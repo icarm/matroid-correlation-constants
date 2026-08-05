@@ -229,12 +229,14 @@ export interface RecordStatus {
   certificateAttached?: boolean
 }
 
-/** The current record matroid for every ground-set size that has one. */
-export async function currentRecords(env: Bindings): Promise<RecordPoint[]> {
+/** Every stored matroid as a plot point — current records and the superseded
+ * history behind them, flagged apart. */
+export async function recordPoints(env: Bindings): Promise<RecordPoint[]> {
   const { results } = await env.DB.prepare(
-    `SELECT id, n, rank, num_bases, alpha_num, alpha_den, alpha_value FROM matroids m
-       WHERE id = (SELECT MAX(id) FROM matroids WHERE n = m.n)
-       ORDER BY n`,
+    `SELECT id, n, rank, num_bases, alpha_num, alpha_den, alpha_value,
+            (id = (SELECT MAX(id) FROM matroids WHERE n = m.n)) AS is_current
+       FROM matroids m
+       ORDER BY n, id`,
   ).all<RecordPoint>()
   return results
 }

@@ -179,7 +179,8 @@ export interface FormState {
   provenanceValue?: string
 }
 
-/** A current record: the row id, ground-set size, and its constant. */
+/** A stored matroid as a plot point: the row id, ground-set size, its
+ * constant, and whether it is still the record for its n. */
 export interface RecordPoint {
   id: number
   n: number
@@ -188,6 +189,7 @@ export interface RecordPoint {
   alpha_num: number
   alpha_den: number
   alpha_value: number
+  is_current: number // SQLite boolean
 }
 
 // Server-rendered SVG scatter of the record constants against the ground-set
@@ -231,9 +233,10 @@ function recordsPlot(pts: RecordPoint[]): string {
     .filter((p) => p.alpha_value >= PLOT_YMIN)
     .map((p) => {
       const beats = beatsGoal(p.alpha_num, p.alpha_den)
-      const title = `n = ${p.n}: record α = ${fmtAlpha(p.alpha_num, p.alpha_den)} ≈ ${p.alpha_value.toFixed(
-        4,
-      )} (rank ${p.rank}, ${p.num_bases.toLocaleString('en-US')} bases)`
+      const title = `n = ${p.n}: ${p.is_current ? 'record' : 'superseded record'} α = ${fmtAlpha(
+        p.alpha_num,
+        p.alpha_den,
+      )} ≈ ${p.alpha_value.toFixed(4)} (rank ${p.rank}, ${p.num_bases.toLocaleString('en-US')} bases)`
       return `<a href="/matroid/${p.id}"><circle class="dot${beats ? ' beats-goal' : ''}" cx="${plotX(p.n).toFixed(
         1,
       )}" cy="${Y(p.alpha_value).toFixed(1)}" r="${beats ? 4.5 : 3.5}"><title>${escapeHtml(title)}</title></circle></a>`
@@ -259,9 +262,9 @@ function recordsSection(records: RecordPoint[]): string {
   return `
   <section class="panel records">
     ${inner}
-    <p class="muted plot-caption">Each dot is the largest verified ${alphaVar} among submitted matroids
-    on n elements; records with ${alphaVar} &le; 1 fall below the frame.
-    Huh&ndash;Schr&ouml;ter&ndash;Wang: ${alphaVar}(<var>M</var>) &le; 2 for every matroid.
+    <p class="muted plot-caption">Each dot is a record-setting matroid &mdash; the current record
+    for its n, or a superseded one kept as history. Dots with ${alphaVar} &le; 1 fall below the
+    frame. Huh&ndash;Schr&ouml;ter&ndash;Wang: ${alphaVar}(<var>M</var>) &le; 2 for every matroid.
     Matroids on at most 7 elements never exceed 1.</p>
     <p class="plot-caption"><a href="/matroids">Browse all matroids &rarr;</a> &nbsp;&middot;&nbsp;
     <a href="/recent">Recent activity &rarr;</a> &nbsp;&middot;&nbsp;

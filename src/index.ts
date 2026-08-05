@@ -26,7 +26,7 @@ import {
   allMatroids,
   COMMENT_MAX,
   commentaryHistory,
-  currentRecords,
+  recordPoints,
   listTokens,
   loadMatroid,
   postCommentary,
@@ -62,7 +62,7 @@ app.use('*', async (c, next) => {
 
 app.get('/', async (c) =>
   c.html(
-    landingPage(c.get('user'), await currentRecords(c.env), c.req.query('expired') === '1'),
+    landingPage(c.get('user'), await recordPoints(c.env), c.req.query('expired') === '1'),
   ),
 )
 
