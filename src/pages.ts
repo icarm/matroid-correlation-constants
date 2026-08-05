@@ -132,6 +132,8 @@ export function layout(title: string, bodyInner: string, user: User | null = nul
     <footer>
       <div class="inner">
         <nav class="footer-links">
+          <a href="/database.json" download>download the records (JSON)</a> &nbsp;&middot;&nbsp;
+          <a class="external" href="https://icarm.zulipchat.com/#narrow/channel/589006-Matroid-Database">discuss on Zulip</a> &nbsp;&middot;&nbsp;
           <a href="/api">API</a> &nbsp;&middot;&nbsp;
           <a class="external" href="https://github.com/icarm/matroid-correlation-constants">source</a> &nbsp;&middot;&nbsp;
           <a class="external" href="https://icarm.io">icarm.io</a>
@@ -397,10 +399,6 @@ function recordsSection(records: RecordPoint[]): string {
       </div>
     </div>
     <div id="chart-tooltip" class="chart-tooltip" hidden></div>
-    <p class="plot-caption"><a href="/matroids">Browse all matroids &rarr;</a> &nbsp;&middot;&nbsp;
-    <a href="/recent">Recent activity &rarr;</a> &nbsp;&middot;&nbsp;
-    <a class="external nowrap" href="https://icarm.zulipchat.com/#narrow/channel/589006-Matroid-Database">Discuss on Zulip</a></p>
-    <p class="plot-caption"><a class="nowrap" href="/database.json" download>Download all records (JSON) &darr;</a></p>
     <script type="application/json" id="chart-data">${chartData}</script>
     <script src="/chart.js" defer></script>
   </section>`
