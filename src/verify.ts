@@ -83,7 +83,7 @@ export interface VerifiedMatroid {
    * there are more than BASES_JSON_MAX_COUNT bases. */
   basesJson: string | null
   /** Canonical bases as sorted bitmasks (the source of truth for hashing). */
-  basesMasks: number[]
+  basesMasks: ArrayLike<number>
 }
 
 export type VerifyResult = { ok: false; error: string } | VerifiedMatroid
@@ -589,7 +589,7 @@ function enumerateBases<T>(
   columns: T[][],
   ops: FieldOps<T>,
   budget: { ops: number },
-): number[] | Fail {
+): Int32Array | Fail {
   const n = columns.length
   const cost = ops.costFactor
   const spend = (k: number): boolean => (budget.ops -= k * cost) > 0
@@ -619,7 +619,7 @@ function enumerateBases<T>(
     }
   }
   const rank = pivots.length
-  if (rank === 0) return [0] // every column is zero: the empty set is the basis
+  if (rank === 0) return Int32Array.of(0) // every column is zero: the empty set is the basis
 
   // The search visits every independent set; bound their possible number
   // before starting. Everything on ≤ 24 elements passes (the budget is 2^24
@@ -638,12 +638,21 @@ function enumerateBases<T>(
   }
 
   // Depth-first search over columns in increasing order, keeping the current
-  // independent set's elimination state on an explicit stack.
-  const bases: number[] = []
+  // independent set's elimination state on an explicit stack. Basis masks
+  // are collected in a manually grown Int32Array: at 4 bytes per mask the
+  // largest admitted case (~5.3M bases) stays ~21 MB, where a plain JS array
+  // (8-byte slots plus growth copies) would crowd the worker's 128 MB.
+  let bases = new Int32Array(1024)
+  let count = 0
   const stack: { vec: T[]; pos: number }[] = []
   const dfs = (start: number, mask: number): Fail | null => {
     if (stack.length === rank) {
-      bases.push(mask)
+      if (count === bases.length) {
+        const grown = new Int32Array(bases.length * 2)
+        grown.set(bases)
+        bases = grown
+      }
+      bases[count++] = mask
       return null
     }
     // Not enough columns left to reach full rank: prune.
@@ -667,14 +676,14 @@ function enumerateBases<T>(
   }
   const failure = dfs(0, 0)
   if (failure) return failure
-  return bases
+  return bases.subarray(0, count)
 }
 
 function matroidFromMatrix(
   n: number,
   fieldText: string,
   data: unknown,
-): { bases: number[]; field: string } | Fail {
+): { bases: Int32Array; field: string } | Fail {
   if (!Array.isArray(data) || data.length === 0 || !data.every((row) => Array.isArray(row))) {
     return fail('the matrix must be a nonempty JSON list of rows')
   }
@@ -722,7 +731,7 @@ function matroidFromMatrix(
     const columns: bigint[][] = Array.from({ length: n }, (_, c) => intRows.map((row) => row[c]))
     const bases = enumerateBases(columns, rationalOps(), budget)
     if (isFail(bases)) return bases
-    return { bases: bases.sort((a, b) => a - b), field: 'Q' }
+    return { bases: bases.sort(), field: 'Q' }
   }
 
   // GF(q): q a prime (up to MAX_FIELD_PRIME), or a prime power p^d with
@@ -769,7 +778,7 @@ function matroidFromMatrix(
   }
   const bases = enumerateBases(columns, gf, budget)
   if (isFail(bases)) return bases
-  return { bases: bases.sort((a, b) => a - b), field: String(p ** d) }
+  return { bases: bases.sort(), field: String(p ** d) }
 }
 
 // ---------------------------------------------------------------------------
@@ -777,7 +786,7 @@ function matroidFromMatrix(
 
 function computeAlpha(
   n: number,
-  bases: number[],
+  bases: Int32Array | number[],
 ): Pick<
   VerifiedMatroid,
   'loops' | 'coloops' | 'alphaNum' | 'alphaDen' | 'alphaValue' | 'maximizingPairs' | 'maxCounts'
@@ -881,7 +890,7 @@ export function verify(
   }
   const representationType = type as RepresentationType
 
-  let bases: number[]
+  let bases: Int32Array | number[]
   let field: string | null = null
   if (representationType === 'matrix') {
     const parsed = matroidFromMatrix(n, fieldText, data)
@@ -910,7 +919,7 @@ export function verify(
     representation: JSON.stringify(data),
     field,
     basesJson:
-      bases.length <= BASES_JSON_MAX_COUNT ? JSON.stringify(bases.map(bitsOf)) : null,
+      bases.length <= BASES_JSON_MAX_COUNT ? JSON.stringify(Array.from(bases, bitsOf)) : null,
     basesMasks: bases,
   }
 }
