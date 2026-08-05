@@ -134,14 +134,49 @@ const bc = (i: string, j: string): string => `B[${i}<var>i</var>, ${j}<var>j</va
 const IN = '&ni;'
 const OUT = '&#8716;'
 
-function problemStatement(): string {
+// The wide hero: the pitch on the left, the standing record on the right —
+// so the page opens wide-into-wide against the wide chart below it, and
+// narrow prose only appears further down where it reads as article body.
+function heroSection(records: RecordPoint[]): string {
+  let best: RecordPoint | null = null
+  for (const r of records) {
+    if (r.is_current && (best === null || r.alpha_value > best.alpha_value)) best = r
+  }
+  const card = best
+    ? `<a class="record-card" href="/matroid/${best.id}">
+        <p class="eyebrow">The record to beat</p>
+        <p class="record-card-value">${fmtAlpha(best.alpha_num, best.alpha_den)}</p>
+        <p class="record-card-approx">&approx; ${best.alpha_value.toFixed(4)}</p>
+        <p class="record-card-meta">${best.name ? `${escapeHtml(best.name)} &mdash; ` : ''}${best.n} elements,
+        rank ${best.rank}${best.field ? `, GF(${escapeHtml(best.field)})` : ''}</p>
+        <p class="record-card-goal">the 4/3 challenge &approx; 1.3333 stands open</p>
+      </a>`
+    : `<div class="record-card">
+        <p class="eyebrow">The record to beat</p>
+        <p class="record-card-value">&mdash;</p>
+        <p class="record-card-meta">No verified records yet. Be the first dot on the board.</p>
+      </div>`
   return `
-  <section class="prose">
-    <p class="lede">Choose a basis of a matroid uniformly at random. Elements usually repel:
-    seeing element <var>i</var> in the random basis makes element <var>j</var> <em>less</em>
-    likely to be there. But in some matroids a pair of elements <em>attracts</em> &mdash; and
-    nobody knows how strong the attraction can get. The challenge:
-    <strong>find a concrete matroid whose correlation constant reaches 4/3.</strong></p>
+  <section class="hero">
+    <div class="hero-copy">
+      <p class="eyebrow">An open, exactly verified record book</p>
+      <h2 class="hero-title">How correlated can the bases of a&nbsp;matroid&nbsp;be?</h2>
+      <p class="lede">Pick a basis uniformly at random. Elements usually repel &mdash; seeing one
+      in the basis makes another <em>less</em> likely. But in some matroids a pair of elements
+      attracts, and nobody knows how strong the attraction can get. The challenge:
+      <strong>find a concrete matroid whose correlation constant reaches 4/3.</strong></p>
+      <p class="hero-actions"><a class="hero-cta" href="#submit">Submit a matroid</a>
+      <a class="hero-link" href="#definition">the definition &darr;</a>
+      <a class="hero-link" href="/api">API</a></p>
+    </div>
+    ${card}
+  </section>`
+}
+
+function definitionSection(): string {
+  return `
+  <section class="prose" id="definition">
+    <h2>The correlation constant</h2>
     <p>
       For a matroid <var>M</var> on <span class="math">{0, &hellip;, n&minus;1}</span> and
       distinct elements <var>i</var>, <var>j</var>, write ${bc(IN, IN)} for the number of bases
@@ -192,6 +227,7 @@ export interface FormState {
  * constant, and whether it is still the record for its n. */
 export interface RecordPoint {
   id: number
+  name: string | null
   n: number
   rank: number
   num_bases: number
@@ -600,9 +636,10 @@ export function landingPage(
     ? '<section class="prose"><p class="muted">That result link has expired &mdash; submit the matroid again below.</p></section>'
     : ''
   const body = `
-    ${problemStatement()}
+    ${heroSection(records)}
     ${expiredNote}
     ${recordsSection(records)}
+    ${definitionSection()}
     ${verifierForm({}, user)}
     <section class="prose api-note">
       <h2>API</h2>
