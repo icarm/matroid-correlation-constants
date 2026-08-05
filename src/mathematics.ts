@@ -9,16 +9,12 @@
 
 import { layout, type User } from './pages'
 
+// MathJax v4's default delimiters are already \( \) and \[ \]; restating
+// them here once produced single-backslash strings after template-literal
+// escaping, turning every parenthesis on the page into a math delimiter.
 const MATHJAX_HEAD = `
     <script>
-      window.MathJax = {
-        tex: {
-          inlineMath: [['\\(', '\\)']],
-          displayMath: [['\\[', '\\]']],
-          processEscapes: true,
-        },
-        chtml: { scale: 0.98 },
-      };
+      window.MathJax = { tex: { processEscapes: true }, chtml: { scale: 0.98 } };
     </script>
     <script defer src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js"></script>`
 
