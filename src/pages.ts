@@ -326,8 +326,9 @@ function verifierForm(state: FormState, user: User | null): string {
       n &le; ${MAX_ELEMENTS} (more than 24 elements only in low rank, where enumeration stays
       feasible; circuit and hyperplane descriptions up to 24), at most
       ${MAX_LISTED_SETS.toLocaleString('en-US')} listed sets or
-      ${MAX_MATRIX_CELLS.toLocaleString('en-US')} matrix entries; matrix fields are &#8474;, a prime
-      GF(p), or a prime power GF(p<sup>d</sup>) up to order ${MAX_EXT_FIELD_ORDER}. Over &#8474;,
+      ${MAX_MATRIX_CELLS.toLocaleString('en-US')} matrix entries; matrix fields are &#8474;, any
+      prime GF(p) with p &lt; 10<sup>6</sup>, or a proper prime power GF(p<sup>d</sup>) up to
+      order ${MAX_EXT_FIELD_ORDER}. Over &#8474;,
       entries may be integers or fraction strings like <code>"-3/5"</code>; over
       GF(p<sup>d</sup>), integers (subfield constants) or coefficient lists like
       <code>[0,1]</code> in the Conway polynomial basis, as in Sage or GAP.</p>
@@ -613,9 +614,11 @@ export function apiDocsPage(user: User | null = null): string {
       fields <code>n</code> (integer), <code>type</code> (one of <code>"matrix"</code>,
       <code>"bases"</code>, <code>"circuits"</code>, <code>"hyperplanes"</code>),
       <code>data</code>, an optional <code>provenance</code> string (attribution: discoverers,
-      date, AI disclosure), and, for matrices, <code>field</code> &mdash; <code>"Q"</code>, a
-      prime <code>"p"</code> for GF(p), or a prime power (<code>"4"</code> or
-      <code>"2^2"</code>) up to order ${MAX_EXT_FIELD_ORDER} for GF(p<sup>d</sup>). For a matrix,
+      date, AI disclosure), and, for matrices, <code>field</code> &mdash; <code>"Q"</code>; a
+      prime <code>"p"</code> for GF(p), any prime below 10<sup>6</sup>; or a proper prime power
+      (<code>"4"</code> or <code>"2^2"</code>) for GF(p<sup>d</sup>), supported up to order
+      ${MAX_EXT_FIELD_ORDER} (extension-field arithmetic is table-driven, so its cost scales
+      with the field order; prime-field arithmetic does not). For a matrix,
       <code>data</code> is a list of rows (columns are the elements). Over &#8474; entries may be
       integers or fraction strings like <code>"-3/5"</code>. Over GF(p<sup>d</sup>) with d &gt; 1,
       an entry is an integer (a prime-subfield constant, reduced mod p) or a coefficient list
