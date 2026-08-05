@@ -1,0 +1,136 @@
+// Exercises src/verify.ts with known matroids. Run via `npm test`
+// (Node 22.6+: type stripping lets Node import the .ts directly).
+import { verify } from './src/verify.ts'
+
+let failures = 0
+const check = (name, cond, detail = '') => {
+  if (cond) {
+    console.log(`ok   ${name}`)
+  } else {
+    failures++
+    console.error(`FAIL ${name}${detail ? ` — ${detail}` : ''}`)
+  }
+}
+const alphaOf = (r) => (r.ok ? `${r.alphaNum}/${r.alphaDen}` : `error: ${r.error}`)
+
+// U(2,4) in all four descriptions: rank 2, 6 bases, α = 1/4 at every pair.
+const u24 = {
+  matrix: verify(4, 'matrix', '3', [[1, 0, 1, 1], [0, 1, 1, 2]]),
+  bases: verify(4, 'bases', '', [[0, 1], [0, 2], [0, 3], [1, 2], [1, 3], [2, 3]]),
+  circuits: verify(4, 'circuits', '', [[0, 1, 2], [0, 1, 3], [0, 2, 3], [1, 2, 3]]),
+  hyperplanes: verify(4, 'hyperplanes', '', [[0], [1], [2], [3]]),
+}
+for (const [kind, r] of Object.entries(u24)) {
+  check(`U(2,4) via ${kind}: verifies`, r.ok, alphaOf(r))
+  if (!r.ok) continue
+  check(`U(2,4) via ${kind}: rank 2, 6 bases`, r.rank === 2 && r.numBases === 6)
+  check(`U(2,4) via ${kind}: α = 1/4`, r.alphaNum === 1 && r.alphaDen === 4, alphaOf(r))
+  check(`U(2,4) via ${kind}: 6 maximizing pairs`, r.maximizingPairs.length === 6)
+  check(
+    `U(2,4) via ${kind}: same bases as matrix`,
+    r.basesJson === u24.matrix.basesJson,
+  )
+}
+
+// The 12-element rank-6 ternary record: α = 100/81 with basis counts
+// (180, 180, 162, 162). Matrix from the discovery record. (That record lists
+// the maximizing pair as (8, 11), but for this matrix the unique maximizer is
+// (5, 10) — confirmed by an independent brute force over all 924 subsets.)
+const ternary = verify(12, 'matrix', '3', [
+  [1, 2, 1, 2, 2, 2, 1, 1, 0, 0, 1, 2],
+  [0, 0, 2, 0, 0, 0, 0, 0, 2, 1, 1, 1],
+  [0, 1, 1, 1, 0, 1, 1, 2, 1, 1, 1, 2],
+  [1, 1, 1, 2, 2, 1, 1, 2, 1, 1, 0, 1],
+  [0, 1, 0, 1, 2, 1, 1, 0, 2, 0, 1, 0],
+  [0, 1, 1, 1, 1, 0, 2, 0, 0, 1, 0, 0],
+])
+check('ternary 100/81: verifies', ternary.ok, alphaOf(ternary))
+if (ternary.ok) {
+  check('ternary 100/81: rank 6, 684 bases', ternary.rank === 6 && ternary.numBases === 684,
+    `rank ${ternary.rank}, ${ternary.numBases} bases`)
+  check('ternary 100/81: α = 100/81', ternary.alphaNum === 100 && ternary.alphaDen === 81, alphaOf(ternary))
+  check(
+    'ternary 100/81: unique maximizing pair (5, 10)',
+    ternary.maximizingPairs.length === 1 &&
+      ternary.maximizingPairs[0][0] === 5 &&
+      ternary.maximizingPairs[0][1] === 10,
+    JSON.stringify(ternary.maximizingPairs),
+  )
+  check(
+    'ternary 100/81: counts (180, 180, 162, 162)',
+    ternary.maxCounts.containBoth === 180 &&
+      ternary.maxCounts.avoidBoth === 180 &&
+      ternary.maxCounts.onlyI === 162 &&
+      ternary.maxCounts.onlyJ === 162,
+    JSON.stringify(ternary.maxCounts),
+  )
+}
+
+// The cycle matroid of K4 over GF(2) (vertex-edge incidence matrix): rank 3,
+// 16 spanning trees, negatively correlated everywhere (α ≤ 1).
+// Edge order: 01, 02, 03, 12, 13, 23.
+const k4 = verify(6, 'matrix', '2', [
+  [1, 1, 1, 0, 0, 0],
+  [1, 0, 0, 1, 1, 0],
+  [0, 1, 0, 1, 0, 1],
+  [0, 0, 1, 0, 1, 1],
+])
+check('K4: verifies', k4.ok, alphaOf(k4))
+if (k4.ok) {
+  check('K4: rank 3, 16 spanning trees', k4.rank === 3 && k4.numBases === 16,
+    `rank ${k4.rank}, ${k4.numBases} bases`)
+  check('K4: α ≤ 1', k4.alphaNum <= k4.alphaDen, alphaOf(k4))
+}
+
+// Rational matrix with fraction entries: columns (1,0), (0,1), (1/2,1/3)
+// give U(2,3); adjacent pairs never avoid a basis together, so α = 0.
+const rational = verify(3, 'matrix', 'Q', [[1, 0, '1/2'], [0, 1, '1/3']])
+check('Q matrix: verifies', rational.ok, alphaOf(rational))
+if (rational.ok) {
+  check('Q matrix: U(2,3) with 3 bases', rational.rank === 2 && rational.numBases === 3)
+  check('Q matrix: α = 0', rational.alphaNum === 0 && rational.alphaDen === 1, alphaOf(rational))
+}
+
+// A zero column is a loop; the other column is a coloop; no eligible pair.
+const loops = verify(2, 'matrix', '5', [[1, 0], [0, 0]])
+check('loop/coloop: verifies with α = 0', loops.ok && loops.alphaNum === 0, alphaOf(loops))
+if (loops.ok) {
+  check(
+    'loop/coloop: classified',
+    loops.loops.length === 1 && loops.loops[0] === 1 && loops.coloops.length === 1 && loops.coloops[0] === 0,
+    JSON.stringify({ loops: loops.loops, coloops: loops.coloops }),
+  )
+}
+
+// Invalid inputs are rejected with pointed errors.
+const badExchange = verify(4, 'bases', '', [[0, 1], [2, 3]])
+check('bases failing exchange rejected', !badExchange.ok && /exchange/.test(badExchange.error), alphaOf(badExchange))
+
+const nested = verify(3, 'circuits', '', [[0, 1], [0, 1, 2]])
+check('nested circuits rejected', !nested.ok && /nested/.test(nested.error), alphaOf(nested))
+
+const badElim = verify(3, 'circuits', '', [[0, 1], [1, 2]])
+check('circuit elimination failure rejected', !badElim.ok && /eliminat/.test(badElim.error), alphaOf(badElim))
+
+const badRow = verify(3, 'matrix', '2', [[1, 0], [0, 1]])
+check('matrix row length mismatch rejected', !badRow.ok && /row/.test(badRow.error), alphaOf(badRow))
+
+const badField = verify(4, 'matrix', '4', [[1, 0, 1, 1], [0, 1, 1, 1]])
+check('GF(4) politely unsupported', !badField.ok && /not prime/.test(badField.error), alphaOf(badField))
+
+const dupBasis = verify(2, 'bases', '', [[0], [0]])
+check('duplicate basis rejected', !dupBasis.ok && /twice/.test(dupBasis.error), alphaOf(dupBasis))
+
+// The whole ground set can never be a hyperplane.
+const badHyp = verify(2, 'hyperplanes', '', [[0, 1]])
+check('full-set hyperplane rejected', !badHyp.ok, alphaOf(badHyp))
+
+// Free matroid via empty circuit list: every element a coloop.
+const free = verify(3, 'circuits', '', [])
+check('free matroid: α = 0, all coloops', free.ok && free.alphaNum === 0 && free.coloops.length === 3, alphaOf(free))
+
+if (failures > 0) {
+  console.error(`\n${failures} failure(s)`)
+  process.exit(1)
+}
+console.log('\nall tests passed')

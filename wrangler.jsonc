@@ -1,0 +1,43 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "matroid-correlation-constants",
+  "account_id": "641ee17fdc075e1c2f3b2cfc7ffdea81",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-06-01",
+  "routes": [{ "pattern": "matroid-correlation-constants.icarm.cloud", "custom_domain": true }],
+  "assets": {
+    "directory": "./public"
+  },
+  // OAuth secrets are set via:
+  //   wrangler secret put GITHUB_CLIENT_ID
+  //   wrangler secret put GITHUB_CLIENT_SECRET
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "matroid-correlation-constants",
+      "database_id": "31733552-8435-405d-baf2-ebbfb2861095",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "SESSIONS",
+      "id": "d487940f6a754f4c8dd5fb16d575dab1"
+    }
+  ],
+  "ratelimits": [
+    {
+      "name": "SUBMISSION_RATE_LIMITER",
+      // Unique integer namespace for per-account submission limits.
+      // (677255 is elliptic-rank, 677256 is ruzsa-genus-one on this account.)
+      "namespace_id": "677257",
+      "simple": {
+        "limit": 60,
+        "period": 60
+      }
+    }
+  ],
+  "observability": {
+    "enabled": true
+  }
+}

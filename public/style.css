@@ -1,0 +1,843 @@
+/* Dark pine theme with coral accents — deliberately distinct from the
+   indigo/amber ruzsa-genus-one site and the light/teal elliptic-rank site. */
+:root {
+  --bg: #0f1914;          /* deep pine-black */
+  --bg-glow: #142a1e;
+  --fg: #e8f0ea;
+  --muted: #93ab9c;
+  --accent: #ff9d6b;      /* warm coral */
+  --accent-bright: #ffbd96;
+  --accent-dim: #c05f33;
+  --panel: #152219;
+  --panel-edge: #2b4234;
+  --valid: #4ade80;
+  --valid-bg: #0c2a18;
+  --invalid: #f87171;
+  --invalid-bg: #331416;
+  --error-bg: #2c1c10;
+  --mono: "JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular, Menlo,
+    Consolas, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: radial-gradient(ellipse 120% 60% at 50% -10%, var(--bg-glow), var(--bg) 70%)
+    fixed var(--bg);
+  color: var(--fg);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif;
+  line-height: 1.65;
+}
+
+/* Default link color; more specific rules (header, footer, buttons) override. */
+a {
+  color: var(--accent);
+}
+
+a:hover {
+  color: var(--accent-bright);
+}
+
+.eq {
+  font-family: var(--mono);
+  white-space: nowrap;
+}
+
+header {
+  border-bottom: 1px solid var(--panel-edge);
+  background: rgba(15, 25, 20, 0.7);
+}
+
+header .inner {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 1.2rem 1.5rem;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+header h1 a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+header h1 a:hover {
+  color: var(--accent-bright);
+}
+
+header nav .auth-nav {
+  font-size: 0.9rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+header nav .auth-nav a.auth-login {
+  display: inline-block;
+  padding: 0.35rem 0.9rem;
+  border: 1px solid var(--accent-dim);
+  border-radius: 999px;
+  color: var(--accent);
+  font-weight: 600;
+  font-style: normal;
+  text-decoration: none;
+}
+
+header nav .auth-nav a.auth-login:hover {
+  border-color: var(--accent);
+  background: rgba(255, 157, 107, 0.1);
+}
+
+a.auth-user {
+  font-weight: 600;
+  color: var(--fg);
+  text-decoration: none;
+}
+
+a.auth-user:hover {
+  color: var(--accent);
+}
+
+.auth-logout {
+  display: inline;
+  margin-left: 0.6rem;
+}
+
+.auth-logout button {
+  margin: 0;
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.auth-logout button:hover {
+  color: var(--accent);
+}
+
+main {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+var {
+  font-style: italic;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.05em;
+}
+
+.math {
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+/* The opening hook: slightly larger, and worth reading first. */
+.lede {
+  font-size: 1.14rem;
+  line-height: 1.7;
+}
+
+.lede strong {
+  color: var(--accent);
+}
+
+.record-new {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* Display equation with a stacked fraction; wraps as two parts on narrow
+   screens. */
+.display-eq {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.6rem 2.6rem;
+  text-align: center;
+  font-size: 1.12rem;
+  color: var(--accent);
+  margin: 1.3rem 0;
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+.frac {
+  display: inline-flex;
+  flex-direction: column;
+  vertical-align: middle;
+  text-align: center;
+  margin: 0 0.25em;
+}
+
+.frac .num {
+  border-bottom: 1px solid currentColor;
+  padding: 0 0.35em 0.05em;
+}
+
+.frac .den {
+  padding: 0.05em 0.35em 0;
+}
+
+.records-plot {
+  width: 100%;
+  height: auto;
+  margin: 0.5rem 0;
+  background: var(--bg);
+  border: 1px solid var(--panel-edge);
+  border-radius: 6px;
+}
+
+.records-plot .grid { stroke: var(--panel-edge); stroke-width: 1; }
+.records-plot .axis { stroke: var(--muted); stroke-width: 1.5; }
+.records-plot .tick {
+  fill: var(--muted);
+  font-size: 12px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+.records-plot .axis-title {
+  fill: var(--muted);
+  font-size: 13px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+.records-plot .guide { fill: none; }
+.records-plot .guide-one { stroke: var(--muted); stroke-width: 1.2; stroke-dasharray: 6 5; opacity: 0.7; }
+.records-plot .guide-known { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 2 4; }
+.records-plot .guide-goal { stroke: var(--accent-dim); stroke-width: 1.8; stroke-dasharray: 6 5; }
+.records-plot .guide-label {
+  fill: var(--muted);
+  font-size: 12px;
+  font-style: italic;
+  font-family: Georgia, "Times New Roman", serif;
+}
+.records-plot .dot { fill: var(--accent); }
+.records-plot .dot.beats-goal { fill: var(--valid); stroke: var(--fg); stroke-width: 1; }
+
+.records-plot a .dot {
+  cursor: pointer;
+}
+
+.records-plot a:hover .dot {
+  fill: var(--accent-bright);
+  r: 5;
+}
+
+.plot-caption {
+  font-size: 0.85rem;
+  margin-top: 0.2rem;
+}
+
+.form-note {
+  font-size: 0.85rem;
+  margin: 0.8rem 0 0;
+}
+
+/* Login CTA in place of the submit button, styled to match it. */
+.login-to-submit {
+  display: inline-block;
+  margin-top: 1.1rem;
+  background: var(--accent);
+  color: #2a1204;
+  border-radius: 6px;
+  padding: 0.6rem 1.6rem;
+  font-size: 1rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.login-to-submit:hover {
+  background: var(--accent-bright);
+}
+
+/* Profile: API tokens & record matroids */
+
+.page-nav {
+  margin: 0 0 1rem;
+  font-size: 0.95rem;
+}
+
+.page-nav a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.page-nav a:hover {
+  text-decoration: underline;
+}
+
+.new-token {
+  border: 1px solid var(--accent);
+  background: rgba(255, 157, 107, 0.08);
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  margin: 1rem 0;
+}
+
+.token-secret {
+  background: var(--panel);
+  border: 1px solid var(--panel-edge);
+  padding: 0.5rem 0.75rem;
+  border-radius: 3px;
+  overflow-x: auto;
+  white-space: nowrap;
+  font-size: 0.95rem;
+  margin: 0.5rem 0;
+}
+
+.tokens-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  font-size: 0.95rem;
+}
+
+.tokens-table th, .tokens-table td {
+  padding: 0.4rem 0.6rem;
+  text-align: left;
+  border-bottom: 1px solid var(--panel-edge);
+  vertical-align: top;
+}
+
+.tokens-table th.num, .tokens-table td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.tokens-table code {
+  font-size: 0.9rem;
+}
+
+/* The /matroids table: sortable column headers with a direction arrow on
+   the active column, in a horizontally scrollable wrapper for small screens. */
+.table-scroll {
+  overflow-x: auto;
+}
+
+.witnesses-table {
+  white-space: nowrap;
+}
+
+.witnesses-table th a.sort {
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.witnesses-table th a.sort:hover {
+  color: var(--accent);
+}
+
+.witnesses-table th a.sort.asc,
+.witnesses-table th a.sort.desc {
+  color: var(--fg);
+}
+
+.witnesses-table th a.sort.asc::after {
+  content: " \2191"; /* up arrow */
+}
+
+.witnesses-table th a.sort.desc::after {
+  content: " \2193"; /* down arrow */
+}
+
+.table-controls {
+  font-size: 0.9rem;
+  margin: 0.7rem 0;
+}
+
+.size-filter input {
+  width: 5rem;
+  padding: 0.15rem 0.45rem;
+  font-size: 0.9rem;
+}
+
+.inline-form {
+  display: inline;
+  margin: 0;
+}
+
+.link-button {
+  margin: 0;
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 400;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.link-button:hover {
+  color: var(--accent);
+}
+
+.new-token-form,
+.profile-name-form {
+  margin-top: 1rem;
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.new-token-form label {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin: 0;
+}
+
+.new-token-form input,
+.profile-name-form input {
+  width: auto;
+  flex: 0 1 16rem;
+}
+
+.new-token-form button,
+.profile-name-form button {
+  margin-top: 0;
+}
+
+.my-matroids {
+  margin-top: 2rem;
+}
+
+/* Matroid pages, commentary, recent activity */
+
+.witness-meta {
+  margin: 1rem 0;
+}
+
+.witness-meta dt {
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin-top: 0.6rem;
+}
+
+.witness-meta dd {
+  margin: 0.1rem 0 0;
+}
+
+.field-badge {
+  display: inline-block;
+  border: 1px solid var(--panel-edge);
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.05rem 0.6rem;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.elements {
+  background: var(--panel);
+  border: 1px solid var(--panel-edge);
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  max-height: 16rem;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 0.9rem;
+}
+
+.bases-details {
+  margin: 0.6rem 0;
+}
+
+.bases-details summary {
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+/* The 2x2 table of basis counts at the maximizing pair. */
+.counts-table {
+  border-collapse: collapse;
+  margin: 0.8rem 0;
+  font-size: 0.95rem;
+}
+
+.counts-table th {
+  color: var(--muted);
+  font-weight: 400;
+  padding: 0.3rem 0.9rem;
+}
+
+.counts-table td {
+  border: 1px solid var(--panel-edge);
+  background: var(--panel);
+  padding: 0.3rem 0.9rem;
+  text-align: right;
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.max-pair,
+.representation,
+.provenance {
+  margin-top: 1.6rem;
+}
+
+.comment-section {
+  margin-top: 2rem;
+}
+
+.comment-body {
+  background: var(--panel);
+  border: 1px solid var(--panel-edge);
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.comment-meta {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin: 0.4rem 0;
+}
+
+.comment-edit {
+  margin-top: 0.5rem;
+}
+
+.comment-edit summary {
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.comment-edit textarea {
+  margin-top: 0.5rem;
+}
+
+.comment-edit button {
+  margin-top: 0.6rem;
+}
+
+.comment-history {
+  list-style: none;
+  padding: 0;
+}
+
+.comment-history li {
+  border-bottom: 1px solid var(--panel-edge);
+  padding: 0.9rem 0;
+}
+
+.activity {
+  list-style: none;
+  padding: 0;
+}
+
+.activity li {
+  border-bottom: 1px solid var(--panel-edge);
+  padding: 0.8rem 0;
+}
+
+.activity-meta {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin: 0 0 0.2rem;
+}
+
+.activity-line {
+  margin: 0;
+}
+
+.activity .comment-body {
+  margin-top: 0.5rem;
+  font-size: 0.92rem;
+}
+
+.pager {
+  display: flex;
+  justify-content: space-between;
+  margin: 1.5rem 0 0.5rem;
+  font-size: 0.95rem;
+}
+
+.pager a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.pager a:hover {
+  text-decoration: underline;
+}
+
+.footer-links {
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
+
+.footer-links a {
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.footer-links a:hover {
+  color: var(--accent);
+}
+
+.acknowledgment {
+  max-width: 640px;
+  margin: 1rem auto 0;
+  padding-top: 1rem;
+  border-top: 1px solid var(--panel-edge);
+  font-size: 0.8rem;
+  line-height: 1.5;
+  text-align: left;
+  color: var(--muted);
+}
+
+.acknowledgment a {
+  color: var(--muted);
+}
+
+.acknowledgment a:hover {
+  color: var(--accent);
+}
+
+.nowrap { white-space: nowrap; }
+
+/* Outbound links get a small external-link glyph, colored to match. */
+a.external::after {
+  content: "";
+  display: inline-block;
+  width: 0.75em;
+  height: 0.75em;
+  margin-left: 0.25em;
+  background-color: currentColor;
+  opacity: 0.6;
+  -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'><path d='M6 1h5v5L8.86 3.85 4.7 8 4 7.3l4.15-4.15zM2 3h2v1H3v6h6V8h1v3H2z'/></svg>") no-repeat center / contain;
+          mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'><path d='M6 1h5v5L8.86 3.85 4.7 8 4 7.3l4.15-4.15zM2 3h2v1H3v6h6V8h1v3H2z'/></svg>") no-repeat center / contain;
+}
+
+.prose p {
+  margin: 0.7rem 0;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--panel-edge);
+  border-radius: 10px;
+  padding: 1.2rem 1.4rem 1.4rem;
+  margin: 1.6rem 0;
+}
+
+.panel h2,
+.result h2 {
+  margin: 0 0 0.8rem;
+  font-size: 1.1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+}
+
+.panel h2 {
+  color: var(--accent);
+}
+
+form label {
+  display: block;
+  margin: 0.9rem 0 0.3rem;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+form label .hint {
+  font-size: 0.82rem;
+  opacity: 0.8;
+}
+
+/* n / description / field side by side where there's room. */
+.form-row {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.form-row label {
+  flex: 1 1 12rem;
+  margin-bottom: 0;
+}
+
+.form-row input,
+.form-row select {
+  margin-top: 0.3rem;
+}
+
+form input,
+form select,
+form textarea {
+  width: 100%;
+  background: var(--bg);
+  color: var(--fg);
+  border: 1px solid var(--panel-edge);
+  border-radius: 6px;
+  padding: 0.55rem 0.7rem;
+  font-family: var(--mono);
+  font-size: 0.95rem;
+}
+
+form select {
+  font-family: inherit;
+}
+
+form input:focus,
+form select:focus,
+form textarea:focus {
+  outline: none;
+  border-color: var(--accent-dim);
+  box-shadow: 0 0 0 2px rgba(255, 157, 107, 0.18);
+}
+
+form textarea {
+  resize: vertical;
+}
+
+form button {
+  margin-top: 1.1rem;
+  background: var(--accent);
+  color: #2a1204;
+  border: none;
+  border-radius: 6px;
+  padding: 0.6rem 1.6rem;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+form button:hover {
+  background: var(--accent-bright);
+}
+
+.result {
+  border-radius: 10px;
+  padding: 1.2rem 1.4rem;
+  margin: 1.6rem 0;
+  border: 1px solid;
+}
+
+.result-valid {
+  background: var(--valid-bg);
+  border-color: var(--valid);
+}
+
+.result-valid h2 {
+  color: var(--valid);
+}
+
+.result-invalid {
+  background: var(--invalid-bg);
+  border-color: var(--invalid);
+}
+
+.result-invalid h2 {
+  color: var(--invalid);
+}
+
+.result-error {
+  background: var(--error-bg);
+  border-color: var(--accent-dim);
+}
+
+.result-error h2 {
+  color: var(--accent);
+}
+
+.stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem 2.2rem;
+  margin: 1rem 0 0.3rem;
+}
+
+.stats div {
+  display: flex;
+  flex-direction: column;
+}
+
+.stats dt {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.stats dd {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 1.15rem;
+}
+
+.stats .score {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.beats {
+  color: var(--valid);
+  font-weight: 700;
+}
+
+.beats-one {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+code {
+  font-family: var(--mono);
+  background: var(--panel);
+  border: 1px solid var(--panel-edge);
+  border-radius: 4px;
+  padding: 0.1rem 0.35rem;
+  font-size: 0.9em;
+}
+
+.api-note {
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.api-note h2 {
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+footer {
+  border-top: 1px solid var(--panel-edge);
+  margin-top: 2rem;
+}
+
+footer .inner {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 1rem 1.5rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
