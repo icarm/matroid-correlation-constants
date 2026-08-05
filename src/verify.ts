@@ -26,6 +26,7 @@ export const MAX_ELEMENTS = 24
 export const MAX_LISTED_SETS = 5000
 export const MAX_MATRIX_CELLS = 5000
 export const MAX_FIELD_PRIME = 1_000_003 // p² must stay well below 2^53
+export const MAX_EXT_FIELD_ORDER = 1024 // extension fields GF(p^d), d ≥ 2
 export const MAX_DATA_TEXT_BYTES = 1_000_000
 export const PROVENANCE_MAX = 2000
 
@@ -281,18 +282,10 @@ interface FieldOps<T> {
   costFactor: number
 }
 
-function parsePrime(p: number): Fail | null {
-  if (!Number.isInteger(p) || p < 2 || p > MAX_FIELD_PRIME) {
-    return fail(`the field characteristic must be a prime between 2 and ${MAX_FIELD_PRIME.toLocaleString('en-US')}`)
-  }
-  for (let d = 2; d * d <= p; d++) {
-    if (p % d === 0) {
-      return fail(
-        `${p} is not prime; finite fields GF(p^d) with d > 1 are not supported yet — use a prime field or another description`,
-      )
-    }
-  }
-  return null
+function isPrime(p: number): boolean {
+  if (!Number.isInteger(p) || p < 2) return false
+  for (let d = 2; d * d <= p; d++) if (p % d === 0) return false
+  return true
 }
 
 function gfOps(p: number): FieldOps<number> {
@@ -331,6 +324,210 @@ function gfOps(p: number): FieldOps<number> {
       for (let k = 0; k < v.length; k++) v[k] = (v[k] * f) % p
     },
     costFactor: 1,
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Conway polynomials, computed from the definition rather than transcribed
+// from a table (q ≤ 1024 keeps the search instant, and a computed table
+// cannot be mistyped). C_{p,d} is the minimal monic degree-d polynomial over
+// F_p — in the standard word order on (c_{d-1}, ..., c_0), where the word
+// encodes f = x^d + Σ (−1)^{d−i} c_i x^i — that is primitive and
+// norm-compatible with C_{p,m} for every proper divisor m of d. This is the
+// convention used by Sage, GAP, and Macaulay2, so coefficient lists written
+// in those systems mean the same field elements here.
+
+// Polynomials over F_p as little-endian coefficient arrays.
+
+const isOnePoly = (a: number[]): boolean => a[0] === 1 && a.every((x, i) => i === 0 || x === 0)
+
+/** a mod m, with m monic; the result has exactly deg(m) entries in 0..p-1. */
+function polyMod(a: number[], m: number[], p: number): number[] {
+  const out = a.slice()
+  const dm = m.length - 1
+  for (let i = out.length - 1; i >= dm; i--) {
+    const c = ((out[i] % p) + p) % p
+    if (c === 0) continue
+    for (let k = 0; k <= dm; k++) out[i - dm + k] -= c * m[k]
+  }
+  const res = new Array<number>(dm).fill(0)
+  for (let k = 0; k < Math.min(dm, out.length); k++) res[k] = ((out[k] % p) + p) % p
+  return res
+}
+
+function polyMulMod(a: number[], b: number[], m: number[], p: number): number[] {
+  const prod = new Array<number>(a.length + b.length - 1).fill(0)
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] === 0) continue
+    for (let j = 0; j < b.length; j++) prod[i + j] = (prod[i + j] + a[i] * b[j]) % p
+  }
+  return polyMod(prod, m, p)
+}
+
+function polyPowMod(base: number[], e: number, m: number[], p: number): number[] {
+  let result = [1]
+  let acc = polyMod(base, m, p)
+  for (let k = e; k > 0; k >>= 1) {
+    if (k & 1) result = polyMulMod(result, acc, m, p)
+    acc = polyMulMod(acc, acc, m, p)
+  }
+  return result
+}
+
+function isIrreducible(f: number[], p: number): boolean {
+  const d = f.length - 1
+  if (d === 1) return true
+  // Trial division by every monic polynomial of degree 1..d/2.
+  for (let deg = 1; deg * 2 <= d; deg++) {
+    for (let w = 0; w < p ** deg; w++) {
+      const g = new Array<number>(deg + 1).fill(0)
+      g[deg] = 1
+      for (let i = 0; i < deg; i++) g[i] = Math.floor(w / p ** i) % p
+      if (polyMod(f, g, p).every((x) => x === 0)) return false
+    }
+  }
+  return true
+}
+
+function primeFactors(x: number): number[] {
+  const out: number[] = []
+  for (let f = 2; f * f <= x; f++) {
+    if (x % f === 0) {
+      out.push(f)
+      while (x % f === 0) x /= f
+    }
+  }
+  if (x > 1) out.push(x)
+  return out
+}
+
+const conwayCache = new Map<string, number[]>()
+
+/** The Conway polynomial C_{p,d} as little-endian coefficients (length d+1,
+ * leading 1). Requires p^d manageable; callers keep p^d ≤ MAX_EXT_FIELD_ORDER
+ * (recursion visits smaller d for the same p). */
+export function conwayPolynomial(p: number, d: number): number[] {
+  const key = `${p}^${d}`
+  const cached = conwayCache.get(key)
+  if (cached) return cached
+  const q = p ** d
+  const qm1Primes = primeFactors(q - 1)
+  const properDivisors: number[] = []
+  for (let m = 1; m < d; m++) if (d % m === 0) properDivisors.push(m)
+  const xPoly = [0, 1]
+  for (let w = 0; w < q; w++) {
+    // The word (c_{d-1}, ..., c_0) in lexicographic order is the base-p
+    // integer w with c_{d-1} most significant.
+    const f = new Array<number>(d + 1).fill(0)
+    f[d] = 1
+    for (let i = 0; i < d; i++) {
+      const c = Math.floor(w / p ** i) % p
+      f[i] = (d - i) % 2 === 0 ? c : (p - c) % p
+    }
+    if (f[0] === 0) continue // divisible by x
+    if (!isIrreducible(f, p)) continue
+    // Primitive: x has order exactly q-1 in F_p[x]/(f).
+    if (qm1Primes.some((ell) => isOnePoly(polyPowMod(xPoly, (q - 1) / ell, f, p)))) continue
+    // Norm-compatible: x^((q-1)/(p^m-1)) is a root of C_{p,m} for every m | d.
+    const compatible = properDivisors.every((m) => {
+      const cm = conwayPolynomial(p, m)
+      const g = polyPowMod(xPoly, (q - 1) / (p ** m - 1), f, p)
+      let acc: number[] = [cm[cm.length - 1]]
+      for (let i = cm.length - 2; i >= 0; i--) {
+        acc = polyMulMod(acc, g, f, p)
+        acc[0] = (acc[0] + cm[i]) % p
+      }
+      return acc.every((x) => x === 0)
+    })
+    if (!compatible) continue
+    conwayCache.set(key, f)
+    return f
+  }
+  /* v8 ignore next -- every prime power has a Conway polynomial */
+  throw new Error(`no Conway polynomial found for ${key}`)
+}
+
+// GF(p^d) arithmetic via the Conway modulus. Elements are integers 0..q-1
+// encoding base-p digit vectors: c_0 + c_1 p + ... + c_{d-1} p^{d-1} stands
+// for c_0 + c_1 a + ... + c_{d-1} a^{d-1} with a a root of C_{p,d}.
+// Multiplication runs on log/antilog tables (a is primitive, so its powers
+// enumerate every nonzero element); addition and negation are tabulated too.
+function gfExtOps(p: number, d: number): FieldOps<number> {
+  const q = p ** d
+  const conway = conwayPolynomial(p, d)
+  const digits = (e: number): number[] => {
+    const out = new Array<number>(d).fill(0)
+    for (let i = 0; i < d; i++) out[i] = Math.floor(e / p ** i) % p
+    return out
+  }
+  const encode = (dg: number[]): number => dg.reduce((acc, c, i) => acc + c * p ** i, 0)
+
+  const antilog = new Int32Array(q - 1)
+  const logT = new Int32Array(q).fill(-1)
+  let cur = new Array<number>(d).fill(0)
+  cur[0] = 1
+  for (let k = 0; k < q - 1; k++) {
+    const e = encode(cur)
+    antilog[k] = e
+    logT[e] = k
+    // cur ← a·cur, using a^d = −(conway_0 + conway_1 a + ...).
+    const top = cur[d - 1]
+    for (let i = d - 1; i > 0; i--) cur[i] = (((cur[i - 1] - top * conway[i]) % p) + p) % p
+    cur[0] = (((-top * conway[0]) % p) + p) % p
+  }
+
+  const neg = new Int32Array(q)
+  const add = new Uint16Array(q * q)
+  const allDigits: number[][] = []
+  for (let e = 0; e < q; e++) allDigits.push(digits(e))
+  for (let u = 0; u < q; u++) {
+    neg[u] = encode(allDigits[u].map((c) => (p - c) % p))
+    for (let v = u; v < q; v++) {
+      const s = encode(allDigits[u].map((c, i) => (c + allDigits[v][i]) % p))
+      add[u * q + v] = s
+      add[v * q + u] = s
+    }
+  }
+
+  const mul = (u: number, v: number): number =>
+    u === 0 || v === 0 ? 0 : antilog[(logT[u] + logT[v]) % (q - 1)]
+  const inv = (u: number): number => antilog[(q - 1 - logT[u]) % (q - 1)]
+
+  return {
+    fromCell(cell, row, col) {
+      if (typeof cell === 'number' && Number.isSafeInteger(cell)) {
+        return ((cell % p) + p) % p // an integer is a prime-subfield constant
+      }
+      if (Array.isArray(cell) && cell.length >= 1 && cell.length <= d) {
+        const dg = new Array<number>(d).fill(0)
+        for (const [i, c] of cell.entries()) {
+          if (typeof c !== 'number' || !Number.isSafeInteger(c)) {
+            return fail(
+              `matrix entry at row ${row}, column ${col}: coefficient lists over GF(${q}) must contain integers`,
+            )
+          }
+          dg[i] = ((c % p) + p) % p
+        }
+        return encode(dg)
+      }
+      return fail(
+        `matrix entry at row ${row}, column ${col} must be an integer or a coefficient list of length at most ${d} over GF(${q}) (Conway polynomial basis)`,
+      )
+    },
+    isZero: (x) => x === 0,
+    eliminate(v, pivot, pos) {
+      // pivot[pos] is normalized to 1.
+      const f = v[pos]
+      if (f === 0) return
+      for (let k = 0; k < v.length; k++) v[k] = add[v[k] * q + neg[mul(f, pivot[k])]]
+    },
+    normalize(v) {
+      let pos = 0
+      while (v[pos] === 0) pos++
+      const f = inv(v[pos])
+      for (let k = 0; k < v.length; k++) v[k] = mul(v[k], f)
+    },
+    costFactor: 2,
   }
 }
 
@@ -494,13 +691,40 @@ function matroidFromMatrix(
     return { bases: bases.sort((a, b) => a - b), field: 'Q' }
   }
 
-  if (!/^\d+$/.test(field)) {
-    return fail(`unrecognized field ${JSON.stringify(fieldText)}: use "Q" or a prime p for GF(p)`)
+  // GF(q): q a prime (up to MAX_FIELD_PRIME), or a prime power p^d with
+  // d ≥ 2 up to MAX_EXT_FIELD_ORDER, written either as the order ("9") or
+  // explicitly ("3^2").
+  const spec = /^(\d{1,9})(?:\^(\d{1,2}))?$/.exec(field)
+  if (!spec) {
+    return fail(
+      `unrecognized field ${JSON.stringify(fieldText)}: use "Q", a prime p, or a prime power p^d (e.g. "4" or "2^2")`,
+    )
   }
-  const p = Number(field)
-  const primeError = parsePrime(p)
-  if (primeError) return primeError
-  const gf = gfOps(p)
+  let p: number
+  let d: number
+  if (spec[2] !== undefined) {
+    p = Number(spec[1])
+    d = Number(spec[2])
+    if (!isPrime(p)) return fail(`GF(${field}): ${p} is not prime`)
+    if (d < 1) return fail(`GF(${field}): the exponent must be at least 1`)
+  } else {
+    const q = Number(spec[1])
+    if (q < 2) return fail(`GF(${q}) is not a field`)
+    p = 2
+    while (q % p !== 0) p++
+    d = Math.round(Math.log(q) / Math.log(p))
+    if (p ** d !== q) {
+      return fail(`GF(${q}): ${q} is not a prime power — use "Q", a prime p, or a prime power p^d`)
+    }
+  }
+  if (d === 1) {
+    if (p > MAX_FIELD_PRIME) {
+      return fail(`prime fields are supported up to GF(${MAX_FIELD_PRIME.toLocaleString('en-US')})`)
+    }
+  } else if (p ** d > MAX_EXT_FIELD_ORDER) {
+    return fail(`extension fields GF(p^d) are supported up to order ${MAX_EXT_FIELD_ORDER}`)
+  }
+  const gf = d === 1 ? gfOps(p) : gfExtOps(p, d)
   const columns: number[][] = Array.from({ length: n }, () => [])
   for (const [ri, row] of rows.entries()) {
     for (let c = 0; c < n; c++) {
@@ -511,7 +735,7 @@ function matroidFromMatrix(
   }
   const bases = enumerateBases(columns, gf, budget)
   if (isFail(bases)) return bases
-  return { bases: bases.sort((a, b) => a - b), field: String(p) }
+  return { bases: bases.sort((a, b) => a - b), field: String(p ** d) }
 }
 
 // ---------------------------------------------------------------------------

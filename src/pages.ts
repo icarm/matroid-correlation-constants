@@ -2,6 +2,7 @@
 
 import {
   MAX_ELEMENTS,
+  MAX_EXT_FIELD_ORDER,
   MAX_LISTED_SETS,
   MAX_MATRIX_CELLS,
   type VerifyResult,
@@ -298,9 +299,11 @@ function verifierForm(state: FormState, user: User | null): string {
       <p class="muted form-note">Verification is exact: the matroid axioms are checked, every basis is
       enumerated, and all ratios are compared by integer cross multiplication. Limits:
       n &le; ${MAX_ELEMENTS}, at most ${MAX_LISTED_SETS.toLocaleString('en-US')} listed sets or
-      ${MAX_MATRIX_CELLS.toLocaleString('en-US')} matrix entries; matrix fields are &#8474; or a prime
-      GF(p) (GF(p<sup>d</sup>) not yet supported). Over &#8474;, entries may be integers or fraction
-      strings like <code>"-3/5"</code>.</p>
+      ${MAX_MATRIX_CELLS.toLocaleString('en-US')} matrix entries; matrix fields are &#8474;, a prime
+      GF(p), or a prime power GF(p<sup>d</sup>) up to order ${MAX_EXT_FIELD_ORDER}. Over &#8474;,
+      entries may be integers or fraction strings like <code>"-3/5"</code>; over
+      GF(p<sup>d</sup>), integers (subfield constants) or coefficient lists like
+      <code>[0,1]</code> in the Conway polynomial basis, as in Sage or GAP.</p>
     </form>
   </section>`
 }
@@ -560,11 +563,17 @@ export function apiDocsPage(user: User | null = null): string {
       fields <code>n</code> (integer), <code>type</code> (one of <code>"matrix"</code>,
       <code>"bases"</code>, <code>"circuits"</code>, <code>"hyperplanes"</code>),
       <code>data</code>, an optional <code>provenance</code> string (attribution: discoverers,
-      date, AI disclosure), and, for matrices, <code>field</code> &mdash; <code>"Q"</code> or a
-      prime <code>"p"</code> for GF(p). For a matrix, <code>data</code> is a list of rows
-      (columns are the elements; over &#8474; entries may be integers or fraction strings like
-      <code>"-3/5"</code>); otherwise it is the complete list of bases, circuits, or hyperplanes
-      as lists of element labels. Limits: n &le; ${MAX_ELEMENTS}, at most
+      date, AI disclosure), and, for matrices, <code>field</code> &mdash; <code>"Q"</code>, a
+      prime <code>"p"</code> for GF(p), or a prime power (<code>"4"</code> or
+      <code>"2^2"</code>) up to order ${MAX_EXT_FIELD_ORDER} for GF(p<sup>d</sup>). For a matrix,
+      <code>data</code> is a list of rows (columns are the elements). Over &#8474; entries may be
+      integers or fraction strings like <code>"-3/5"</code>. Over GF(p<sup>d</sup>) with d &gt; 1,
+      an entry is an integer (a prime-subfield constant, reduced mod p) or a coefficient list
+      <code>[c0, c1, ...]</code> meaning c<sub>0</sub> + c<sub>1</sub>a + &hellip; where
+      <var>a</var> is a root of the Conway polynomial C<sub>p,d</sub> &mdash; the same convention
+      as Sage, GAP, and Macaulay2, so matrices copy across unchanged. For the other types,
+      <code>data</code> is the complete list of bases, circuits, or hyperplanes as lists of
+      element labels. Limits: n &le; ${MAX_ELEMENTS}, at most
       ${MAX_LISTED_SETS.toLocaleString('en-US')} listed sets or
       ${MAX_MATRIX_CELLS.toLocaleString('en-US')} matrix entries.</p>
       <p>Requires an <code>Authorization: Bearer &lt;token&gt;</code> header &mdash; create a token

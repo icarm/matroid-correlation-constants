@@ -1,6 +1,6 @@
 // Exercises src/verify.ts with known matroids. Run via `npm test`
 // (Node 22.6+: type stripping lets Node import the .ts directly).
-import { verify } from './src/verify.ts'
+import { conwayPolynomial, verify } from './src/verify.ts'
 
 let failures = 0
 const check = (name, cond, detail = '') => {
@@ -115,8 +115,11 @@ check('circuit elimination failure rejected', !badElim.ok && /eliminat/.test(bad
 const badRow = verify(3, 'matrix', '2', [[1, 0], [0, 1]])
 check('matrix row length mismatch rejected', !badRow.ok && /row/.test(badRow.error), alphaOf(badRow))
 
-const badField = verify(4, 'matrix', '4', [[1, 0, 1, 1], [0, 1, 1, 1]])
-check('GF(4) politely unsupported', !badField.ok && /not prime/.test(badField.error), alphaOf(badField))
+const badField = verify(4, 'matrix', '6', [[1, 0, 1, 1], [0, 1, 1, 1]])
+check('GF(6) rejected as not a prime power', !badField.ok && /prime power/.test(badField.error), alphaOf(badField))
+
+const bigExt = verify(4, 'matrix', '2^11', [[1, 0, 1, 1], [0, 1, 1, 1]])
+check('GF(2^11) rejected as too large', !bigExt.ok && /up to order/.test(bigExt.error), alphaOf(bigExt))
 
 const dupBasis = verify(2, 'bases', '', [[0], [0]])
 check('duplicate basis rejected', !dupBasis.ok && /twice/.test(dupBasis.error), alphaOf(dupBasis))
@@ -191,6 +194,63 @@ check('free matroid: α = 0, all coloops', free.ok && free.alphaNum === 0 && fre
     )
   }
 }
+
+// Conway polynomials against their standard values (as in Sage/GAP),
+// little-endian: C_{2,3} = x^3+x+1, C_{2,4} = x^4+x+1, C_{3,2} = x^2+2x+2,
+// C_{5,2} = x^2+4x+2, C_{7,2} = x^2+6x+3.
+for (const [p, d, expected] of [
+  [2, 3, [1, 1, 0, 1]],
+  [2, 4, [1, 1, 0, 0, 1]],
+  [3, 2, [2, 2, 1]],
+  [5, 2, [2, 4, 1]],
+  [7, 2, [3, 6, 1]],
+]) {
+  const got = conwayPolynomial(p, d)
+  check(
+    `Conway C_{${p},${d}}`,
+    JSON.stringify(got) === JSON.stringify(expected),
+    `got ${JSON.stringify(got)}, expected ${JSON.stringify(expected)}`,
+  )
+}
+
+// U(2,5) over GF(4): five pairwise-independent columns (1,0), (0,1), (1,1),
+// (1,a), (1,a+1) — a matroid not representable over GF(2) or GF(3), so this
+// genuinely exercises extension-field arithmetic. α(U(2,5)) = 1/3.
+const u25 = verify(5, 'matrix', '4', [
+  [1, 0, 1, 1, 1],
+  [0, 1, 1, [0, 1], [1, 1]],
+])
+check('U(2,5) over GF(4): verifies', u25.ok, alphaOf(u25))
+if (u25.ok) {
+  check('U(2,5): rank 2, 10 bases', u25.rank === 2 && u25.numBases === 10, String(u25.numBases))
+  check('U(2,5): α = 1/3', u25.alphaNum === 1 && u25.alphaDen === 3, alphaOf(u25))
+  check('U(2,5): field recorded as 4', u25.field === '4', String(u25.field))
+}
+
+// The same columns as "2^2" and with the duplicate-slope check: over GF(9)
+// four distinct slopes give U(2,4).
+const u25b = verify(5, 'matrix', '2^2', [
+  [1, 0, 1, 1, 1],
+  [0, 1, 1, [0, 1], [1, 1]],
+])
+check('field "2^2" equals field "4"', u25b.ok && u25b.basesJson === u25.basesJson)
+
+const u24gf9 = verify(4, 'matrix', '9', [
+  [1, 0, 1, 1],
+  [0, 1, 1, [0, 1]],
+])
+check(
+  'U(2,4) over GF(9): α = 1/4',
+  u24gf9.ok && u24gf9.alphaNum === 1 && u24gf9.alphaDen === 4 && u24gf9.field === '9',
+  alphaOf(u24gf9),
+)
+
+// The largest supported extension field.
+const gf1024 = verify(3, 'matrix', '1024', [
+  [1, 0, [0, 1]],
+  [0, 1, 1],
+])
+check('GF(1024) = GF(2^10) accepted', gf1024.ok && gf1024.field === '1024', alphaOf(gf1024))
 
 if (failures > 0) {
   console.error(`\n${failures} failure(s)`)

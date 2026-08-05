@@ -20,8 +20,11 @@ families approach 4/3. The challenge: a concrete matroid with α(M) ≥ 4/3.
 
 ## The site
 
-- **Submit matroids** (GitHub login required) as a matrix over ℚ or a prime
-  field GF(p), or as the complete list of bases, circuits, or hyperplanes.
+- **Submit matroids** (GitHub login required) as a matrix over ℚ or a
+  finite field — any prime GF(p), or GF(p^d) up to order 1024 using the
+  Conway polynomial convention (as in Sage/GAP/Macaulay2; the polynomials
+  are computed from the definition, not transcribed) — or as the complete
+  list of bases, circuits, or hyperplanes.
   Verification is pure TypeScript (`src/verify.ts`): the matroid axioms are
   checked (basis exchange, or the circuit axioms), every basis is
   enumerated, and all ratios are compared by exact integer cross
