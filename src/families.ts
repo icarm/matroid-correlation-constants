@@ -49,10 +49,30 @@ export function familiesPage(user: User | null = null): string {
         parameterized construction with a proved formula. A <em>solid</em> curve is a proved
         value of the full invariant; a <em>dashed</em> curve certifies a distinguished-pair
         lower bound. Full proofs live on the <a href="/mathematics">mathematics page</a>.
-        New families need human proof review and are contributed by pull request, not by the
-        submission form.
       </p>
       <div class="family-grid">${cards}</div>
+      <h3 id="propose">Propose a family</h3>
+      <p>
+        Unlike concrete matroids, a family claim &mdash; a formula for every parameter, a
+        supremum &mdash; cannot be verified by enumeration; it needs a proof and human review.
+        Proposals go through a structured
+        <a class="external" href="https://github.com/icarm/matroid-correlation-constants/issues/new?template=propose-family.yml">GitHub
+        issue form</a> asking for the parameter domain, the construction, the exact curve
+        values, the claimed supremum, a proof or stable reference, and the discovery record
+        with an AI-use declaration. An automatic screen compares the claimed supremum against
+        the 4/3 threshold (numeric triage only &mdash; it verifies no mathematics); review and
+        acceptance are human decisions, and accepted families are added to the catalog by pull
+        request, gaining their curve, card, and page together.
+      </p>
+      <p>
+        A strong proposal comes with evidence: <a href="/#submit">verify your family&rsquo;s
+        small members</a> through the concrete form first &mdash; each one becomes a
+        machine-checked record entry reviewers can lean on, as the uniform self-sum family's
+        members \\(P_2,\ldots,P_5\\) do.
+      </p>
+      <p class="hero-actions">
+        <a class="hero-cta external" href="https://github.com/icarm/matroid-correlation-constants/issues/new?template=propose-family.yml">Propose a family</a>
+      </p>
     </section>`
   return layout('Families — Matroid Correlation Constants', body, user, MATHJAX_HEAD)
 }

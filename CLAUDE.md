@@ -83,7 +83,7 @@ API token may be present at `~/.matroid-correlation-token.txt`.
 - Challenges section with per-field leaderboards (thresholds in the
   draft's `submission-eligibility-policy.json`).
 - Records table beside the plot; structure flags (simple/connected/
-  paving) for explorer filters; family-proposal intake via GitHub issue
-  form once the GitHub repo exists (design agreed 2026-08-05: issue
-  template + /families CTA + optional numeric screening action).
+  paving) for explorer filters. Family-proposal intake is BUILT
+  (.github/ISSUE_TEMPLATE/propose-family.yml + screening workflow +
+  /families CTA) — it activates when issues open on the GitHub repo.
 - Construction-expression DSL deliberately deferred (see project memory).
