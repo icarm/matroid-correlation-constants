@@ -406,6 +406,10 @@
     update()
   })
 
+  // The tooltip is position:fixed; hoist it to <body> so no ancestor's
+  // transform or overflow can interfere with viewport positioning.
+  document.body.append(controls.tooltip)
+
   readUrl()
   if (fallback) fallback.hidden = true
   explorer.hidden = false
