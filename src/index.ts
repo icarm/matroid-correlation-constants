@@ -49,6 +49,7 @@ import {
   SUBMISSION_RATE_PERIOD_SEC,
 } from './rateLimit'
 import { mathematicsPage } from './mathematics'
+import { familiesPage, familyPage } from './families'
 
 const rateLimitMessage = `submission rate limit exceeded: ${SUBMISSION_RATE_LIMIT} per ${SUBMISSION_RATE_PERIOD_SEC} seconds`
 
@@ -75,6 +76,14 @@ app.post('/auth/logout', logout)
 app.get('/api', (c) => c.html(apiDocsPage(c.get('user'))))
 
 app.get('/mathematics', (c) => c.html(mathematicsPage(c.get('user'))))
+
+app.get('/families', (c) => c.html(familiesPage(c.get('user'))))
+
+app.get('/family/:id', (c) => {
+  const page = familyPage(c.req.param('id'), c.get('user'))
+  if (page === null) return c.html(notFoundPage(c.get('user')), 404)
+  return c.html(page)
+})
 
 // A JSON attachment response with a strong ETag over the exact body, so
 // clients can revalidate cheaply. no-cache = clients may store but must

@@ -330,11 +330,15 @@
         (i === 0 ? 'M' : 'L') + X(xVal(p)).toFixed(2) + ',' + Y(p.exact.value).toFixed(2)).join(' ')
       const opacity = Math.max(0.55, 1 - index * 0.05)
       if (sorted.length > 1) {
-        marks.append(el('path', {
+        const curve = el('path', {
           d: path,
           class: 'curve-path' + (family.claim === 'lower' ? ' lower-bound' : ''),
           stroke: family.color, opacity,
-        }))
+        })
+        curve.style.cursor = 'pointer'
+        curve.style.pointerEvents = 'stroke'
+        curve.addEventListener('click', () => { location.href = '/family/' + family.id })
+        marks.append(curve)
       }
       for (const p of sorted) {
         const dot = el('circle', {
@@ -347,7 +351,7 @@
           'value ' + p.exact.label + ' ≈ ' + fmt(p.exact.value, 5),
           '|E| = ' + p.n + ' · rank ' + p.rank,
           family.claim === 'exact' ? 'proved exact' : 'certified lower bound',
-        ])
+        ], '/family/' + family.id)
         marks.append(dot)
       }
     })

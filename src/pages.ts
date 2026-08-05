@@ -127,10 +127,9 @@ export function layout(
         </a>
         <nav class="primary-nav" aria-label="Primary navigation">
           <a href="/">Explore</a>
+          <a href="/families">Families</a>
           <a href="/matroids">Matroids</a>
           <a href="/mathematics">Mathematics</a>
-          <a href="/recent">Activity</a>
-          <a href="/api">API</a>
         </nav>
         <a class="button-dark" href="/#submit">Submit a matroid</a>
         <span class="auth-nav">${authNav(user)}</span>
@@ -140,6 +139,7 @@ export function layout(
     <footer>
       <div class="inner">
         <nav class="footer-links">
+          <a href="/recent">recent activity</a> &nbsp;&middot;&nbsp;
           <a href="/database.json" download>download the records (JSON)</a> &nbsp;&middot;&nbsp;
           <a class="external" href="https://icarm.zulipchat.com/#narrow/channel/589006-Matroid-Database">discuss on Zulip</a> &nbsp;&middot;&nbsp;
           <a href="/api">API</a> &nbsp;&middot;&nbsp;

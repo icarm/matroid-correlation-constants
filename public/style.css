@@ -1330,3 +1330,82 @@ footer .inner {
   color: var(--muted);
   font-size: 0.85rem;
 }
+
+/* Family cards: a color-striped grid, one card per family. */
+.family-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr));
+  gap: 1rem;
+  margin: 1.4rem 0;
+}
+
+.family-card {
+  display: block;
+  background: var(--bg-bright);
+  border: 1px solid var(--panel-edge);
+  border-top: 4px solid var(--family-color);
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm);
+  padding: 1rem 1.2rem 1.1rem;
+  color: var(--fg);
+  text-decoration: none;
+}
+
+.family-card:hover {
+  border-color: var(--family-color);
+  color: var(--fg);
+}
+
+.family-card h3 {
+  margin: 0.2rem 0 0.5rem;
+  font-size: 1.15rem;
+}
+
+.family-card .eyebrow {
+  margin-bottom: 0;
+}
+
+.family-formula {
+  margin: 0.3rem 0 0.6rem;
+}
+
+.family-summary {
+  font-size: 0.92rem;
+  margin: 0 0 0.6rem;
+}
+
+.family-meta {
+  font-size: 0.85rem;
+  margin: 0.15rem 0;
+}
+
+.claim-badge {
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+}
+
+.claim-badge.exact { color: var(--valid); }
+.claim-badge.lower { color: var(--family-color, var(--muted)); }
+
+.family-page h3 {
+  margin-top: 1.8rem;
+}
+
+.family-table-scroll {
+  max-height: 22rem;
+  overflow: auto;
+  border: 1px solid var(--panel-edge);
+  border-radius: 8px;
+  margin: 0.6rem 0 1rem;
+}
+
+.family-table {
+  margin: 0;
+  white-space: nowrap;
+}
+
+.family-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--bg-bright);
+}
