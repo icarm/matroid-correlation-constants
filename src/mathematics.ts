@@ -10,7 +10,16 @@
 import { layout, type User } from './pages'
 
 const MATHJAX_HEAD = `
-    <script>MathJax = { tex: { tags: 'none' }, chtml: { displayAlign: 'center' } };</script>
+    <script>
+      window.MathJax = {
+        tex: {
+          inlineMath: [['\\(', '\\)']],
+          displayMath: [['\\[', '\\]']],
+          processEscapes: true,
+        },
+        chtml: { scale: 0.98 },
+      };
+    </script>
     <script defer src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js"></script>`
 
 const CONTENT = String.raw`
@@ -44,6 +53,7 @@ const CONTENT = String.raw`
       <p>
         Let \(M\) be a matroid on \([n]=\{0,\ldots,n-1\}\). For distinct \(i,j\in[n]\), set
       </p>
+      <div class="math-panel">
       \[
       \begin{aligned}
       B^{ij}(M) &:= \{B \text{ a basis of } M : i, j \notin B\},\\
@@ -56,6 +66,7 @@ const CONTENT = String.raw`
       \qquad
       \overline{\alpha}(M) := \max_{i\ne j} R_{ij}(M),
       \]
+      </div>
       <p>
         where the maximum ranges over pairs of nonloop, noncoloop elements. For such a pair the
         two denominator factors are positive. If \(M\) consists only of loops and coloops, the
@@ -68,10 +79,12 @@ const CONTENT = String.raw`
         basis sum, for example
         \(B^{ij}(M,w) := \sum_{B\in B^{ij}(M)}\prod_{x\in B} w_x\), and set
       </p>
+      <div class="math-panel">
       \[
       \alpha(M) := \sup_{\substack{i\ne j\\ w\in\mathbb R_{>0}^{E(M)}}}
       \frac{B^{ij}(M,w)\,B_{ij}(M,w)}{B^i_j(M,w)\,B^j_i(M,w)}.
       \]
+      </div>
       <p>
         The weighted \(\alpha\) permits arbitrary positive weights and dominates
         \(\overline{\alpha}\); it is out of scope for this site's automated verification.
@@ -104,10 +117,12 @@ const CONTENT = String.raw`
         inequality to deletions and contractions, so every 1-Rayleigh matroid is balanced [4].
         Thus
       </p>
+      <div class="math-panel">
       \[
       \mathrm{HPP} \Longrightarrow 1\text{-Rayleigh} \Longrightarrow \text{balanced}
       \Longrightarrow \overline{\alpha}(M)\leq1.
       \]
+      </div>
       <p>
         Examples with the HPP &mdash; hence balanced &mdash; include uniform and regular
         matroids; in particular graphic and cographic matroids, and more generally every
@@ -116,9 +131,11 @@ const CONTENT = String.raw`
         1-Rayleigh. Nevertheless, Huh&ndash;Schr&ouml;ter&ndash;Wang [1] proved the universal
         bound
       </p>
+      <div class="math-panel emphasized">
       \[
       \boxed{\ \overline{\alpha}(M)\leq\alpha(M)\leq 2\ }
       \]
+      </div>
       <p>for every matroid \(M\).</p>
 
       <h3 id="discovery">Discovery record <span class="muted">&mdash; known values and how they were found</span></h3>
@@ -178,6 +195,7 @@ const CONTENT = String.raw`
         \(N+e\times f\) for the free coextension by \(f\) of the free extension by \(e\) of
         \(N\). Let \(M\) have rank \(m\), and define the four adjacent-rank counts
       </p>
+      <div class="math-panel">
       \[
       \begin{aligned}
       i &= \#\{I\subseteq E(M) : |I|=m-1,\ I \text{ independent}\},\\
@@ -186,36 +204,43 @@ const CONTENT = String.raw`
       s &= \#\{S\subseteq E(M) : |S|=m+1,\ \operatorname{rk}_M(S)=m\}.
       \end{aligned}
       \]
+      </div>
       <p>
         The four basis classes of \(M+e\times f\), according to whether they contain \(e\) and
         \(f\), correspond respectively to the independent \((m-1)\)-sets, bases, rank-\(m\)
         sets of rank at least \(m-1\), and spanning \((m+1)\)-sets of \(M\). Hence
       </p>
+      <div class="math-panel emphasized">
       \[
       \boxed{\ \epsilon(M) := R_{ef}(M+e\times f) = \frac{is}{ab}.\ } \tag{1}
       \]
+      </div>
       <p>
         For \(N=M\oplus M\), distributing an almost-basis or an almost-spanning set between the
         two summands gives \(b_N=b^2\), \(i_N=2ib\), \(s_N=2sb\), and \(a_N=2ab-b^2+2is\), so
       </p>
+      <div class="math-panel emphasized">
       \[
       \boxed{\ \epsilon(M\oplus M) = R_{ef}\bigl((M\oplus M)+e\times f\bigr)
         = \frac{4is}{2ab-b^2+2is}.\ } \tag{2}
       \]
+      </div>
       <p>
         Equivalently, with \(Q(M)=is/b^2\), \(Z(M)=a/b\), and \(\beta(M)=b/a\),
       </p>
+      <div class="math-panel">
       \[
       \epsilon(M\oplus M) = \frac{4Q(M)}{2Z(M)-1+2Q(M)}
         = \frac{4\epsilon(M)}{2(1+\epsilon(M))-\beta(M)}. \tag{3}
       \]
-
+      </div>
       <h3 id="two-design">Common mechanism <span class="muted">&mdash; why the starting matroids all have the uniform value</span></h3>
       <p>
         Suppose the bases of a rank-\(r\) matroid \(M\) form a \(2\)-\((n,r,\lambda)\) design,
         and let \(b=|\mathcal B(M)|\). Double counting bases through zero, one, or two
         specified elements gives, for every distinct \(i,j\),
       </p>
+      <div class="math-panel emphasized">
       \[
       |B_{ij}(M)| = \frac{br(r-1)}{n(n-1)}, \qquad
       |B^i_j(M)| = |B^j_i(M)| = \frac{br(n-r)}{n(n-1)}, \qquad
@@ -224,6 +249,7 @@ const CONTENT = String.raw`
       \[
       \boxed{\ \overline{\alpha}(M) = \frac{(r-1)(n-r-1)}{r(n-r)} = \overline{\alpha}(U_{r,n}).\ } \tag{4}
       \]
+      </div>
       <p>
         The 2-design condition determines these four basis-incidence counts, but it does not
         determine \(i,a,s\). Therefore it fixes \(\overline{\alpha}(M)\) without fixing
@@ -233,6 +259,7 @@ const CONTENT = String.raw`
 
       <h3 id="uniform-family">Family 1 <span class="muted">&mdash; uniform self-sum extensions</span></h3>
       <p>Take \(M=U_{r,2r}\) and \(P_r=(M\oplus M)+e\times f\). Then</p>
+      <div class="math-panel emphasized">
       \[
       a=b=\binom{2r}{r}, \qquad i=s=\binom{2r}{r-1}, \qquad
       Q(M) = \left(\frac{\binom{2r}{r-1}}{\binom{2r}{r}}\right)^{\!2} = \frac{r^2}{(r+1)^2},
@@ -241,6 +268,7 @@ const CONTENT = String.raw`
       \[
       \boxed{\ R_{ef}(P_r) = \frac{4r^2}{3r^2+2r+1} \longrightarrow \frac43.\ } \tag{5}
       \]
+      </div>
       <p>
         The displayed value is exact for \((e,f)\), so it proves
         \(\overline{\alpha}(P_r)\ge R_{ef}(P_r)\). It is not presently proved that \((e,f)\)
@@ -263,6 +291,7 @@ const CONTENT = String.raw`
         applies. For a rank-\(d\) geometry \(G\), let \(\sigma_G(k)\) be the number of
         spanning \(k\)-subsets. M&ouml;bius inversion on the flat lattice gives
       </p>
+      <div class="math-panel">
       \[
       \sigma_{\operatorname{PG}(d-1,q)}(k) = \sum_{j=0}^{d} { d \brack j }_q (-1)^{d-j}
         q^{\binom{d-j}{2}} \binom{(q^j-1)/(q-1)}{k}, \tag{6}
@@ -271,30 +300,37 @@ const CONTENT = String.raw`
       \sigma_{\operatorname{AG}(d-1,q)}(k) = \sum_{j=1}^{d} q^{d-j} { d-1 \brack j-1 }_q
         (-1)^{d-j} q^{\binom{d-j}{2}} \binom{q^{j-1}}{k}, \tag{7}
       \]
+      </div>
       <p>
         where \({d \brack j}_q\) is a Gaussian binomial coefficient. Let \(h_G\) be the number
         of hyperplanes of \(G\) and \(H\) one such hyperplane. Every independent
         \((d-1)\)-set spans a unique hyperplane, as does every nonspanning \(d\)-set of rank
         \(d-1\). Consequently the four inputs to (2) are
       </p>
+      <div class="math-panel">
       \[
       i = h_G\,\sigma_H(d-1), \qquad b = \sigma_G(d), \qquad
       a = b + h_G\,\sigma_H(d), \qquad s = \sigma_G(d+1), \tag{8}
       \]
+      </div>
       <p>
         and equations (2), (6)&ndash;(8) give every plotted affine and projective point as an
         exact rational number, without enumerating subsets of the exponentially large ground
         sets. For fixed \(q\) and \(d\to\infty\), the relevant rank probabilities converge to
         those of random matrices over \(\operatorname{GF}(q)\), giving
       </p>
+      <div class="math-panel emphasized">
       \[
       \boxed{\ R_{ef}\bigl((G\oplus G)+e\times f\bigr) \longrightarrow \frac{4q^2}{3q^2+1};\ } \tag{9}
       \]
+      </div>
       <p>for fixed \(d\) and \(q\to\infty\) the geometry is asymptotically uniform in all the
       counts relevant to (2), giving</p>
+      <div class="math-panel emphasized">
       \[
       \boxed{\ R_{ef}\bigl((G\oplus G)+e\times f\bigr) \longrightarrow \frac{4d}{3d+1}.\ } \tag{10}
       \]
+      </div>
       <p>Either subsequent limit &mdash; \(q\to\infty\) in (9) or \(d\to\infty\) in (10) &mdash;
       approaches \(4/3\).</p>
       <p class="muted">
@@ -312,12 +348,15 @@ const CONTENT = String.raw`
         independent, every \(r\)-set has rank at least \(r-1\), and every \((r+1)\)-set is
         spanning, so
       </p>
+      <div class="math-panel">
       \[
       i = \binom{n}{r-1}, \qquad b = \frac{c}{c+1}\binom nr, \qquad a = \binom nr,
       \qquad s = \binom{n}{r+1},
       \qquad \epsilon(M_{r,n}) = \frac{r}{r+1}, \qquad \beta(M_{r,n}) = \frac{c}{c+1}.
       \]
+      </div>
       <p>Substitution in (3) proves the displayed family formula:</p>
+      <div class="math-panel emphasized">
       \[
       \boxed{\ R_{ef}\bigl((M_{r,n}\oplus M_{r,n})+e\times f\bigr)
         = \frac{4r(c+1)}{(3r+1)c+4r+2},\ } \tag{11}
@@ -325,7 +364,9 @@ const CONTENT = String.raw`
       \[
       \lim_{n\to\infty} R_{ef} = \frac{4r}{3r+1}, \qquad \lim_{r\to\infty}\frac{4r}{3r+1} = \frac43.
       \]
+      </div>
       <p>The two plotted subfamilies are</p>
+      <div class="math-panel">
       \[
       \begin{array}{c|c|c}
       \text{systems} & \text{admissible } n & R_{ef}\\
@@ -334,6 +375,7 @@ const CONTENT = String.raw`
       S(3,4,n) & n\equiv2,4 \pmod 6 & \dfrac{16(n-3)}{13n-34} \longrightarrow \dfrac{16}{13}.
       \end{array}
       \]
+      </div>
       <p>
         The existence of \(S(3,4,n)\) for every \(n\equiv2,4\pmod6\) is Hanani's theorem [8];
         for every fixed \(r\), Keevash's existence theorem for designs [7] supplies

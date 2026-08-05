@@ -192,6 +192,36 @@ main [id] {
   margin: 0.5rem 0;
 }
 
+/* Display equations sit in bright cards, as in the draft site; the key boxed
+   formulas get the emphasized teal edge. Wide equations scroll sideways. */
+.math-panel {
+  max-width: 850px;
+  margin: 1.4rem 0;
+  padding: 0.9rem 1.4rem;
+  overflow-x: auto;
+  border: 1px solid var(--panel-edge);
+  background: var(--bg-bright);
+  border-radius: 8px;
+  font-family: var(--serif);
+}
+
+.math-panel.emphasized {
+  border-left: 4px solid var(--accent);
+  background:
+    linear-gradient(90deg, rgba(23, 107, 114, 0.055), transparent 70%),
+    var(--bg-bright);
+}
+
+mjx-container[jax='CHTML'] {
+  margin: 0;
+  color: inherit;
+}
+
+.math-panel mjx-container[display] {
+  min-width: max-content;
+  margin-block: 0.7em !important;
+}
+
 .auth-nav {
   font-size: 0.9rem;
   color: var(--muted);
