@@ -252,6 +252,50 @@ const gf1024 = verify(3, 'matrix', '1024', [
 ])
 check('GF(1024) = GF(2^10) accepted', gf1024.ok && gf1024.field === '1024', alphaOf(gf1024))
 
+// Chris Eur's sample challenge submission (found via ChatGPT 5.6 Sol Ultra):
+// a rank-9 matroid on 26 elements over GF(7), claimed α = 280043/243256
+// ≈ 1.1512 > 8/7. Also exercises the rank-aware n = 26 admission.
+const eur26 = verify(26, 'matrix', '7', [
+  [5, 3, 2, 4, 5, 3, 2, 3, 3, 3, 2, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
+  [1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [4, 1, 6, 1, 6, 6, 2, 1, 0, 4, 4, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [5, 2, 2, 3, 0, 1, 3, 1, 4, 1, 4, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 3, 2, 4, 5, 3, 2, 3, 3, 3, 2, 4, 1, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 1, 6, 1, 6, 6, 2, 1, 0, 4, 4, 4, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 2, 2, 3, 0, 1, 3, 1, 4, 1, 4, 2, 0, 0],
+  [1, 3, 6, 0, 5, 1, 1, 0, 5, 4, 4, 4, 5, 3, 6, 3, 4, 5, 0, 6, 2, 2, 2, 1, 3, 1],
+])
+check('Eur n=26 sample: verifies', eur26.ok, alphaOf(eur26))
+if (eur26.ok) {
+  check('Eur n=26 sample: rank 9', eur26.rank === 9, String(eur26.rank))
+  check(
+    'Eur n=26 sample: α = 280043/243256',
+    eur26.alphaNum === 280043 && eur26.alphaDen === 243256,
+    alphaOf(eur26),
+  )
+  check(
+    'Eur n=26 sample: beats 8/7',
+    eur26.alphaNum * 7 > 8 * eur26.alphaDen,
+    alphaOf(eur26),
+  )
+}
+
+// High rank on 26 elements must be declined by the independent-set budget.
+{
+  const p = 65521
+  const modpow = (b, e) => { let r = 1n, x = BigInt(b) % BigInt(p); for (let k = BigInt(e); k > 0n; k >>= 1n, x = (x * x) % BigInt(p)) if (k & 1n) r = (r * x) % BigInt(p); return Number(r) }
+  const inv = (a) => modpow(a, p - 2)
+  const cauchy = Array.from({ length: 13 }, (_, i) =>
+    Array.from({ length: 26 }, (_, j) => inv(i + j + 100)),
+  )
+  const big = verify(26, 'matrix', String(p), cauchy)
+  check('rank 13 on 26 elements declined', !big.ok && /too large to verify/.test(big.error), alphaOf(big))
+}
+
+const bigCircuits = verify(25, 'circuits', '', [[0, 1, 2]])
+check('circuits on 25 elements declined', !bigCircuits.ok && /at most 24/.test(bigCircuits.error), alphaOf(bigCircuits))
+
 if (failures > 0) {
   console.error(`\n${failures} failure(s)`)
   process.exit(1)

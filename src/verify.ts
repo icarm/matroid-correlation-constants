@@ -19,10 +19,18 @@
 // multiplication (in BigInt: the products can exceed 2^53).
 
 // The ground-set ceiling is set by full basis enumeration in a Worker
-// (128 MB memory, ~30 s CPU): the worst case is the uniform matroid, with
-// C(24,12) ≈ 2.7M bases taking a few seconds and ~30 MB. n = 26 would need
-// ~4x both, too close to the limits.
-export const MAX_ELEMENTS = 24
+// (128 MB memory, ~30 s CPU). The enumeration visits every independent set,
+// so the real cost driver is Σ_{k ≤ rank} C(n, k), bounded below by
+// INDEPENDENT_SET_BUDGET: everything on ≤ 24 elements fits (the bound is
+// exactly 2^24), while 25 or 26 elements are admitted only in low enough
+// rank (e.g. rank ≤ 10 at n = 26).
+export const MAX_ELEMENTS = 26
+const INDEPENDENT_SET_BUDGET = 2 ** 24
+
+// The circuit and hyperplane checks tabulate dependence over all 2^n
+// subsets, so those two descriptions stop at 24 elements (a 2^26 table plus
+// its sweep would crowd the worker's memory and CPU).
+export const MAX_DP_ELEMENTS = 24
 export const MAX_LISTED_SETS = 5000
 export const MAX_MATRIX_CELLS = 5000
 export const MAX_FIELD_PRIME = 1_000_003 // p² must stay well below 2^53
@@ -186,6 +194,11 @@ function matroidFromBases(n: number, data: unknown): number[] | Fail {
 // no circuit.
 
 function matroidFromCircuits(n: number, data: unknown): number[] | Fail {
+  if (n > MAX_DP_ELEMENTS) {
+    return fail(
+      `circuit and hyperplane descriptions support at most ${MAX_DP_ELEMENTS} elements — describe this matroid by a matrix or its bases instead`,
+    )
+  }
   const circuits = parseSetList(n, data, 'circuit')
   if (isFail(circuits)) return circuits
   for (const c of circuits) {
@@ -249,6 +262,11 @@ function matroidFromCircuits(n: number, data: unknown): number[] | Fail {
 // cocircuits, i.e. the circuits of the dual; validate those and dualize.
 
 function matroidFromHyperplanes(n: number, data: unknown): number[] | Fail {
+  if (n > MAX_DP_ELEMENTS) {
+    return fail(
+      `circuit and hyperplane descriptions support at most ${MAX_DP_ELEMENTS} elements — describe this matroid by a matrix or its bases instead`,
+    )
+  }
   const hyperplanes = parseSetList(n, data, 'hyperplane')
   if (isFail(hyperplanes)) return hyperplanes
   const full = (1 << n) - 1
@@ -602,6 +620,22 @@ function enumerateBases<T>(
   }
   const rank = pivots.length
   if (rank === 0) return [0] // every column is zero: the empty set is the basis
+
+  // The search visits every independent set; bound their possible number
+  // before starting. Everything on ≤ 24 elements passes (the budget is 2^24
+  // and Σ_k C(24,k) cannot exceed it); on 25 or 26 elements this admits only
+  // low ranks, where the count stays small.
+  let bound = 0
+  let binom = 1 // C(n, 0)
+  for (let k = 0; k <= rank; k++) {
+    bound += binom
+    binom = (binom * (n - k)) / (k + 1)
+  }
+  if (bound > INDEPENDENT_SET_BUDGET) {
+    return fail(
+      `too large to verify: a rank-${rank} matroid on ${n} elements may have ~${Math.round(bound / 1e6)}M independent sets to enumerate (limit ${Math.round(INDEPENDENT_SET_BUDGET / 1e6)}M) — on ${n} elements only lower ranks are supported`,
+    )
+  }
 
   // Depth-first search over columns in increasing order, keeping the current
   // independent set's elimination state on an explicit stack.
