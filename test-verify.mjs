@@ -26,7 +26,13 @@ for (const [kind, r] of Object.entries(u24)) {
   if (!r.ok) continue
   check(`U(2,4) via ${kind}: rank 2, 6 bases`, r.rank === 2 && r.numBases === 6)
   check(`U(2,4) via ${kind}: α = 1/4`, r.alphaNum === 1 && r.alphaDen === 4, alphaOf(r))
-  check(`U(2,4) via ${kind}: 6 maximizing pairs`, r.maximizingPairs.length === 6)
+  check(
+    `U(2,4) via ${kind}: 6 maximizing pairs, each with its 2x2 table`,
+    r.maximizingPairs.length === 6 &&
+      r.maximizingPairs.every(
+        (p) => p.counts.containBoth === 1 && p.counts.avoidBoth === 1 && p.counts.onlyI === 2 && p.counts.onlyJ === 2,
+      ),
+  )
   check(
     `U(2,4) via ${kind}: same bases as matrix`,
     r.basesJson === u24.matrix.basesJson,
@@ -68,8 +74,8 @@ if (ternary.ok) {
   check(
     'ternary 100/81: unique maximizing pair (5, 10)',
     ternary.maximizingPairs.length === 1 &&
-      ternary.maximizingPairs[0][0] === 5 &&
-      ternary.maximizingPairs[0][1] === 10,
+      ternary.maximizingPairs[0].i === 5 &&
+      ternary.maximizingPairs[0].j === 10,
     JSON.stringify(ternary.maximizingPairs),
   )
   check(

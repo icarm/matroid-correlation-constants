@@ -176,6 +176,14 @@ export interface FormState {
   typeValue?: string
   fieldValue?: string
   dataValue?: string
+  nameValue?: string
+  discoverersValue?: string
+  discoveryDateValue?: string
+  aiUsedValue?: string
+  aiModelValue?: string
+  aiRoleValue?: string
+  aiChatUrlValue?: string
+  citationValue?: string
   provenanceValue?: string
 }
 
@@ -390,9 +398,57 @@ function verifierForm(state: FormState, user: User | null): string {
       <label for="data">Data <span class="hint" id="data-hint">${DATA_HINTS[selectedType]}</span></label>
       <textarea id="data" name="data" rows="8" required
                 placeholder="${escapeHtml(DATA_PLACEHOLDERS[selectedType])}">${escapeHtml(state.dataValue ?? '')}</textarea>
-      <label for="provenance">Attribution <span class="hint">(optional: discoverers, discovery date, AI-use disclosure)</span></label>
-      <textarea id="provenance" name="provenance" rows="2"
-                placeholder="e.g. found by X and Y, 2026-08, using Z; no AI / AI model and role">${escapeHtml(state.provenanceValue ?? '')}</textarea>
+      <details class="attribution"${
+        [
+          state.nameValue,
+          state.discoverersValue,
+          state.discoveryDateValue,
+          state.aiUsedValue,
+          state.citationValue,
+          state.provenanceValue,
+        ].some((v) => v)
+          ? ' open'
+          : ''
+      }>
+        <summary>Attribution &amp; discovery <span class="hint">(optional, encouraged &mdash; discovery is
+        distinct from submission, and AI use is recorded as data)</span></summary>
+        <div class="form-row">
+          <label for="name">Name <span class="hint">(for display)</span>
+          <input id="name" name="name" type="text" maxlength="200" placeholder="e.g. Ternary rank-6 benchmark"
+                 value="${escapeHtml(state.nameValue ?? '')}" /></label>
+          <label for="discoverers">Discovered by
+          <input id="discoverers" name="discoverers" type="text" maxlength="500" placeholder="names, as they should be credited"
+                 value="${escapeHtml(state.discoverersValue ?? '')}" /></label>
+          <label for="discovery_date">Discovery date <span class="hint">(YYYY-MM or YYYY-MM-DD)</span>
+          <input id="discovery_date" name="discovery_date" type="text" maxlength="10" placeholder="e.g. 2026-08"
+                 value="${escapeHtml(state.discoveryDateValue ?? '')}" /></label>
+        </div>
+        <div class="form-row">
+          <label for="ai_used">AI used in the discovery?
+          <select id="ai_used" name="ai_used">
+            <option value=""${(state.aiUsedValue ?? '') === '' ? ' selected' : ''}>&mdash;</option>
+            <option value="no"${state.aiUsedValue === 'no' ? ' selected' : ''}>no</option>
+            <option value="yes"${state.aiUsedValue === 'yes' ? ' selected' : ''}>yes</option>
+          </select></label>
+          <label for="ai_model">AI model &amp; version
+          <input id="ai_model" name="ai_model" type="text" maxlength="200" placeholder="e.g. ChatGPT 5.6 Sol Ultra"
+                 value="${escapeHtml(state.aiModelValue ?? '')}" /></label>
+          <label for="ai_chat_url">Public chat/run link <span class="hint">(if one exists)</span>
+          <input id="ai_chat_url" name="ai_chat_url" type="text" maxlength="500" placeholder="https://&hellip;"
+                 value="${escapeHtml(state.aiChatUrlValue ?? '')}" /></label>
+        </div>
+        <label for="ai_role">AI role <span class="hint">(one or two sentences)</span></label>
+        <textarea id="ai_role" name="ai_role" rows="2" maxlength="1000"
+                  placeholder="what the AI did in the discovery">${escapeHtml(state.aiRoleValue ?? '')}</textarea>
+        <div class="form-row">
+          <label for="citation">Citation <span class="hint">(paper or preprint, if published)</span>
+          <input id="citation" name="citation" type="text" maxlength="500" placeholder="e.g. arXiv:1806.02675"
+                 value="${escapeHtml(state.citationValue ?? '')}" /></label>
+        </div>
+        <label for="provenance">Notes</label>
+        <textarea id="provenance" name="provenance" rows="2"
+                  placeholder="anything else worth recording about this matroid">${escapeHtml(state.provenanceValue ?? '')}</textarea>
+      </details>
       ${submit}
       <p class="muted form-note">Verification is exact: the matroid axioms are checked, every basis is
       enumerated, and all ratios are compared by integer cross multiplication. Limits:
@@ -451,9 +507,15 @@ function recordSection(result: { alphaNum: number; alphaDen: number; n: number }
   return `<p class="muted">The ${recordLink('record matroid')} for n = ${result.n} has ${alphaVar} = ${recordAlpha}, so this one was not saved.</p>`
 }
 
-/** Maximizing pairs, clipped for display. */
-function pairsHtml(pairs: [number, number][]): string {
-  const shown = pairs.slice(0, 12).map(([i, j]) => `(${i},&thinsp;${j})`)
+/** Maximizing pairs, clipped for display. Accepts the current shape
+ * ({i, j, counts}) and the pre-migration one ([i, j]). */
+type PairLike = { i: number; j: number } | [number, number]
+const pairIJ = (p: PairLike): [number, number] => (Array.isArray(p) ? [p[0], p[1]] : [p.i, p.j])
+function pairsHtml(pairs: PairLike[]): string {
+  const shown = pairs.slice(0, 12).map((p) => {
+    const [i, j] = pairIJ(p)
+    return `(${i},&thinsp;${j})`
+  })
   const more = pairs.length - 12
   return shown.join(', ') + (more > 0 ? ` <span class="muted">&hellip; and ${more} more</span>` : '')
 }
@@ -658,7 +720,10 @@ export function apiDocsPage(user: User | null = null): string {
   -H 'authorization: Bearer matroid_...' \\
   -d '{ "n": 4, "type": "matrix", "field": "3",
         "data": [[1,0,1,1],[0,1,1,2]],
-        "provenance": "the uniform matroid U(2,4); classical" }'`
+        "name": "Uniform matroid U(2,4)",
+        "discovery": { "date": "1935-01", "discoverers": "classical",
+                       "ai_used": false },
+        "provenance": "worked example" }'`
   const verifyResp = `{
   "ok": true,
   "n": 4,
@@ -669,7 +734,10 @@ export function apiDocsPage(user: User | null = null): string {
   "alphaNum": 1,                    // α(M) as a reduced fraction ...
   "alphaDen": 4,
   "alphaValue": 0.25,               // ... and as a decimal
-  "maximizingPairs": [[0,1], [0,2], [0,3], [1,2], [1,3], [2,3]],
+  "maximizingPairs": [              // every tied pair, each with its 2x2 table
+    { "i": 0, "j": 1, "counts": { "containBoth": 1, "avoidBoth": 1, "onlyI": 2, "onlyJ": 2 } },
+    ...
+  ],
   "maxCounts": { "containBoth": 1, "avoidBoth": 1, "onlyI": 2, "onlyJ": 2 },
   "field": "3",
   "record": { "recorded": true, "recordAlphaNum": 1, "recordAlphaDen": 4, "matroidId": 7 }
@@ -686,8 +754,12 @@ export function apiDocsPage(user: User | null = null): string {
       computes its correlation constant ${alphaVar}(<var>M</var>) exactly. The body is JSON with
       fields <code>n</code> (integer), <code>type</code> (one of <code>"matrix"</code>,
       <code>"bases"</code>, <code>"circuits"</code>, <code>"hyperplanes"</code>),
-      <code>data</code>, an optional <code>provenance</code> string (attribution: discoverers,
-      date, AI disclosure), and, for matrices, <code>field</code> &mdash; <code>"Q"</code>; a
+      <code>data</code>, optional attribution &mdash; <code>name</code>, <code>citation</code>,
+      free-text <code>provenance</code> notes, and a structured <code>discovery</code> object
+      <code>{"date": "YYYY-MM[-DD]", "discoverers", "ai_used": &lt;bool&gt;, "ai_model",
+      "ai_role", "ai_chat_url"}</code> (when <code>ai_used</code> is true, the model and role are
+      required; discovery is distinct from the submission timestamp) &mdash; and, for matrices,
+      <code>field</code>: <code>"Q"</code>; a
       prime <code>"p"</code> for GF(p), any prime below 10<sup>6</sup>; or a proper prime power
       (<code>"4"</code> or <code>"2^2"</code>) for GF(p<sup>d</sup>), supported up to order
       ${MAX_EXT_FIELD_ORDER} (extension-field arithmetic is table-driven, so its cost scales
@@ -805,7 +877,7 @@ export function matroidDetailPage(
   const status = isCurrent
     ? 'current record for this ground-set size'
     : `superseded &mdash; the record is now <a href="/matroid/${m.record_id}">${alphaVar} = ${fmtAlpha(m.record_alpha_num, m.record_alpha_den)}</a>`
-  let maxPairs: [number, number][] = []
+  let maxPairs: PairLike[] = []
   try {
     maxPairs = JSON.parse(m.max_pairs)
   } catch {
@@ -831,9 +903,22 @@ export function matroidDetailPage(
         <pre class="elements">${escapeHtml(formatListJson(m.bases))}</pre>
       </details>`
   }
+  // Discovery record: structured fields first, free-text notes after.
+  const discoveryRows: string[] = []
+  if (m.discoverers) discoveryRows.push(`<dt>discovered by</dt><dd>${escapeHtml(m.discoverers)}</dd>`)
+  if (m.discovery_date) discoveryRows.push(`<dt>discovery date</dt><dd>${escapeHtml(m.discovery_date)}</dd>`)
+  if (m.ai_used !== null) {
+    let ai = m.ai_used ? 'yes' : 'no'
+    if (m.ai_used && m.ai_model) {
+      ai = `yes &mdash; ${escapeHtml(m.ai_model)}${m.ai_role ? `: ${escapeHtml(m.ai_role)}` : ''}`
+      if (m.ai_chat_url) ai += ` (<a class="external" href="${escapeHtml(m.ai_chat_url)}">chat/run link</a>)`
+    }
+    discoveryRows.push(`<dt>AI use</dt><dd>${ai}</dd>`)
+  }
+  if (m.citation) discoveryRows.push(`<dt>citation</dt><dd>${escapeHtml(m.citation)}</dd>`)
   const provenanceBlock = m.provenance
     ? `<section class="provenance">
-        <h3>Attribution</h3>
+        <h3>Notes</h3>
         <div class="comment-body">${escapeHtml(m.provenance)}</div>
       </section>`
     : ''
@@ -841,7 +926,7 @@ export function matroidDetailPage(
     <section class="prose">
       <p class="page-nav"><a href="/">&larr; home</a> &nbsp;&middot;&nbsp; <a href="/matroids">all matroids</a></p>
       ${justRecorded ? `<p class="record-new">New record: the largest verified ${alphaVar} for n = ${m.n}. Saved. &#127941;</p>` : ''}
-      <h2>matroid #${m.id}</h2>
+      <h2>matroid #${m.id}${m.name ? ` <span class="matroid-name">&mdash; ${escapeHtml(m.name)}</span>` : ''}</h2>
       <dl class="stats">
         <div><dt>n</dt><dd><a href="/matroids?n=${m.n}" title="all record matroids for this ground-set size">${m.n}</a></dd></div>
         <div><dt>rank</dt><dd>${m.rank}</dd></div>
@@ -850,6 +935,7 @@ export function matroidDetailPage(
       </dl>
       <dl class="witness-meta">
         <dt>status</dt><dd>${status}</dd>
+        ${discoveryRows.join('\n        ')}
         <dt>submitted by</dt><dd>${submitter}</dd>
         <dt>submitted at</dt><dd>${escapeHtml(m.created_at)} UTC</dd>
       </dl>
@@ -871,7 +957,11 @@ export function matroidDetailPage(
       ${provenanceBlock}
       ${commentarySection(m.id, comment, user)}
     </section>`
-  return layout(`matroid #${m.id} — ${SITE_NAME}`, body, user)
+  return layout(
+    `matroid #${m.id}${m.name ? ` (${m.name})` : ''} — ${SITE_NAME}`,
+    body,
+    user,
+  )
 }
 
 export function commentaryHistoryPage(

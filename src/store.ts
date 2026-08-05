@@ -5,7 +5,23 @@
 
 import type { Bindings } from './auth'
 import type { RecordPoint, TokenRow, UserMatroidRow } from './pages'
-import type { VerifiedMatroid } from './verify'
+import { VERIFIER_VERSION, type VerifiedMatroid } from './verify'
+
+/** Structured discovery metadata accompanying a submission (all optional;
+ * validated in the route layer). Mirrors the discovery-record fields of the
+ * draft site's submission schema: discovery is distinct from submission, and
+ * AI use is disclosed as data, not prose. */
+export interface SubmissionMeta {
+  name: string | null
+  discoverers: string | null
+  discoveryDate: string | null
+  aiUsed: boolean | null
+  aiModel: string | null
+  aiRole: string | null
+  aiChatUrl: string | null
+  citation: string | null
+  provenance: string | null
+}
 
 export const COMMENT_MAX = 4000
 
@@ -38,6 +54,14 @@ export interface MatroidView {
   cert_field: string | null
   cert_matrix: string | null
   bases: string | null
+  name: string | null
+  discoverers: string | null
+  discovery_date: string | null
+  ai_used: number | null // SQLite boolean; NULL = undisclosed
+  ai_model: string | null
+  ai_role: string | null
+  ai_chat_url: string | null
+  citation: string | null
   provenance: string | null
   created_at: string
   submitter_name: string | null
@@ -54,7 +78,9 @@ export async function loadMatroid(
   const matroid = await env.DB.prepare(
     `SELECT m.id, m.n, m.rank, m.num_bases, m.alpha_num, m.alpha_den, m.alpha_value,
             m.max_pairs, m.max_counts, m.representation_type, m.representation,
-            m.field, m.cert_field, m.cert_matrix, m.bases, m.provenance,
+            m.field, m.cert_field, m.cert_matrix, m.bases,
+            m.name, m.discoverers, m.discovery_date, m.ai_used, m.ai_model,
+            m.ai_role, m.ai_chat_url, m.citation, m.provenance,
             m.created_at, m.current_comment_id,
             u.display_name AS submitter_name,
             (SELECT id FROM matroids WHERE n = m.n ORDER BY id DESC LIMIT 1) AS record_id,
@@ -263,7 +289,7 @@ const atLeast = (aNum: number, aDen: number, bNum: number, bDen: number): boolea
 export async function recordMatroid(
   env: Bindings,
   result: VerifiedMatroid,
-  provenance: string | null,
+  meta: SubmissionMeta,
   userId: number,
 ): Promise<RecordStatus> {
   const basesHash = result.basesHash
@@ -319,8 +345,11 @@ export async function recordMatroid(
     const ins = await env.DB.prepare(
       `INSERT INTO matroids (n, rank, num_bases, alpha_num, alpha_den, alpha_value,
                              max_pairs, max_counts, representation_type, representation,
-                             field, bases, bases_hash, provenance, submitter_user_id)
-       SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15
+                             field, bases, bases_hash, provenance, submitter_user_id,
+                             name, discoverers, discovery_date, ai_used, ai_model,
+                             ai_role, ai_chat_url, citation, verifier_version)
+       SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15,
+              ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25
        WHERE NOT EXISTS (SELECT 1 FROM matroids WHERE n = ?1 AND id > ?16)`,
     )
       .bind(
@@ -339,9 +368,18 @@ export async function recordMatroid(
           ? result.basesJson
           : null,
         basesHash,
-        provenance,
+        meta.provenance,
         userId,
         row?.id ?? 0,
+        meta.name,
+        meta.discoverers,
+        meta.discoveryDate,
+        meta.aiUsed === null ? null : meta.aiUsed ? 1 : 0,
+        meta.aiModel,
+        meta.aiRole,
+        meta.aiChatUrl,
+        meta.citation,
+        VERIFIER_VERSION,
       )
       .run()
     if ((ins.meta.changes ?? 0) > 0) {

@@ -55,6 +55,10 @@ export const BASES_JSON_MAX_COUNT = 5000
 // (FieldOps.costFactor).
 const OP_BUDGET = 16_000_000_000
 
+/** Stamped on every stored verification, so rows can be re-audited when the
+ * verifier evolves (the canonical hash scheme has already changed once). */
+export const VERIFIER_VERSION = '2.0.0'
+
 export const REPRESENTATION_TYPES = ['matrix', 'bases', 'circuits', 'hyperplanes'] as const
 export type RepresentationType = (typeof REPRESENTATION_TYPES)[number]
 
@@ -63,6 +67,14 @@ export interface MaxCounts {
   avoidBoth: number
   onlyI: number
   onlyJ: number
+}
+
+/** One maximizing pair with its own 2×2 basis-count table (tied pairs share
+ * the ratio but not necessarily the table). */
+export interface MaximizingPair {
+  i: number
+  j: number
+  counts: MaxCounts
 }
 
 export interface VerifiedMatroid {
@@ -76,9 +88,9 @@ export interface VerifiedMatroid {
   alphaNum: number
   alphaDen: number
   alphaValue: number
-  /** Every pair [i, j] (i < j) attaining the maximum. */
-  maximizingPairs: [number, number][]
-  /** The 2×2 basis counts at the first maximizing pair. */
+  /** Every pair (i < j) attaining the maximum, each with its counts. */
+  maximizingPairs: MaximizingPair[]
+  /** The 2×2 basis counts at the first maximizing pair (convenience). */
   maxCounts: MaxCounts | null
   representationType: RepresentationType
   /** Normalized JSON of the submitted description. */
@@ -937,8 +949,7 @@ class BasesConsumer {
     const total = this.count
     let bestNum = 0n
     let bestDen = 1n
-    let maximizingPairs: [number, number][] = []
-    let maxCounts: MaxCounts | null = null
+    let maximizingPairs: MaximizingPair[] = []
     for (let a = 0; a < eligible.length; a++) {
       for (let b = a + 1; b < eligible.length; b++) {
         const i = eligible[a]
@@ -950,14 +961,14 @@ class BasesConsumer {
         // Both denominator factors are positive for nonloop, noncoloop pairs.
         const num = BigInt(containBoth) * BigInt(avoidBoth)
         const den = BigInt(onlyI) * BigInt(onlyJ)
-        const cmp = maxCounts === null ? 1n : num * bestDen - bestNum * den
+        const cmp = maximizingPairs.length === 0 ? 1n : num * bestDen - bestNum * den
+        const entry = { i, j, counts: { containBoth, avoidBoth, onlyI, onlyJ } }
         if (cmp > 0n) {
           bestNum = num
           bestDen = den
-          maximizingPairs = [[i, j]]
-          maxCounts = { containBoth, avoidBoth, onlyI, onlyJ }
+          maximizingPairs = [entry]
         } else if (cmp === 0n) {
-          maximizingPairs.push([i, j])
+          maximizingPairs.push(entry)
         }
       }
     }
@@ -967,7 +978,7 @@ class BasesConsumer {
       loops,
       coloops,
       maximizingPairs,
-      maxCounts,
+      maxCounts: maximizingPairs.length ? maximizingPairs[0].counts : null,
       basesJson: this.kept ? JSON.stringify(this.kept.map(bitsOf)) : null,
       basesHash,
     }

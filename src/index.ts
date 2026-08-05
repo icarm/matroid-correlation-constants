@@ -34,6 +34,7 @@ import {
   recordMatroid,
   userMatroids,
   type RecordStatus,
+  type SubmissionMeta,
 } from './store'
 import {
   MAX_DATA_TEXT_BYTES,
@@ -101,6 +102,8 @@ app.get('/database.json', async (c) => {
     `SELECT m.id, m.n, m.rank, m.num_bases, m.alpha_num, m.alpha_den, m.alpha_value,
             m.max_pairs, m.max_counts, m.representation_type, m.representation,
             m.field, m.cert_field, m.cert_matrix, m.bases, m.provenance, m.created_at,
+            m.name, m.discoverers, m.discovery_date, m.ai_used, m.ai_model,
+            m.ai_role, m.ai_chat_url, m.citation, m.verifier_version,
             u.display_name AS submitter,
             (m.id = (SELECT MAX(id) FROM matroids WHERE n = m.n)) AS is_current
        FROM matroids m LEFT JOIN users u ON u.id = m.submitter_user_id
@@ -123,6 +126,15 @@ app.get('/database.json', async (c) => {
     bases: string | null
     provenance: string | null
     created_at: string
+    name: string | null
+    discoverers: string | null
+    discovery_date: string | null
+    ai_used: number | null
+    ai_model: string | null
+    ai_role: string | null
+    ai_chat_url: string | null
+    citation: string | null
+    verifier_version: string | null
     submitter: string | null
     is_current: number
   }>()
@@ -136,6 +148,7 @@ app.get('/database.json', async (c) => {
   }
   const matroids = results.map((r) => ({
     id: r.id,
+    name: r.name,
     n: r.n,
     rank: r.rank,
     num_bases: r.num_bases,
@@ -148,7 +161,17 @@ app.get('/database.json', async (c) => {
     cert_field: r.cert_field,
     cert_matrix: parse(r.cert_matrix),
     bases: parse(r.bases),
+    discovery: {
+      date: r.discovery_date,
+      discoverers: r.discoverers,
+      ai_used: r.ai_used === null ? null : !!r.ai_used,
+      ai_model: r.ai_model,
+      ai_role: r.ai_role,
+      ai_chat_url: r.ai_chat_url,
+    },
+    citation: r.citation,
     provenance: r.provenance,
+    verifier_version: r.verifier_version,
     submitter: r.submitter,
     created_at: r.created_at,
     current: !!r.is_current,
@@ -267,6 +290,59 @@ app.post('/profile/name', async (c) => {
   return c.redirect('/profile', 302)
 })
 
+// Discovery dates are YYYY-MM or YYYY-MM-DD, as in the draft site's schema
+// (discovery is distinct from the submission timestamp GitHub-style metadata
+// records automatically).
+const DISCOVERY_DATE_RE = /^\d{4}-(0[1-9]|1[0-2])(-(0[1-9]|[12]\d|3[01]))?$/
+
+/** Validate and trim the structured discovery metadata. All fields are
+ * optional, but what is supplied must be coherent: a real date shape, an
+ * http(s) chat link, and a model + role whenever AI use is declared. */
+function parseMeta(raw: {
+  name?: unknown
+  discoverers?: unknown
+  discoveryDate?: unknown
+  aiUsed?: unknown
+  aiModel?: unknown
+  aiRole?: unknown
+  aiChatUrl?: unknown
+  citation?: unknown
+  provenance?: unknown
+}): SubmissionMeta | { error: string } {
+  const text = (v: unknown, max: number): string | null =>
+    typeof v === 'string' && v.trim() !== '' ? v.trim().slice(0, max) : null
+  const meta: SubmissionMeta = {
+    name: text(raw.name, 200),
+    discoverers: text(raw.discoverers, 500),
+    discoveryDate: text(raw.discoveryDate, 10),
+    aiUsed:
+      typeof raw.aiUsed === 'boolean'
+        ? raw.aiUsed
+        : raw.aiUsed === 'yes'
+          ? true
+          : raw.aiUsed === 'no'
+            ? false
+            : null,
+    aiModel: text(raw.aiModel, 200),
+    aiRole: text(raw.aiRole, 1000),
+    aiChatUrl: text(raw.aiChatUrl, 500),
+    citation: text(raw.citation, 500),
+    provenance: text(raw.provenance, PROVENANCE_MAX),
+  }
+  if (meta.discoveryDate !== null && !DISCOVERY_DATE_RE.test(meta.discoveryDate)) {
+    return { error: 'discovery date must be YYYY-MM or YYYY-MM-DD' }
+  }
+  if (meta.aiChatUrl !== null && !/^https?:\/\//.test(meta.aiChatUrl)) {
+    return { error: 'the AI chat link must be an http(s) URL' }
+  }
+  if (meta.aiUsed === true && (meta.aiModel === null || meta.aiRole === null)) {
+    return {
+      error: 'when AI use is declared, the model/version and a brief role description are required',
+    }
+  }
+  return meta
+}
+
 function verifyFromText(
   nText: string,
   typeText: string,
@@ -334,24 +410,43 @@ app.post('/verify', async (c) => {
   const typeText = typeof body.type === 'string' ? body.type : ''
   const fieldText = typeof body.field === 'string' ? body.field : ''
   const dataText = typeof body.data === 'string' ? body.data : ''
-  const provenance =
-    typeof body.provenance === 'string' ? body.provenance.trim().slice(0, PROVENANCE_MAX) : ''
-  const result = verifyFromText(nText, typeText, fieldText, dataText)
+  const form: FormState = {
+    nValue: nText,
+    typeValue: typeText,
+    fieldValue: fieldText,
+    dataValue: dataText,
+    nameValue: typeof body.name === 'string' ? body.name : '',
+    discoverersValue: typeof body.discoverers === 'string' ? body.discoverers : '',
+    discoveryDateValue: typeof body.discovery_date === 'string' ? body.discovery_date : '',
+    aiUsedValue: typeof body.ai_used === 'string' ? body.ai_used : '',
+    aiModelValue: typeof body.ai_model === 'string' ? body.ai_model : '',
+    aiRoleValue: typeof body.ai_role === 'string' ? body.ai_role : '',
+    aiChatUrlValue: typeof body.ai_chat_url === 'string' ? body.ai_chat_url : '',
+    citationValue: typeof body.citation === 'string' ? body.citation : '',
+    provenanceValue: typeof body.provenance === 'string' ? body.provenance : '',
+  }
+  const meta = parseMeta({
+    name: form.nameValue,
+    discoverers: form.discoverersValue,
+    discoveryDate: form.discoveryDateValue,
+    aiUsed: form.aiUsedValue,
+    aiModel: form.aiModelValue,
+    aiRole: form.aiRoleValue,
+    aiChatUrl: form.aiChatUrlValue,
+    citation: form.citationValue,
+    provenance: form.provenanceValue,
+  })
+  const result: VerifyResult =
+    'error' in meta ? { ok: false, error: meta.error } : verifyFromText(nText, typeText, fieldText, dataText)
   let record: RecordStatus | undefined
-  if (result.ok) {
-    record = await recordMatroid(c.env, result, provenance || null, user.id)
+  if (result.ok && !('error' in meta)) {
+    record = await recordMatroid(c.env, result, meta, user.id)
     if (record.recorded) return c.redirect(`/matroid/${record.matroidId}?new=1`, 303)
   }
   const flash: ResultFlash = {
     result: slimResult(result),
     record,
-    form: {
-      nValue: nText,
-      typeValue: typeText,
-      fieldValue: fieldText,
-      dataValue: dataText,
-      provenanceValue: provenance,
-    },
+    form,
   }
   const key = crypto.randomUUID()
   await c.env.SESSIONS.put(`result:${key}`, JSON.stringify(flash), {
@@ -393,28 +488,42 @@ app.post('/api/verify', async (c) => {
   } catch {
     return c.json({ ok: false, error: 'request body must be JSON' }, 400)
   }
-  const { n, type, field, data, provenance } = (body ?? {}) as {
+  const { n, type, field, data, provenance, name, citation, discovery } = (body ?? {}) as {
     n?: unknown
     type?: unknown
     field?: unknown
     data?: unknown
     provenance?: unknown
+    name?: unknown
+    citation?: unknown
+    discovery?: unknown
   }
   if (typeof n !== 'number' || typeof type !== 'string' || data === undefined) {
     return c.json(
       {
         ok: false,
-        error: `expected {"n": <integer>, "type": <one of ${REPRESENTATION_TYPES.join('|')}>, "data": [...], "field"?: "Q"|"<prime>", "provenance"?: <string>}`,
+        error: `expected {"n": <integer>, "type": <one of ${REPRESENTATION_TYPES.join('|')}>, "data": [...], "field"?: "Q"|"<prime power>", "name"?, "citation"?, "provenance"?, "discovery"?: {"date", "discoverers", "ai_used", "ai_model", "ai_role", "ai_chat_url"}}`,
       },
       400,
     )
   }
   const fieldText = typeof field === 'number' ? String(field) : typeof field === 'string' ? field : ''
-  const provenanceText =
-    typeof provenance === 'string' ? provenance.trim().slice(0, PROVENANCE_MAX) : ''
+  const disc = (discovery ?? {}) as Record<string, unknown>
+  const meta = parseMeta({
+    name,
+    citation,
+    provenance,
+    discoverers: disc.discoverers,
+    discoveryDate: disc.date,
+    aiUsed: disc.ai_used,
+    aiModel: disc.ai_model,
+    aiRole: disc.ai_role,
+    aiChatUrl: disc.ai_chat_url,
+  })
+  if ('error' in meta) return c.json({ ok: false, error: meta.error }, 400)
   const result = verify(n, type, fieldText, data)
   if (!result.ok) return c.json(result, 400)
-  const record = await recordMatroid(c.env, result, provenanceText || null, user.id)
+  const record = await recordMatroid(c.env, result, meta, user.id)
   // Echoing the (possibly large) bases and description back is redundant for
   // API users.
   const { basesJson: _bases, representation: _rep, ...rest } = result
