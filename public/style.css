@@ -1,20 +1,26 @@
-/* Dark pine theme with coral accents — deliberately distinct from the
-   indigo/amber ruzsa-genus-one site and the light/teal elliptic-rank site. */
+/* Warm paper theme with teal and rust accents, following Chris Eur's
+   draft of the matroid correlation site. */
 :root {
-  --bg: #0f1914;          /* deep pine-black */
-  --bg-glow: #142a1e;
-  --fg: #e8f0ea;
-  --muted: #93ab9c;
-  --accent: #ff9d6b;      /* warm coral */
-  --accent-bright: #ffbd96;
-  --accent-dim: #c05f33;
-  --panel: #152219;
-  --panel-edge: #2b4234;
-  --valid: #4ade80;
-  --valid-bg: #0c2a18;
-  --invalid: #f87171;
-  --invalid-bg: #331416;
-  --error-bg: #2c1c10;
+  --bg: #f7f5ee;          /* paper */
+  --bg-bright: #fffef9;   /* paper-bright */
+  --bg-muted: #eeeade;    /* paper-muted */
+  --fg: #15383b;          /* ink */
+  --ink-deep: #0b2c2f;
+  --muted: #476467;       /* ink-soft */
+  --accent: #176b72;      /* teal */
+  --accent-bright: #2b9296;
+  --accent-dim: #5f8f93;
+  --rust: #a64d3d;
+  --rust-dark: #82382c;
+  --panel: #fffef9;
+  --panel-edge: #d9d5c9;
+  --valid: #2e7158;
+  --valid-bg: #e9f2ec;
+  --invalid: #a64d3d;
+  --invalid-bg: #f7e8e3;
+  --error-bg: #f5efdd;
+  --shadow-sm: 0 2px 12px rgba(25, 53, 54, 0.08);
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
   --mono: "JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular, Menlo,
     Consolas, monospace;
 }
@@ -27,12 +33,18 @@ html,
 body {
   margin: 0;
   padding: 0;
-  background: radial-gradient(ellipse 120% 60% at 50% -10%, var(--bg-glow), var(--bg) 70%)
-    fixed var(--bg);
+  background: var(--bg);
   color: var(--fg);
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial,
-    sans-serif;
-  line-height: 1.65;
+  font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.6;
+}
+
+/* Display headings are serif, as in the draft site. */
+h1, h2, h3 {
+  font-family: var(--serif);
+  color: var(--fg);
+  letter-spacing: 0.005em;
 }
 
 /* Default link color; more specific rules (header, footer, buttons) override. */
@@ -51,7 +63,7 @@ a:hover {
 
 header {
   border-bottom: 1px solid var(--panel-edge);
-  background: rgba(15, 25, 20, 0.7);
+  background: var(--bg-bright);
 }
 
 header .inner {
@@ -73,12 +85,12 @@ header h1 {
 }
 
 header h1 a {
-  color: var(--accent);
+  color: var(--fg);
   text-decoration: none;
 }
 
 header h1 a:hover {
-  color: var(--accent-bright);
+  color: var(--accent);
 }
 
 header nav .auth-nav {
@@ -100,7 +112,7 @@ header nav .auth-nav a.auth-login {
 
 header nav .auth-nav a.auth-login:hover {
   border-color: var(--accent);
-  background: rgba(255, 157, 107, 0.1);
+  background: rgba(23, 107, 114, 0.08);
 }
 
 a.auth-user {
@@ -160,7 +172,7 @@ var {
 }
 
 .record-new {
-  color: var(--accent);
+  color: var(--rust);
   font-weight: 600;
 }
 
@@ -175,6 +187,10 @@ var {
   text-align: center;
   font-size: 1.12rem;
   color: var(--accent);
+  background: var(--bg-bright);
+  border: 1px solid var(--panel-edge);
+  border-radius: 16px;
+  padding: 0.9rem 1rem;
   margin: 1.3rem 0;
   font-family: Georgia, "Times New Roman", serif;
 }
@@ -209,9 +225,9 @@ var {
   width: 100%;
   height: auto;
   margin: 0.5rem 0;
-  background: var(--bg);
+  background: var(--bg-bright);
   border: 1px solid var(--panel-edge);
-  border-radius: 6px;
+  border-radius: 8px;
 }
 
 /* The interactive explorer: filter sidebar + chart, stacking on narrow
@@ -235,7 +251,7 @@ var {
 }
 
 .filter-panel {
-  background: var(--bg);
+  background: var(--bg-bright);
   border: 1px solid var(--panel-edge);
   border-radius: 8px;
   padding: 0.9rem 1rem 1rem;
@@ -266,7 +282,7 @@ var {
 .filter-panel input[type='search'],
 .filter-panel select {
   width: 100%;
-  background: var(--panel);
+  background: var(--bg);
   color: var(--fg);
   border: 1px solid var(--panel-edge);
   border-radius: 6px;
@@ -333,13 +349,13 @@ var {
 .atlas-chart {
   width: 100%;
   height: auto;
-  background: var(--bg);
+  background: var(--bg-bright);
   border: 1px solid var(--panel-edge);
-  border-radius: 6px;
+  border-radius: 8px;
 }
 
 .atlas-chart .grid-line { stroke: var(--panel-edge); stroke-width: 1; }
-.atlas-chart .grid-line.target { stroke: var(--accent-dim); stroke-width: 1.6; stroke-dasharray: 4 5; }
+.atlas-chart .grid-line.target { stroke: rgba(166, 77, 61, 0.45); stroke-width: 1.6; stroke-dasharray: 4 5; }
 .atlas-chart .axis-line { stroke: var(--muted); stroke-width: 1.5; }
 .atlas-chart .tick-label {
   fill: var(--muted);
@@ -352,7 +368,7 @@ var {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 .atlas-chart .target-label {
-  fill: var(--accent);
+  fill: var(--rust);
   font-size: 12px;
   font-style: italic;
   font-family: Georgia, "Times New Roman", serif;
@@ -364,14 +380,14 @@ var {
   stroke-linejoin: round;
 }
 .atlas-chart .curve-path.lower-bound { stroke-dasharray: 9 7; }
-.atlas-chart .curve-point { stroke: var(--bg); stroke-width: 1.5; }
+.atlas-chart .curve-point { stroke: var(--bg-bright); stroke-width: 1.5; }
 .atlas-chart .curve-point:hover, .atlas-chart .curve-point:focus { r: 6; }
 .atlas-chart .matroid-point {
-  fill: var(--fg);
-  stroke: var(--bg);
+  fill: var(--ink-deep);
+  stroke: var(--bg-bright);
   stroke-width: 2;
 }
-.atlas-chart .matroid-point.global-record { fill: var(--accent); }
+.atlas-chart .matroid-point.global-record { fill: var(--rust); }
 .atlas-chart .matroid-point:hover, .atlas-chart .matroid-point:focus { r: 10; }
 
 .chart-legend {
@@ -385,7 +401,7 @@ var {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  background: var(--bg);
+  background: var(--bg-bright);
   border: 1px solid var(--panel-edge);
   border-radius: 999px;
   color: var(--fg);
@@ -411,10 +427,10 @@ var {
   position: fixed;
   z-index: 10;
   max-width: 20rem;
-  background: var(--panel);
+  background: var(--bg-bright);
   border: 1px solid var(--panel-edge);
-  border-radius: 6px;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
+  border-radius: 8px;
+  box-shadow: 0 18px 50px rgba(17, 48, 50, 0.14);
   padding: 0.5rem 0.7rem;
   font-size: 0.82rem;
   pointer-events: none;
@@ -441,15 +457,15 @@ var {
 }
 .records-plot .guide { fill: none; }
 .records-plot .guide-known { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 2 4; }
-.records-plot .guide-goal { stroke: var(--accent-dim); stroke-width: 1.8; stroke-dasharray: 6 5; }
+.records-plot .guide-goal { stroke: var(--rust); opacity: 0.6; stroke-width: 1.8; stroke-dasharray: 4 5; }
 .records-plot .guide-label {
   fill: var(--muted);
   font-size: 12px;
   font-style: italic;
   font-family: Georgia, "Times New Roman", serif;
 }
-.records-plot .dot { fill: var(--accent); }
-.records-plot .dot.beats-goal { fill: var(--valid); stroke: var(--fg); stroke-width: 1; }
+.records-plot .dot { fill: var(--ink-deep); }
+.records-plot .dot.beats-goal { fill: var(--rust); stroke: var(--bg-bright); stroke-width: 1; }
 
 .records-plot a .dot {
   cursor: pointer;
@@ -475,11 +491,11 @@ var {
   display: inline-block;
   margin-top: 1.1rem;
   background: var(--accent);
-  color: #2a1204;
-  border-radius: 6px;
+  color: var(--bg-bright);
+  border-radius: 999px;
   padding: 0.6rem 1.6rem;
   font-size: 1rem;
-  font-weight: 700;
+  font-weight: 600;
   text-decoration: none;
 }
 
@@ -505,14 +521,14 @@ var {
 
 .new-token {
   border: 1px solid var(--accent);
-  background: rgba(255, 157, 107, 0.08);
+  background: rgba(23, 107, 114, 0.06);
   padding: 0.75rem 1rem;
   border-radius: 6px;
   margin: 1rem 0;
 }
 
 .token-secret {
-  background: var(--panel);
+  background: var(--bg-muted);
   border: 1px solid var(--panel-edge);
   padding: 0.5rem 0.75rem;
   border-radius: 3px;
@@ -658,9 +674,9 @@ var {
 
 .field-badge {
   display: inline-block;
-  border: 1px solid var(--panel-edge);
+  border: 1px solid var(--accent-dim);
   border-radius: 999px;
-  background: var(--panel);
+  background: var(--bg-bright);
   color: var(--accent);
   font-size: 0.8rem;
   font-weight: 600;
@@ -673,7 +689,7 @@ var {
    than soft-wrapping — a wrapped row would split numbers across lines (and
    an unbreakable long row leaves a spurious blank line before it wraps). */
 .elements {
-  background: var(--panel);
+  background: var(--bg-muted);
   border: 1px solid var(--panel-edge);
   border-radius: 6px;
   padding: 0.75rem 1rem;
@@ -708,7 +724,7 @@ var {
 
 .counts-table td {
   border: 1px solid var(--panel-edge);
-  background: var(--panel);
+  background: var(--bg-muted);
   padding: 0.3rem 0.9rem;
   text-align: right;
   font-family: var(--mono);
@@ -726,7 +742,7 @@ var {
 }
 
 .comment-body {
-  background: var(--panel);
+  background: var(--bg-bright);
   border: 1px solid var(--panel-edge);
   border-radius: 6px;
   padding: 0.75rem 1rem;
@@ -863,17 +879,19 @@ a.external::after {
 .panel {
   background: var(--panel);
   border: 1px solid var(--panel-edge);
-  border-radius: 10px;
+  border-radius: 16px;
   padding: 1.2rem 1.4rem 1.4rem;
   margin: 1.6rem 0;
+  box-shadow: var(--shadow-sm);
 }
 
 .panel h2,
 .result h2 {
   margin: 0 0 0.8rem;
-  font-size: 1.1rem;
+  font-family: inherit;
+  font-size: 0.95rem;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.14em;
   font-weight: 600;
 }
 
@@ -914,10 +932,10 @@ form input,
 form select,
 form textarea {
   width: 100%;
-  background: var(--bg);
+  background: var(--bg-bright);
   color: var(--fg);
   border: 1px solid var(--panel-edge);
-  border-radius: 6px;
+  border-radius: 8px;
   padding: 0.55rem 0.7rem;
   font-family: var(--mono);
   font-size: 0.95rem;
@@ -935,8 +953,8 @@ form input:focus,
 form select:focus,
 form textarea:focus {
   outline: none;
-  border-color: var(--accent-dim);
-  box-shadow: 0 0 0 2px rgba(255, 157, 107, 0.18);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(43, 146, 150, 0.18);
 }
 
 form textarea {
@@ -946,12 +964,12 @@ form textarea {
 form button {
   margin-top: 1.1rem;
   background: var(--accent);
-  color: #2a1204;
+  color: var(--bg-bright);
   border: none;
-  border-radius: 6px;
+  border-radius: 999px;
   padding: 0.6rem 1.6rem;
   font-size: 1rem;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
 }
 
@@ -960,7 +978,7 @@ form button:hover {
 }
 
 .result {
-  border-radius: 10px;
+  border-radius: 16px;
   padding: 1.2rem 1.4rem;
   margin: 1.6rem 0;
   border: 1px solid;
@@ -986,11 +1004,11 @@ form button:hover {
 
 .result-error {
   background: var(--error-bg);
-  border-color: var(--accent-dim);
+  border-color: var(--rust);
 }
 
 .result-error h2 {
-  color: var(--accent);
+  color: var(--rust);
 }
 
 .stats {
@@ -1017,7 +1035,7 @@ form button:hover {
 }
 
 .stats .score {
-  color: var(--accent);
+  color: var(--rust);
   font-weight: 700;
 }
 
@@ -1037,7 +1055,7 @@ form button:hover {
 
 code {
   font-family: var(--mono);
-  background: var(--panel);
+  background: var(--bg-muted);
   border: 1px solid var(--panel-edge);
   border-radius: 4px;
   padding: 0.1rem 0.35rem;
