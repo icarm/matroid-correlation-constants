@@ -16,6 +16,7 @@ import type {
   RecordStatus,
 } from './store'
 import { COMMENT_MAX } from './store'
+import { familiesChartData } from './familyData'
 
 export interface User {
   id: number
@@ -340,6 +341,7 @@ function recordsSection(records: RecordPoint[]): string {
   // Data for the interactive explorer (progressive enhancement in /chart.js);
   // <-escaping keeps the JSON safe inside a script element.
   const chartData = JSON.stringify({
+    families: familiesChartData(),
     records: records.map((r) => ({
       id: r.id,
       n: r.n,

@@ -1,6 +1,6 @@
-// The interactive records explorer: family curves from the discovery record
-// (hard-coded below, following Chris Eur's draft site) plus this site's
-// verified record submissions (injected by the server as #chart-data).
+// The interactive records explorer. All data — the family curves (single
+// source of truth: src/familyData.ts) and this site's verified record
+// submissions — arrives as server-injected JSON (#chart-data).
 // Progressive enhancement: without JS the server-rendered plot stands.
 'use strict'
 ;(() => {
@@ -10,64 +10,19 @@
   if (!explorer || !chart) return
 
   // ---------------------------------------------------------------------
-  // Family data, ported from the discovery record's catalog.
+  // Data: both the family curves and this site's verified record
+  // submissions arrive as server-injected JSON (#chart-data). The single
+  // source of truth for families is src/familyData.ts.
 
-  const frac = (num, den) => {
-    let a = num, b = den
-    while (b) { const t = a % b; a = b; b = t }
-    const n2 = num / a, d2 = den / a
-    return { label: d2 === 1 ? String(n2) : n2 + '/' + d2, value: num / den }
-  }
-  const pt = (parameter, n, rank, f, field) => ({ parameter, n, rank, exact: f, field: field ?? null })
-
-  const spikePoints = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29].map((p) =>
-    pt('p = ' + p, 4 * p + 2, 5, frac(8, 7), p))
-  const uniformPoints = []
-  for (let r = 2; r <= 30; r++) uniformPoints.push(pt('r = ' + r, 4 * r + 2, 2 * r + 1, frac(4 * r * r, 3 * r * r + 2 * r + 1)))
-  const steinerTriples = []
-  for (let n = 7; n <= 74; n++) if (n % 6 === 1 || n % 6 === 3) steinerTriples.push(pt('n = ' + n, 2 * n + 2, 7, frac(6 * (n - 2), 5 * n - 8)))
-  const steinerQuadruples = []
-  for (let n = 8; n <= 74; n++) if (n % 6 === 2 || n % 6 === 4) steinerQuadruples.push(pt('n = ' + n, 2 * n + 2, 9, frac(16 * (n - 3), 13 * n - 34)))
-  const geo = (kind, pts) => pts.map(([n, rank, a, b], i) => pt(`rank(${kind}) = ${[3, 4, 5, 6, 8][i] ?? i + 3}`, n, rank, frac(a, b)))
-  // Affine/projective exact values from the discovery record. The rank(A)=8
-  // point is the fifth entry of the q=2 series.
-  const affine = {
-    2: geo('A', [[10, 7, 6, 7], [18, 9, 8, 7], [34, 11, 80, 67], [66, 13, 6, 5], [258, 17, 1168, 977]]),
-    3: geo('A', [[20, 7, 42, 37], [56, 9, 6, 5], [164, 11, 265, 218]]),
-    5: geo('A', [[52, 7, 150, 127], [252, 9, 1168, 959]]),
-    7: geo('A', [[100, 7, 306, 257], [688, 9, 104, 85]]),
-  }
-  const projective = {
-    2: geo('PG', [[16, 7, 10, 9], [32, 9, 128, 109], [64, 11, 70, 59], [128, 13, 297, 250], [512, 17, 7456, 6275]]),
-    3: geo('PG', [[28, 7, 36, 31], [82, 9, 256, 213], [244, 11, 1640, 1351], [730, 13, 12528, 10261]]),
-    5: geo('PG', [[64, 7, 32, 27], [314, 9, 2944, 2417], [1564, 11, 3200, 2593]]),
-    7: geo('PG', [[116, 7, 180, 151], [802, 9, 7296, 5963]]),
-  }
-
-  // claim: 'exact' (solid) or 'lower' (dashed, certified lower bounds).
-  const FAMILIES = [
-    { id: 'hsw-finite-field-spikes', name: 'Huh–Schröter–Wang finite-field spikes', short: 'HSW spikes', claim: 'exact',
-      color: '#8c3d2f', fields: [2, 3, 5, 7], series: [{ id: 'p', label: 'Mₚ⁵', points: spikePoints }] },
-    { id: 'uniform-self-sum-extensions', name: 'Uniform self-sum extensions', short: 'Uniform extensions', claim: 'lower',
-      color: '#176b72', fields: [], series: [{ id: 'r', label: 'Pᵣ', points: uniformPoints }] },
-    { id: 'affine-self-sum-extensions', name: 'Affine-geometry self-sum extensions', short: 'Affine extensions', claim: 'lower',
-      color: '#6d4c93', fields: [], series: [2, 3, 5, 7].map((q) => ({ id: 'q' + q, label: 'q = ' + q, points: affine[q] })) },
-    { id: 'projective-self-sum-extensions', name: 'Projective-geometry self-sum extensions', short: 'Projective extensions', claim: 'lower',
-      color: '#b5652a', fields: [], series: [2, 3, 5, 7].map((q) => ({ id: 'q' + q, label: 'q = ' + q, points: projective[q] })) },
-    { id: 'steiner-system-self-sum-extensions', name: 'Steiner-system sparse-paving extensions', short: 'Steiner extensions', claim: 'lower',
-      color: '#34745b', fields: [], series: [
-        { id: 's23', label: 'S(2,3,n)', points: steinerTriples },
-        { id: 's34', label: 'S(3,4,n)', points: steinerQuadruples },
-      ] },
-  ]
+  let records = []
+  let FAMILIES = []
+  try {
+    const data = JSON.parse(document.getElementById('chart-data').textContent)
+    records = data.records
+    FAMILIES = data.families
+  } catch { /* leave empty */ }
   const allSeries = FAMILIES.flatMap((family) =>
     family.series.map((series) => ({ family, series, key: family.id + ':' + series.id })))
-
-  // This site's verified record submissions.
-  let records = []
-  try {
-    records = JSON.parse(document.getElementById('chart-data').textContent).records
-  } catch { /* leave empty */ }
   const bestValue = records.reduce((best, r) => Math.max(best, r.value), 0)
 
   // ---------------------------------------------------------------------

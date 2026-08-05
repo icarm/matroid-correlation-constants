@@ -32,10 +32,13 @@ case).
   rejects with both values) and discovery-metadata validation.
 - `src/pages.ts` — server-rendered template-literal pages. `src/mathematics.ts`
   — the proofs page (the only page loading MathJax, from CDN).
-- `public/chart.js` — the interactive explorer (family curves hard-coded
-  from the draft's catalog; records injected via `#chart-data` JSON).
-  Progressive enhancement: server-rendered SVG stays without JS. Same
-  pattern as the form's placeholder script.
+- `src/familyData.ts` — the family catalog, single source of truth:
+  family pages render from it and the landing page injects it (with the
+  record points) as `#chart-data` JSON for the explorer. Accepted family
+  proposals are added here by PR.
+- `public/chart.js` — the interactive explorer; all data arrives via the
+  injected JSON. Progressive enhancement: server-rendered SVG stays
+  without JS. Same pattern as the form's placeholder script.
 - `public/style.css` — design tokens in `:root`, Chris's paper/teal/rust
   palette, serif display headings.
 
@@ -76,6 +79,8 @@ API token may be present at `~/.matroid-correlation-token.txt`.
   is_current when doing this). Prerequisite for field leaderboards.
 - Challenges section with per-field leaderboards (thresholds in the
   draft's `submission-eligibility-policy.json`).
-- Family pages; records table beside the plot; structure flags (simple/
-  connected/paving) for explorer filters.
+- Records table beside the plot; structure flags (simple/connected/
+  paving) for explorer filters; family-proposal intake via GitHub issue
+  form once the GitHub repo exists (design agreed 2026-08-05: issue
+  template + /families CTA + optional numeric screening action).
 - Construction-expression DSL deliberately deferred (see project memory).
