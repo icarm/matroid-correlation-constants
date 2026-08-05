@@ -129,6 +129,69 @@ check('full-set hyperplane rejected', !badHyp.ok, alphaOf(badHyp))
 const free = verify(3, 'circuits', '', [])
 check('free matroid: α = 0, all coloops', free.ok && free.alphaNum === 0 && free.coloops.length === 3, alphaOf(free))
 
+// Larger ground sets. A Cauchy matrix over GF(p) has every minor nonzero, so
+// 10 x 20 gives the uniform matroid U(10,20) — the worst case for basis
+// enumeration at n = 20. α(U(r,n)) = (r-1)(n-r-1)/(r(n-r)).
+{
+  const p = 65521
+  const modpow = (b, e) => { let r = 1n, x = BigInt(b) % BigInt(p); for (let k = BigInt(e); k > 0n; k >>= 1n, x = (x * x) % BigInt(p)) if (k & 1n) r = (r * x) % BigInt(p); return Number(r) }
+  const inv = (a) => modpow(a, p - 2)
+  const cauchy = Array.from({ length: 10 }, (_, i) =>
+    Array.from({ length: 20 }, (_, j) => inv(i + j + 100)),
+  )
+  const u = verify(20, 'matrix', String(p), cauchy)
+  check('U(10,20) via Cauchy/GF: verifies', u.ok, alphaOf(u))
+  if (u.ok) {
+    check('U(10,20): 184,756 bases', u.numBases === 184756, String(u.numBases))
+    check('U(10,20): α = 81/100', u.alphaNum === 81 && u.alphaDen === 100, alphaOf(u))
+    check('U(10,20): bases JSON omitted when huge', u.basesJson === null)
+  }
+}
+
+// A Vandermonde matrix over Q has every maximal minor nonzero (generalized
+// Vandermonde = Schur polynomial x positive factors), so 8 x 16 gives
+// U(8,16) — exercising exact BigInt elimination at scale.
+{
+  const vandermonde = Array.from({ length: 8 }, (_, r) =>
+    Array.from({ length: 16 }, (_, j) => (j + 1) ** r),
+  )
+  const u = verify(16, 'matrix', 'Q', vandermonde)
+  check('U(8,16) via Vandermonde/Q: verifies', u.ok, alphaOf(u))
+  if (u.ok) {
+    check('U(8,16): 12,870 bases', u.numBases === 12870, String(u.numBases))
+    check('U(8,16): α = 49/64', u.alphaNum === 49 && u.alphaDen === 64, alphaOf(u))
+  }
+}
+
+// The HSW spike M_5^5 (n = 22 > the old limit of 18): α = 8/7 with the 2x2
+// counts from Section 5 of the paper, (500, 5000, 625, 3500).
+{
+  const p = 5, d = 5
+  const cols = [[1, 0, 0, 0, 0], [0, 1, 1, 1, 1]]
+  for (let m = 1; m < d; m++) {
+    for (let k = 1; k <= p; k++) {
+      const v = [k % p, 0, 0, 0, 0]
+      v[m] = 1
+      cols.push(v)
+    }
+  }
+  const rows = Array.from({ length: d }, (_, r) => cols.map((c) => c[r]))
+  const s = verify(22, 'matrix', '5', rows)
+  check('spike M_5^5 (n=22): verifies', s.ok, alphaOf(s))
+  if (s.ok) {
+    check('spike M_5^5: rank 5, 9,625 bases', s.rank === 5 && s.numBases === 9625, String(s.numBases))
+    check('spike M_5^5: α = 8/7', s.alphaNum === 8 && s.alphaDen === 7, alphaOf(s))
+    check(
+      'spike M_5^5: HSW counts (500, 5000, 625, 3500)',
+      s.maxCounts.containBoth === 500 &&
+        s.maxCounts.avoidBoth === 5000 &&
+        s.maxCounts.onlyI === 625 &&
+        s.maxCounts.onlyJ === 3500,
+      JSON.stringify(s.maxCounts),
+    )
+  }
+}
+
 if (failures > 0) {
   console.error(`\n${failures} failure(s)`)
   process.exit(1)

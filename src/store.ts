@@ -229,14 +229,40 @@ export async function currentRecords(env: Bindings): Promise<RecordPoint[]> {
   return results
 }
 
-async function sha256Hex(s: string): Promise<string> {
-  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s))
+async function sha256Hex(data: string | Uint8Array): Promise<string> {
+  const bytes = typeof data === 'string' ? new TextEncoder().encode(data) : data
+  const digest = await crypto.subtle.digest('SHA-256', bytes as BufferSource)
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('')
 }
 
+// Canonical matroid hash. When the bases list is small its canonical JSON is
+// hashed; a huge list is hashed as raw little-endian masks instead of
+// materializing a many-MB string. The scheme is determined by the basis
+// count, so equal matroids always hash under the same scheme.
+async function basesHashOf(result: VerifiedMatroid): Promise<string> {
+  if (result.basesJson !== null) return sha256Hex(result.basesJson)
+  const bytes = new Uint8Array(result.basesMasks.length * 4)
+  const view = new DataView(bytes.buffer)
+  for (let i = 0; i < result.basesMasks.length; i++) view.setUint32(i * 4, result.basesMasks[i], true)
+  return sha256Hex(bytes)
+}
+
+interface RecordRow {
+  id: number
+  alpha_num: number
+  alpha_den: number
+  bases_hash: string
+}
+
+/** Exact fraction comparison; the cross products exceed 2^63 for large basis
+ * counts, so this must happen in BigInt here, not in SQLite. */
+const atLeast = (aNum: number, aDen: number, bNum: number, bDen: number): boolean =>
+  BigInt(aNum) * BigInt(bDen) >= BigInt(bNum) * BigInt(aDen)
+
 // Insert only when the constant strictly exceeds every stored record for this
-// ground-set size. D1 serializes writes, so the NOT EXISTS guard is race-free
-// (the cross-multiplied products stay below 2^63); the unique
+// ground-set size. The comparison is done exactly in JS; the insert is
+// guarded by "no row for this n newer than the one we compared against"
+// (optimistic concurrency, retried on the rare race). The unique
 // (n, alpha_num, alpha_den) index additionally rules out duplicate rows.
 export async function recordMatroid(
   env: Bindings,
@@ -244,56 +270,76 @@ export async function recordMatroid(
   provenance: string | null,
   userId: number,
 ): Promise<RecordStatus> {
-  const basesHash = await sha256Hex(result.basesJson)
-  const ins = await env.DB.prepare(
-    `INSERT INTO matroids (n, rank, num_bases, alpha_num, alpha_den, alpha_value,
-                           max_pairs, max_counts, representation_type, representation,
-                           field, bases, bases_hash, provenance, submitter_user_id)
-     SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15
-     WHERE NOT EXISTS (SELECT 1 FROM matroids WHERE n = ?1 AND alpha_num * ?5 >= ?4 * alpha_den)`,
-  )
-    .bind(
-      result.n,
-      result.rank,
-      result.numBases,
-      result.alphaNum,
-      result.alphaDen,
-      result.alphaValue,
-      JSON.stringify(result.maximizingPairs),
-      result.maxCounts ? JSON.stringify(result.maxCounts) : null,
-      result.representationType,
-      result.representation,
-      result.field,
-      result.basesJson.length <= BASES_STORE_MAX ? result.basesJson : null,
-      basesHash,
-      provenance,
-      userId,
+  const basesHash = await basesHashOf(result)
+  const currentFor = (n: number) =>
+    env.DB.prepare(
+      'SELECT id, alpha_num, alpha_den, bases_hash FROM matroids WHERE n = ? ORDER BY id DESC LIMIT 1',
     )
-    .run()
-  if ((ins.meta.changes ?? 0) > 0) {
-    return {
-      recorded: true,
-      recordAlphaNum: result.alphaNum,
-      recordAlphaDen: result.alphaDen,
-      matroidId: ins.meta.last_row_id as number,
+      .bind(n)
+      .first<RecordRow>()
+
+  const notRecorded = (row: RecordRow): RecordStatus => {
+    const status: RecordStatus = {
+      recorded: false,
+      recordAlphaNum: row.alpha_num,
+      recordAlphaDen: row.alpha_den,
+      matroidId: row.id,
     }
+    // On a tie, distinguish "resubmitted the record matroid itself" from "a
+    // different matroid with the same constant". Bases are stored
+    // canonically, so matroid equality is hash equality.
+    if (row.alpha_num === result.alphaNum && row.alpha_den === result.alphaDen) {
+      status.tiedExact = row.bases_hash === basesHash
+    }
+    return status
   }
-  const row = await env.DB.prepare(
-    'SELECT id, alpha_num, alpha_den, bases_hash FROM matroids WHERE n = ? ORDER BY id DESC LIMIT 1',
-  )
-    .bind(result.n)
-    .first<{ id: number; alpha_num: number; alpha_den: number; bases_hash: string }>()
-  const status: RecordStatus = {
-    recorded: false,
-    recordAlphaNum: row?.alpha_num ?? result.alphaNum,
-    recordAlphaDen: row?.alpha_den ?? result.alphaDen,
-    matroidId: row?.id ?? 0,
+
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const row = await currentFor(result.n)
+    if (row && atLeast(row.alpha_num, row.alpha_den, result.alphaNum, result.alphaDen)) {
+      return notRecorded(row)
+    }
+    const ins = await env.DB.prepare(
+      `INSERT INTO matroids (n, rank, num_bases, alpha_num, alpha_den, alpha_value,
+                             max_pairs, max_counts, representation_type, representation,
+                             field, bases, bases_hash, provenance, submitter_user_id)
+       SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15
+       WHERE NOT EXISTS (SELECT 1 FROM matroids WHERE n = ?1 AND id > ?16)`,
+    )
+      .bind(
+        result.n,
+        result.rank,
+        result.numBases,
+        result.alphaNum,
+        result.alphaDen,
+        result.alphaValue,
+        JSON.stringify(result.maximizingPairs),
+        result.maxCounts ? JSON.stringify(result.maxCounts) : null,
+        result.representationType,
+        result.representation,
+        result.field,
+        result.basesJson !== null && result.basesJson.length <= BASES_STORE_MAX
+          ? result.basesJson
+          : null,
+        basesHash,
+        provenance,
+        userId,
+        row?.id ?? 0,
+      )
+      .run()
+    if ((ins.meta.changes ?? 0) > 0) {
+      return {
+        recorded: true,
+        recordAlphaNum: result.alphaNum,
+        recordAlphaDen: result.alphaDen,
+        matroidId: ins.meta.last_row_id as number,
+      }
+    }
+    // A concurrent submission for this n landed between our read and insert;
+    // re-read and compare against it.
   }
-  // On a tie, distinguish "resubmitted the record matroid itself" from "a
-  // different matroid with the same constant". Bases are stored canonically,
-  // so matroid equality is hash equality.
-  if (row && row.alpha_num === result.alphaNum && row.alpha_den === result.alphaDen) {
-    status.tiedExact = row.bases_hash === basesHash
-  }
-  return status
+  const row = await currentFor(result.n)
+  return row
+    ? notRecorded(row)
+    : { recorded: false, recordAlphaNum: result.alphaNum, recordAlphaDen: result.alphaDen, matroidId: 0 }
 }

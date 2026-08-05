@@ -18,17 +18,27 @@
 // checked exactly, and every ratio is compared by exact integer cross
 // multiplication (in BigInt: the products can exceed 2^53).
 
-export const MAX_ELEMENTS = 18
+// The ground-set ceiling is set by full basis enumeration in a Worker
+// (128 MB memory, ~30 s CPU): the worst case is the uniform matroid, with
+// C(24,12) ≈ 2.7M bases taking a few seconds and ~30 MB. n = 26 would need
+// ~4x both, too close to the limits.
+export const MAX_ELEMENTS = 24
 export const MAX_LISTED_SETS = 5000
 export const MAX_MATRIX_CELLS = 5000
 export const MAX_FIELD_PRIME = 1_000_003 // p² must stay well below 2^53
 export const MAX_DATA_TEXT_BYTES = 1_000_000
 export const PROVENANCE_MAX = 2000
 
-// Elementary-operation budget for basis enumeration. Rational matrices use
-// exact BigInt elimination whose per-op cost is unbounded in principle, so
-// runaway inputs fail cleanly instead of burning worker CPU.
-const OP_BUDGET = 500_000_000
+/** The canonical bases list is materialized as JSON only up to this count
+ * (beyond it the list is never stored or displayed, and building it for
+ * millions of bases would exhaust worker memory). */
+export const BASES_JSON_MAX_COUNT = 5000
+
+// Elementary-operation budget for basis enumeration, so runaway inputs fail
+// cleanly instead of burning worker CPU. Rational matrices use exact BigInt
+// elimination whose per-op cost is much higher, so their ops are charged at
+// a multiple (FieldOps.costFactor).
+const OP_BUDGET = 4_000_000_000
 
 export const REPRESENTATION_TYPES = ['matrix', 'bases', 'circuits', 'hyperplanes'] as const
 export type RepresentationType = (typeof REPRESENTATION_TYPES)[number]
@@ -60,8 +70,11 @@ export interface VerifiedMatroid {
   representation: string
   /** 'Q' or the prime p as text, for matrix submissions. */
   field: string | null
-  /** Canonical JSON list of bases, each sorted, in sorted order. */
-  basesJson: string
+  /** Canonical JSON list of bases, each sorted, in sorted order; null when
+   * there are more than BASES_JSON_MAX_COUNT bases. */
+  basesJson: string | null
+  /** Canonical bases as sorted bitmasks (the source of truth for hashing). */
+  basesMasks: number[]
 }
 
 export type VerifyResult = { ok: false; error: string } | VerifiedMatroid
@@ -264,6 +277,8 @@ interface FieldOps<T> {
   eliminate(v: T[], pivot: T[], pos: number): void
   /** Optionally renormalize a new pivot vector in place. */
   normalize(v: T[]): void
+  /** Budget charge per vector entry eliminated (BigInt ops cost more). */
+  costFactor: number
 }
 
 function parsePrime(p: number): Fail | null {
@@ -315,6 +330,7 @@ function gfOps(p: number): FieldOps<number> {
       const f = inv(v[pos])
       for (let k = 0; k < v.length; k++) v[k] = (v[k] * f) % p
     },
+    costFactor: 1,
   }
 }
 
@@ -349,6 +365,7 @@ function rationalOps(): FieldOps<bigint> {
       }
       if (g > 1n) for (let k = 0; k < v.length; k++) v[k] /= g
     },
+    costFactor: 10,
   }
 }
 
@@ -359,7 +376,8 @@ function enumerateBases<T>(
   budget: { ops: number },
 ): number[] | Fail {
   const n = columns.length
-  const spend = (k: number): boolean => (budget.ops -= k) > 0
+  const cost = ops.costFactor
+  const spend = (k: number): boolean => (budget.ops -= k * cost) > 0
 
   // First pass: rank of the whole matrix, reusing the same elimination.
   const pivots: { vec: T[]; pos: number }[] = []
@@ -516,6 +534,29 @@ function computeAlpha(
   const coloops = bitsOf(inter)
   const eligible = bitsOf(union & ~inter)
 
+  // One pass over the bases accumulates, for every element and pair of
+  // elements, how many bases contain them; the four 2x2 cells for a pair
+  // follow by inclusion-exclusion. (A per-pair scan over millions of bases
+  // would cost C(n,2) full passes instead of one.)
+  const single = new Float64Array(n) // counts < 2^53, exact in doubles
+  const both = new Float64Array(n * n)
+  const els = new Int32Array(n)
+  for (const basis of bases) {
+    let m = basis
+    let k = 0
+    while (m) {
+      const low = m & -m
+      els[k++] = 31 - Math.clz32(low)
+      m ^= low
+    }
+    for (let a = 0; a < k; a++) {
+      single[els[a]]++
+      const row = els[a] * n
+      for (let c = a + 1; c < k; c++) both[row + els[c]]++
+    }
+  }
+
+  const total = bases.length
   let bestNum = 0n
   let bestDen = 1n
   let maximizingPairs: [number, number][] = []
@@ -524,21 +565,10 @@ function computeAlpha(
     for (let b = a + 1; b < eligible.length; b++) {
       const i = eligible[a]
       const j = eligible[b]
-      const bi = 1 << i
-      const bj = 1 << j
-      let containBoth = 0
-      let avoidBoth = 0
-      let onlyI = 0
-      let onlyJ = 0
-      for (const basis of bases) {
-        const hasI = basis & bi
-        const hasJ = basis & bj
-        if (hasI) {
-          if (hasJ) containBoth++
-          else onlyI++
-        } else if (hasJ) onlyJ++
-        else avoidBoth++
-      }
+      const containBoth = both[i * n + j]
+      const onlyI = single[i] - containBoth
+      const onlyJ = single[j] - containBoth
+      const avoidBoth = total - single[i] - single[j] + containBoth
       // Both denominator factors are positive for nonloop, noncoloop pairs.
       const num = BigInt(containBoth) * BigInt(avoidBoth)
       const den = BigInt(onlyI) * BigInt(onlyJ)
@@ -621,6 +651,8 @@ export function verify(
     representationType,
     representation: JSON.stringify(data),
     field,
-    basesJson: JSON.stringify(bases.map(bitsOf)),
+    basesJson:
+      bases.length <= BASES_JSON_MAX_COUNT ? JSON.stringify(bases.map(bitsOf)) : null,
+    basesMasks: bases,
   }
 }
