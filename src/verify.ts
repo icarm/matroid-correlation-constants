@@ -12,20 +12,25 @@
 // there is no eligible pair and the convention is α(M) = 0.
 //
 // A matroid is submitted as one complete description — a matrix over Q or a
-// prime field GF(p), the list of all bases, all circuits, or all hyperplanes.
-// Every description is reduced to the full list of bases as bitmasks over the
-// ground set (n ≤ 18, so a subset is one integer), the matroid axioms are
-// checked exactly, and every ratio is compared by exact integer cross
-// multiplication (in BigInt: the products can exceed 2^53).
+// finite field, the list of all bases, all circuits, or all hyperplanes.
+// Every description is reduced to a stream of basis bitmasks in ascending
+// numeric order (subsets of the ground set fit an int32). The bases are
+// never stored: the correlation constant needs only O(n²) pair counts, the
+// canonical JSON is kept only while small, and the canonical hash is a
+// chunked SHA-256 over the stream. The matroid axioms are checked exactly,
+// and every ratio is compared by exact integer cross multiplication (in
+// BigInt: the products can exceed 2^53).
 
 // The ground-set ceiling: subsets are int32 bitmasks, so n ≤ 30. What is
 // actually verifiable is decided by enumeration cost, not n — the search
 // visits every independent set, so the driver is Σ_{k ≤ rank} C(n, k),
-// bounded by INDEPENDENT_SET_BUDGET. Everything on ≤ 24 elements fits (the
-// bound is exactly 2^24); 25 to 30 elements are admitted only in low enough
-// rank (e.g. rank ≤ 10 at n = 26, rank ≤ 8 at n = 30).
+// bounded by INDEPENDENT_SET_BUDGET. Everything on ≤ 24 elements fits
+// (2^24 < the bound); larger ground sets are admitted only in low enough
+// rank (e.g. rank ≤ 12 at n = 26, rank ≤ 9 at n = 30). Since bases stream
+// through constant-memory accumulators rather than being stored, the bound
+// is sized purely against the worker CPU limit.
 export const MAX_ELEMENTS = 30
-const INDEPENDENT_SET_BUDGET = 2 ** 24
+const INDEPENDENT_SET_BUDGET = 2 ** 25
 
 // The circuit and hyperplane checks tabulate dependence over all 2^n
 // subsets, so those two descriptions stop at 24 elements (a 2^26 table plus
@@ -48,7 +53,7 @@ export const BASES_JSON_MAX_COUNT = 5000
 // limit in wrangler.jsonc). Rational matrices use exact BigInt elimination
 // whose per-op cost is much higher, so their ops are charged at a multiple
 // (FieldOps.costFactor).
-const OP_BUDGET = 8_000_000_000
+const OP_BUDGET = 16_000_000_000
 
 export const REPRESENTATION_TYPES = ['matrix', 'bases', 'circuits', 'hyperplanes'] as const
 export type RepresentationType = (typeof REPRESENTATION_TYPES)[number]
@@ -83,8 +88,10 @@ export interface VerifiedMatroid {
   /** Canonical JSON list of bases, each sorted, in sorted order; null when
    * there are more than BASES_JSON_MAX_COUNT bases. */
   basesJson: string | null
-  /** Canonical bases as sorted bitmasks (the source of truth for hashing). */
-  basesMasks: ArrayLike<number>
+  /** Canonical matroid hash: chunked SHA-256 over the basis-mask stream in
+   * ascending numeric order (little-endian 4-byte masks in 2^16-mask blocks;
+   * the final digest hashes the concatenated block digests). */
+  basesHash: string
 }
 
 export type VerifyResult = { ok: false; error: string } | VerifiedMatroid
@@ -585,12 +592,14 @@ function rationalOps(): FieldOps<bigint> {
   }
 }
 
-/** Row-reduce to at most `n` independent rows, then DFS-enumerate all bases. */
+/** Row-reduce to at most `n` independent rows, then DFS-stream every basis
+ * (in ascending mask order) into `visit`. Returns null on success. */
 function enumerateBases<T>(
   columns: T[][],
   ops: FieldOps<T>,
   budget: { ops: number },
-): Int32Array | Fail {
+  visit: (mask: number) => void,
+): Fail | null {
   const n = columns.length
   const cost = ops.costFactor
   const spend = (k: number): boolean => (budget.ops -= k * cost) > 0
@@ -620,12 +629,15 @@ function enumerateBases<T>(
     }
   }
   const rank = pivots.length
-  if (rank === 0) return Int32Array.of(0) // every column is zero: the empty set is the basis
+  if (rank === 0) {
+    visit(0) // every column is zero: the empty set is the basis
+    return null
+  }
 
   // The search visits every independent set; bound their possible number
-  // before starting. Everything on ≤ 24 elements passes (the budget is 2^24
-  // and Σ_k C(24,k) cannot exceed it); on 25 or 26 elements this admits only
-  // low ranks, where the count stays small.
+  // before starting. Everything on ≤ 24 elements passes (Σ_k C(24,k) = 2^24
+  // is under the budget); on larger ground sets this admits only low ranks,
+  // where the count stays small.
   let bound = 0
   let binom = 1 // C(n, 0)
   for (let k = 0; k <= rank; k++) {
@@ -638,26 +650,20 @@ function enumerateBases<T>(
     )
   }
 
-  // Depth-first search over columns in increasing order, keeping the current
-  // independent set's elimination state on an explicit stack. Basis masks
-  // are collected in a manually grown Int32Array: at 4 bytes per mask the
-  // largest admitted case (~5.3M bases) stays ~21 MB, where a plain JS array
-  // (8-byte slots plus growth copies) would crowd the worker's 128 MB.
-  let bases = new Int32Array(1024)
-  let count = 0
+  // Depth-first search choosing each basis's LARGEST column first, iterating
+  // candidates in ascending order — this emits bases in ascending numeric
+  // (colex) mask order, the canonical stream order shared by every
+  // description path. The current independent set's elimination state lives
+  // on an explicit stack.
   const stack: { vec: T[]; pos: number }[] = []
-  const dfs = (start: number, mask: number): Fail | null => {
+  const dfs = (limit: number, mask: number): Fail | null => {
     if (stack.length === rank) {
-      if (count === bases.length) {
-        const grown = new Int32Array(bases.length * 2)
-        grown.set(bases)
-        bases = grown
-      }
-      bases[count++] = mask
+      visit(mask)
       return null
     }
-    // Not enough columns left to reach full rank: prune.
-    for (let c = start; c <= n - (rank - stack.length); c++) {
+    // A column c must leave room for the (need - 1) smaller columns below it.
+    const need = rank - stack.length
+    for (let c = need - 1; c < limit; c++) {
       const v = columns[c].slice()
       for (const { vec, pos } of stack) {
         if (!spend(v.length)) {
@@ -669,22 +675,21 @@ function enumerateBases<T>(
       if (pos < 0) continue
       ops.normalize(v)
       stack.push({ vec: v, pos })
-      const failure = dfs(c + 1, mask | (1 << c))
+      const failure = dfs(c, mask | (1 << c))
       stack.pop()
       if (failure) return failure
     }
     return null
   }
-  const failure = dfs(0, 0)
-  if (failure) return failure
-  return bases.subarray(0, count)
+  return dfs(n, 0)
 }
 
 function matroidFromMatrix(
   n: number,
   fieldText: string,
   data: unknown,
-): { bases: Int32Array; field: string } | Fail {
+  visit: (mask: number) => void,
+): { field: string } | Fail {
   if (!Array.isArray(data) || data.length === 0 || !data.every((row) => Array.isArray(row))) {
     return fail('the matrix must be a nonempty JSON list of rows')
   }
@@ -730,9 +735,9 @@ function matroidFromMatrix(
       intRows.push(nums.map((num, k) => (num * lcm) / dens[k]))
     }
     const columns: bigint[][] = Array.from({ length: n }, (_, c) => intRows.map((row) => row[c]))
-    const bases = enumerateBases(columns, rationalOps(), budget)
-    if (isFail(bases)) return bases
-    return { bases: bases.sort(), field: 'Q' }
+    const failure = enumerateBases(columns, rationalOps(), budget, visit)
+    if (failure) return failure
+    return { field: 'Q' }
   }
 
   // GF(q): q a prime (up to MAX_FIELD_PRIME), or a prime power p^d with
@@ -777,40 +782,117 @@ function matroidFromMatrix(
       columns[c].push(cell)
     }
   }
-  const bases = enumerateBases(columns, gf, budget)
-  if (isFail(bases)) return bases
-  return { bases: bases.sort(), field: String(p ** d) }
+  const failure = enumerateBases(columns, gf, budget, visit)
+  if (failure) return failure
+  return { field: String(p ** d) }
 }
 
 // ---------------------------------------------------------------------------
-// The correlation constant from the list of bases.
+// Streaming consumption of the basis stream.
 
-function computeAlpha(
-  n: number,
-  bases: Int32Array | number[],
-): Pick<
-  VerifiedMatroid,
-  'loops' | 'coloops' | 'alphaNum' | 'alphaDen' | 'alphaValue' | 'maximizingPairs' | 'maxCounts'
-> {
-  let union = 0
-  let inter = (1 << n) - 1
-  for (const b of bases) {
-    union |= b
-    inter &= b
+// Minimal synchronous SHA-256: crypto.subtle.digest is async with no
+// streaming interface, and the canonical hash must interleave with basis
+// enumeration without buffering the stream.
+const SHA256_K = new Uint32Array([
+  0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+  0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+  0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+  0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+  0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+  0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+  0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+  0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2,
+])
+
+export function sha256(data: Uint8Array): Uint8Array {
+  const H = new Int32Array([
+    0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19,
+  ])
+  const byteLen = data.length
+  const padded = new Uint8Array((((byteLen + 8) >> 6) + 1) << 6)
+  padded.set(data)
+  padded[byteLen] = 0x80
+  const dv = new DataView(padded.buffer)
+  dv.setUint32(padded.length - 8, Math.floor(byteLen / 0x20000000))
+  dv.setUint32(padded.length - 4, (byteLen << 3) >>> 0)
+  const w = new Int32Array(64)
+  for (let off = 0; off < padded.length; off += 64) {
+    for (let t = 0; t < 16; t++) w[t] = dv.getUint32(off + t * 4)
+    for (let t = 16; t < 64; t++) {
+      const x = w[t - 15]
+      const y = w[t - 2]
+      const s0 = ((x >>> 7) | (x << 25)) ^ ((x >>> 18) | (x << 14)) ^ (x >>> 3)
+      const s1 = ((y >>> 17) | (y << 15)) ^ ((y >>> 19) | (y << 13)) ^ (y >>> 10)
+      w[t] = (w[t - 16] + s0 + w[t - 7] + s1) | 0
+    }
+    let a = H[0], b = H[1], c = H[2], d = H[3], e = H[4], f = H[5], g = H[6], h = H[7]
+    for (let t = 0; t < 64; t++) {
+      const S1 = ((e >>> 6) | (e << 26)) ^ ((e >>> 11) | (e << 21)) ^ ((e >>> 25) | (e << 7))
+      const ch = (e & f) ^ (~e & g)
+      const t1 = (h + S1 + ch + SHA256_K[t] + w[t]) | 0
+      const S0 = ((a >>> 2) | (a << 30)) ^ ((a >>> 13) | (a << 19)) ^ ((a >>> 22) | (a << 10))
+      const maj = (a & b) ^ (a & c) ^ (b & c)
+      const t2 = (S0 + maj) | 0
+      h = g; g = f; f = e; e = (d + t1) | 0; d = c; c = b; b = a; a = (t1 + t2) | 0
+    }
+    H[0] = (H[0] + a) | 0; H[1] = (H[1] + b) | 0; H[2] = (H[2] + c) | 0; H[3] = (H[3] + d) | 0
+    H[4] = (H[4] + e) | 0; H[5] = (H[5] + f) | 0; H[6] = (H[6] + g) | 0; H[7] = (H[7] + h) | 0
   }
-  const loops = bitsOf(~union & ((1 << n) - 1))
-  const coloops = bitsOf(inter)
-  const eligible = bitsOf(union & ~inter)
+  const out = new Uint8Array(32)
+  const ov = new DataView(out.buffer)
+  for (let i = 0; i < 8; i++) ov.setUint32(i * 4, H[i] >>> 0)
+  return out
+}
 
-  // One pass over the bases accumulates, for every element and pair of
-  // elements, how many bases contain them; the four 2x2 cells for a pair
-  // follow by inclusion-exclusion. (A per-pair scan over millions of bases
-  // would cost C(n,2) full passes instead of one.)
-  const single = new Float64Array(n) // counts < 2^53, exact in doubles
-  const both = new Float64Array(n * n)
-  const els = new Int32Array(n)
-  for (const basis of bases) {
-    let m = basis
+const toHex = (bytes: Uint8Array): string =>
+  [...bytes].map((b) => b.toString(16).padStart(2, '0')).join('')
+
+const HASH_BLOCK_MASKS = 65536 // 256 KiB of masks per hashed block
+
+/** Consumes the ascending stream of basis masks with constant memory: O(n²)
+ * pair counts for the correlation constant, the first BASES_JSON_MAX_COUNT
+ * masks for the canonical JSON, and a chunked SHA-256 for the canonical
+ * matroid hash. Nothing scales with the number of bases. */
+class BasesConsumer {
+  private readonly n: number
+  private count = 0
+  private firstMask = 0
+  private union = 0
+  private inter: number
+  private readonly single: Float64Array // counts < 2^53, exact in doubles
+  private readonly both: Float64Array
+  private readonly els: Int32Array
+  private kept: number[] | null = []
+  private readonly block = new Uint8Array(HASH_BLOCK_MASKS * 4)
+  private readonly blockView = new DataView(this.block.buffer)
+  private blockLen = 0
+  private readonly blockDigests: Uint8Array[] = []
+
+  constructor(n: number) {
+    this.n = n
+    this.inter = (1 << n) - 1
+    this.single = new Float64Array(n)
+    this.both = new Float64Array(n * n)
+    this.els = new Int32Array(n)
+  }
+
+  visit(mask: number): void {
+    if (this.count === 0) this.firstMask = mask
+    this.count++
+    this.union |= mask
+    this.inter &= mask
+    if (this.kept) {
+      if (this.kept.length < BASES_JSON_MAX_COUNT) this.kept.push(mask)
+      else this.kept = null
+    }
+    this.blockView.setUint32(this.blockLen, mask, true)
+    this.blockLen += 4
+    if (this.blockLen === this.block.length) this.flushBlock()
+    // Accumulate, for every element and pair of elements, how many bases
+    // contain them; the four 2x2 cells for a pair follow by
+    // inclusion-exclusion in finish().
+    const els = this.els
+    let m = mask
     let k = 0
     while (m) {
       const low = m & -m
@@ -818,54 +900,85 @@ function computeAlpha(
       m ^= low
     }
     for (let a = 0; a < k; a++) {
-      single[els[a]]++
-      const row = els[a] * n
-      for (let c = a + 1; c < k; c++) both[row + els[c]]++
+      this.single[els[a]]++
+      const row = els[a] * this.n
+      for (let c = a + 1; c < k; c++) this.both[row + els[c]]++
     }
   }
 
-  const total = bases.length
-  let bestNum = 0n
-  let bestDen = 1n
-  let maximizingPairs: [number, number][] = []
-  let maxCounts: MaxCounts | null = null
-  for (let a = 0; a < eligible.length; a++) {
-    for (let b = a + 1; b < eligible.length; b++) {
-      const i = eligible[a]
-      const j = eligible[b]
-      const containBoth = both[i * n + j]
-      const onlyI = single[i] - containBoth
-      const onlyJ = single[j] - containBoth
-      const avoidBoth = total - single[i] - single[j] + containBoth
-      // Both denominator factors are positive for nonloop, noncoloop pairs.
-      const num = BigInt(containBoth) * BigInt(avoidBoth)
-      const den = BigInt(onlyI) * BigInt(onlyJ)
-      const cmp = maxCounts === null ? 1n : num * bestDen - bestNum * den
-      if (cmp > 0n) {
-        bestNum = num
-        bestDen = den
-        maximizingPairs = [[i, j]]
-        maxCounts = { containBoth, avoidBoth, onlyI, onlyJ }
-      } else if (cmp === 0n) {
-        maximizingPairs.push([i, j])
+  private flushBlock(): void {
+    this.blockDigests.push(sha256(this.block.subarray(0, this.blockLen)))
+    this.blockLen = 0
+  }
+
+  finish(): Pick<
+    VerifiedMatroid,
+    | 'rank'
+    | 'numBases'
+    | 'loops'
+    | 'coloops'
+    | 'alphaNum'
+    | 'alphaDen'
+    | 'alphaValue'
+    | 'maximizingPairs'
+    | 'maxCounts'
+    | 'basesJson'
+    | 'basesHash'
+  > {
+    if (this.blockLen > 0 || this.blockDigests.length === 0) this.flushBlock()
+    const concat = new Uint8Array(this.blockDigests.length * 32)
+    this.blockDigests.forEach((d, i) => concat.set(d, i * 32))
+    const basesHash = toHex(sha256(concat))
+
+    const n = this.n
+    const loops = bitsOf(~this.union & ((1 << n) - 1))
+    const coloops = bitsOf(this.inter)
+    const eligible = bitsOf(this.union & ~this.inter)
+    const total = this.count
+    let bestNum = 0n
+    let bestDen = 1n
+    let maximizingPairs: [number, number][] = []
+    let maxCounts: MaxCounts | null = null
+    for (let a = 0; a < eligible.length; a++) {
+      for (let b = a + 1; b < eligible.length; b++) {
+        const i = eligible[a]
+        const j = eligible[b]
+        const containBoth = this.both[i * n + j]
+        const onlyI = this.single[i] - containBoth
+        const onlyJ = this.single[j] - containBoth
+        const avoidBoth = total - this.single[i] - this.single[j] + containBoth
+        // Both denominator factors are positive for nonloop, noncoloop pairs.
+        const num = BigInt(containBoth) * BigInt(avoidBoth)
+        const den = BigInt(onlyI) * BigInt(onlyJ)
+        const cmp = maxCounts === null ? 1n : num * bestDen - bestNum * den
+        if (cmp > 0n) {
+          bestNum = num
+          bestDen = den
+          maximizingPairs = [[i, j]]
+          maxCounts = { containBoth, avoidBoth, onlyI, onlyJ }
+        } else if (cmp === 0n) {
+          maximizingPairs.push([i, j])
+        }
       }
     }
-  }
-  if (maximizingPairs.length === 0) {
-    // Only loops and coloops: α(M) = 0 by convention.
-    return { loops, coloops, alphaNum: 0, alphaDen: 1, alphaValue: 0, maximizingPairs, maxCounts }
-  }
-  const g = bigGcd(bestNum, bestDen)
-  const alphaNum = Number(bestNum / g)
-  const alphaDen = Number(bestDen / g)
-  return {
-    loops,
-    coloops,
-    alphaNum,
-    alphaDen,
-    alphaValue: alphaNum / alphaDen,
-    maximizingPairs,
-    maxCounts,
+    const base = {
+      rank: popcount(this.firstMask),
+      numBases: total,
+      loops,
+      coloops,
+      maximizingPairs,
+      maxCounts,
+      basesJson: this.kept ? JSON.stringify(this.kept.map(bitsOf)) : null,
+      basesHash,
+    }
+    if (maximizingPairs.length === 0) {
+      // Only loops and coloops: α(M) = 0 by convention.
+      return { ...base, alphaNum: 0, alphaDen: 1, alphaValue: 0 }
+    }
+    const g = bigGcd(bestNum, bestDen)
+    const alphaNum = Number(bestNum / g)
+    const alphaDen = Number(bestDen / g)
+    return { ...base, alphaNum, alphaDen, alphaValue: alphaNum / alphaDen }
   }
 }
 
@@ -891,12 +1004,13 @@ export function verify(
   }
   const representationType = type as RepresentationType
 
-  let bases: Int32Array | number[]
+  // All description paths feed the same streaming consumer, in the same
+  // canonical ascending mask order.
+  const consumer = new BasesConsumer(n)
   let field: string | null = null
   if (representationType === 'matrix') {
-    const parsed = matroidFromMatrix(n, fieldText, data)
+    const parsed = matroidFromMatrix(n, fieldText, data, (mask) => consumer.visit(mask))
     if (isFail(parsed)) return { ok: false, error: parsed.error }
-    bases = parsed.bases
     field = parsed.field
   } else {
     const parsed =
@@ -906,21 +1020,15 @@ export function verify(
           ? matroidFromCircuits(n, data)
           : matroidFromHyperplanes(n, data)
     if (isFail(parsed)) return { ok: false, error: parsed.error }
-    bases = parsed
+    for (const mask of parsed) consumer.visit(mask)
   }
 
-  const rank = popcount(bases[0])
   return {
     ok: true,
     n,
-    rank,
-    numBases: bases.length,
-    ...computeAlpha(n, bases),
+    ...consumer.finish(),
     representationType,
     representation: JSON.stringify(data),
     field,
-    basesJson:
-      bases.length <= BASES_JSON_MAX_COUNT ? JSON.stringify(Array.from(bases, bitsOf)) : null,
-    basesMasks: bases,
   }
 }

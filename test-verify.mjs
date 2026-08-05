@@ -1,6 +1,7 @@
 // Exercises src/verify.ts with known matroids. Run via `npm test`
 // (Node 22.6+: type stripping lets Node import the .ts directly).
-import { conwayPolynomial, verify } from './src/verify.ts'
+import { createHash } from 'node:crypto'
+import { conwayPolynomial, sha256, verify } from './src/verify.ts'
 
 let failures = 0
 const check = (name, cond, detail = '') => {
@@ -30,6 +31,21 @@ for (const [kind, r] of Object.entries(u24)) {
     `U(2,4) via ${kind}: same bases as matrix`,
     r.basesJson === u24.matrix.basesJson,
   )
+  check(
+    `U(2,4) via ${kind}: same canonical hash as matrix`,
+    r.basesHash === u24.matrix.basesHash,
+    `${r.basesHash} vs ${u24.matrix.basesHash}`,
+  )
+}
+
+// The in-house synchronous SHA-256 against node's, across the padding
+// boundary cases (empty, one block, exact block, multi-block).
+for (const len of [0, 3, 55, 56, 63, 64, 65, 1000, 262144]) {
+  const buf = new Uint8Array(len)
+  for (let i = 0; i < len; i++) buf[i] = (i * 37 + 11) % 256
+  const ours = [...sha256(buf)].map((b) => b.toString(16).padStart(2, '0')).join('')
+  const nodes = createHash('sha256').update(buf).digest('hex')
+  check(`sha256 parity at ${len} bytes`, ours === nodes, `${ours} vs ${nodes}`)
 }
 
 // The 12-element rank-6 ternary record: α = 100/81 with basis counts
@@ -323,11 +339,11 @@ check('n = 31 rejected', !tooMany.ok && /at most 30/.test(tooMany.error), alphaO
   )
   const big = verify(26, 'matrix', String(p), cauchy)
   check('rank 13 on 26 elements declined', !big.ok && /too large to verify/.test(big.error), alphaOf(big))
-  const cauchy30 = Array.from({ length: 9 }, (_, i) =>
+  const cauchy30 = Array.from({ length: 10 }, (_, i) =>
     Array.from({ length: 30 }, (_, j) => inv(i + j + 100)),
   )
   const big30 = verify(30, 'matrix', String(p), cauchy30)
-  check('rank 9 on 30 elements declined', !big30.ok && /too large to verify/.test(big30.error), alphaOf(big30))
+  check('rank 10 on 30 elements declined', !big30.ok && /too large to verify/.test(big30.error), alphaOf(big30))
 }
 
 const bigCircuits = verify(25, 'circuits', '', [[0, 1, 2]])

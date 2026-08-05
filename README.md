@@ -28,12 +28,16 @@ families approach 4/3. The challenge: a concrete matroid with α(M) ≥ 4/3.
   Verification is pure TypeScript (`src/verify.ts`): the matroid axioms are
   checked (basis exchange, or the circuit axioms), every basis is
   enumerated, and all ratios are compared by exact integer cross
-  multiplication. Limits: n ≤ 30, ≤ 5,000 listed sets, ≤ 5,000 matrix
-  entries. (The ceiling is full basis enumeration in a Worker: everything
-  on ≤ 24 elements is accepted; beyond that, only ranks whose independent
-  sets number at most 2^24 — e.g. rank ≤ 10 at n = 26, rank ≤ 8 at n = 30.
-  Circuit and hyperplane descriptions stop at 24 elements, since their
-  axiom checks tabulate all 2^n subsets.)
+  multiplication. Bases stream through constant-memory accumulators — the
+  pair counts behind α, a canonical JSON kept only while small, and a
+  chunked SHA-256 of the ascending mask stream (the canonical matroid hash
+  used for exact-tie detection) — so nothing scales with the number of
+  bases. Limits: n ≤ 30, ≤ 5,000 listed sets, ≤ 5,000 matrix entries. (The
+  ceiling is enumeration CPU: everything on ≤ 24 elements is accepted;
+  beyond that, only ranks whose independent sets number at most 2^25 —
+  e.g. rank ≤ 12 at n = 26, rank ≤ 9 at n = 30, ~45 s worst. Circuit and
+  hyperplane descriptions stop at 24 elements, since their axiom checks
+  tabulate all 2^n subsets.)
 - **Records.** A submission whose constant strictly beats the record for
   its ground-set size n is saved and attributed; beaten records are kept as
   history. The landing page plots the record α against n with the

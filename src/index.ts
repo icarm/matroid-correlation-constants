@@ -303,7 +303,7 @@ const RESULT_FLASH_TTL_SEC = 10 * 60
 /** Trim the heavyweight fields before flashing a result to KV. */
 function slimResult(result: VerifyResult): VerifyResult {
   if (!result.ok) return result
-  return { ...result, representation: '', basesJson: null, basesMasks: [] }
+  return { ...result, representation: '', basesJson: null }
 }
 
 // Post/Redirect/Get: a record-setting submission redirects to its new matroid
@@ -413,7 +413,7 @@ app.post('/api/verify', async (c) => {
   const record = await recordMatroid(c.env, result, provenanceText || null, user.id)
   // Echoing the (possibly large) bases and description back is redundant for
   // API users.
-  const { basesJson: _bases, basesMasks: _masks, representation: _rep, ...rest } = result
+  const { basesJson: _bases, representation: _rep, ...rest } = result
   return c.json({ ...rest, record })
 })
 

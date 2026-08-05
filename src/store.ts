@@ -229,24 +229,6 @@ export async function currentRecords(env: Bindings): Promise<RecordPoint[]> {
   return results
 }
 
-async function sha256Hex(data: string | Uint8Array): Promise<string> {
-  const bytes = typeof data === 'string' ? new TextEncoder().encode(data) : data
-  const digest = await crypto.subtle.digest('SHA-256', bytes as BufferSource)
-  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('')
-}
-
-// Canonical matroid hash. When the bases list is small its canonical JSON is
-// hashed; a huge list is hashed as raw little-endian masks instead of
-// materializing a many-MB string. The scheme is determined by the basis
-// count, so equal matroids always hash under the same scheme.
-async function basesHashOf(result: VerifiedMatroid): Promise<string> {
-  if (result.basesJson !== null) return sha256Hex(result.basesJson)
-  const bytes = new Uint8Array(result.basesMasks.length * 4)
-  const view = new DataView(bytes.buffer)
-  for (let i = 0; i < result.basesMasks.length; i++) view.setUint32(i * 4, result.basesMasks[i], true)
-  return sha256Hex(bytes)
-}
-
 interface RecordRow {
   id: number
   alpha_num: number
@@ -270,7 +252,7 @@ export async function recordMatroid(
   provenance: string | null,
   userId: number,
 ): Promise<RecordStatus> {
-  const basesHash = await basesHashOf(result)
+  const basesHash = result.basesHash
   const currentFor = (n: number) =>
     env.DB.prepare(
       'SELECT id, alpha_num, alpha_den, bases_hash FROM matroids WHERE n = ? ORDER BY id DESC LIMIT 1',
