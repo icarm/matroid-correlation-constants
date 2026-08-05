@@ -170,19 +170,17 @@ function heroSection(records: RecordPoint[]): string {
   for (const r of records) {
     if (r.is_current && (best === null || r.alpha_value > best.alpha_value)) best = r
   }
-  const card = best
-    ? `<a class="record-card" href="/matroid/${best.id}">
+  const bestLine = best
+    ? `Best single matroid: <a href="/matroid/${best.id}">${alphaVar} = ${fmtAlpha(best.alpha_num, best.alpha_den)}
+       &approx; ${best.alpha_value.toFixed(4)}</a>${best.name ? ` &mdash; ${escapeHtml(best.name)}` : ''}
+       (${best.n} elements${best.field ? `, GF(${escapeHtml(best.field)})` : ''})`
+    : 'No verified records yet &mdash; be the first dot on the board.'
+  const card = `<div class="record-card">
         <p class="eyebrow">The record to beat</p>
-        <p class="record-card-value">${fmtAlpha(best.alpha_num, best.alpha_den)}</p>
-        <p class="record-card-approx">&approx; ${best.alpha_value.toFixed(4)}</p>
-        <p class="record-card-meta">${best.name ? `${escapeHtml(best.name)} &mdash; ` : ''}${best.n} elements,
-        rank ${best.rank}${best.field ? `, GF(${escapeHtml(best.field)})` : ''}</p>
-        <p class="record-card-goal">the 4/3 challenge &approx; 1.3333 stands open</p>
-      </a>`
-    : `<div class="record-card">
-        <p class="eyebrow">The record to beat</p>
-        <p class="record-card-value">&mdash;</p>
-        <p class="record-card-meta">No verified records yet. Be the first dot on the board.</p>
+        <p class="record-card-value">4/3</p>
+        <p class="record-card-approx">&approx; 1.3333 &mdash; reached by known families only in the limit</p>
+        <p class="record-card-meta">${bestLine}</p>
+        <p class="record-card-goal">verify ${alphaVar}(<var>M</var>) &ge; 4/3 for a single matroid to claim it</p>
       </div>`
   return `
   <section class="hero">
