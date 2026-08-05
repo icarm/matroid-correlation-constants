@@ -367,7 +367,10 @@ function recordSection(result: { alphaNum: number; alphaDen: number; n: number }
   }
   if (record.recordAlphaNum === result.alphaNum && record.recordAlphaDen === result.alphaDen) {
     if (record.tiedExact) {
-      return `<p class="muted">This is exactly the ${recordLink('current record matroid')} for n = ${result.n} (${alphaVar} = ${recordAlpha}), basis for basis.</p>`
+      const cert = record.certificateAttached
+        ? ' Your matrix was attached to it as a representability certificate — the record now carries the field badge.'
+        : ''
+      return `<p class="muted">This is exactly the ${recordLink('current record matroid')} for n = ${result.n} (${alphaVar} = ${recordAlpha}), basis for basis.${cert}</p>`
     }
     return `<p class="muted">Ties the ${recordLink('current record')} for n = ${result.n} (${alphaVar} = ${recordAlpha}) with a <em>different</em> matroid of the same constant &mdash; the standing record keeps its place.</p>`
   }
@@ -636,7 +639,11 @@ export function apiDocsPage(user: User | null = null): string {
       (the error pinpoints a failing exchange or circuit elimination), or a limit is exceeded.
       On success, <code>record.recorded</code> reports whether the record book changed; on a tie,
       <code>record.tiedExact</code> reports whether the submission is the record matroid itself
-      (<code>true</code>) or a different matroid with the same constant (<code>false</code>).</p>
+      (<code>true</code>) or a different matroid with the same constant (<code>false</code>).
+      An exact tie can still add information: a matrix over a field, resubmitting a record that
+      has no verified field, is attached to the record as a representability certificate
+      (reported as <code>record.certificateAttached</code>) — so proving a field for an existing
+      combinatorial record is a useful submission, not a rejected duplicate.</p>
       <pre><code>${escapeHtml(verifyResp)}</code></pre>
       <p>The same matroid described by its bases instead:</p>
       <pre><code>${escapeHtml(basesReq)}</code></pre>
@@ -775,6 +782,15 @@ export function matroidDetailPage(
         <pre class="elements">${escapeHtml(formatListJson(m.representation))}</pre>
         ${basesBlock}
       </section>
+      ${
+        m.cert_matrix
+          ? `<section class="representation">
+        <h3>Representability certificate ${fieldBadge(m.cert_field)}</h3>
+        <p class="muted">A matrix later verified to define exactly this matroid, basis for basis.</p>
+        <pre class="elements">${escapeHtml(formatListJson(m.cert_matrix))}</pre>
+      </section>`
+          : ''
+      }
       ${pairBlock}
       ${provenanceBlock}
       ${commentarySection(m.id, comment, user)}
@@ -970,7 +986,7 @@ export function matroidsPage(
         <td class="num">${m.num_bases.toLocaleString('en-US')}</td>
         <td class="num">${fmtAlpha(m.alpha_num, m.alpha_den)}</td>
         <td class="num">${m.alpha_value.toFixed(4)}</td>
-        <td>${escapeHtml(m.representation_type)}${m.field ? ` ${fieldBadge(m.field)}` : ''}</td>
+        <td>${escapeHtml(m.representation_type)}${m.field ? ` ${fieldBadge(m.field)}` : m.cert_field ? ` ${fieldBadge(m.cert_field)}` : ''}</td>
         <td>${m.submitter ? escapeHtml(m.submitter) : '<span class="muted">anonymous</span>'}</td>
         <td>${escapeHtml(m.created_at)}</td>
         <td>${m.is_current ? 'current' : '<span class="muted">superseded</span>'}</td>

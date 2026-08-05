@@ -35,6 +35,8 @@ export interface MatroidView {
   representation_type: string
   representation: string
   field: string | null
+  cert_field: string | null
+  cert_matrix: string | null
   bases: string | null
   provenance: string | null
   created_at: string
@@ -52,7 +54,8 @@ export async function loadMatroid(
   const matroid = await env.DB.prepare(
     `SELECT m.id, m.n, m.rank, m.num_bases, m.alpha_num, m.alpha_den, m.alpha_value,
             m.max_pairs, m.max_counts, m.representation_type, m.representation,
-            m.field, m.bases, m.provenance, m.created_at, m.current_comment_id,
+            m.field, m.cert_field, m.cert_matrix, m.bases, m.provenance,
+            m.created_at, m.current_comment_id,
             u.display_name AS submitter_name,
             (SELECT id FROM matroids WHERE n = m.n ORDER BY id DESC LIMIT 1) AS record_id,
             (SELECT alpha_num FROM matroids WHERE n = m.n ORDER BY id DESC LIMIT 1) AS record_alpha_num,
@@ -184,6 +187,7 @@ export interface MatroidListRow {
   alpha_value: number
   representation_type: string
   field: string | null
+  cert_field: string | null
   created_at: string
   submitter: string | null
   is_current: number // SQLite boolean: 1 when still the record for n
@@ -193,7 +197,7 @@ export interface MatroidListRow {
 export function allMatroids(env: Bindings): Promise<MatroidListRow[]> {
   return env.DB.prepare(
     `SELECT m.id, m.n, m.rank, m.num_bases, m.alpha_num, m.alpha_den, m.alpha_value,
-            m.representation_type, m.field, m.created_at,
+            m.representation_type, m.field, m.cert_field, m.created_at,
             u.display_name AS submitter,
             (m.id = (SELECT MAX(id) FROM matroids WHERE n = m.n)) AS is_current
        FROM matroids m LEFT JOIN users u ON u.id = m.submitter_user_id
@@ -217,6 +221,12 @@ export interface RecordStatus {
    * false when it is a different matroid with the same constant.
    */
   tiedExact?: boolean
+  /**
+   * Set when an exact tie carried new information: the submission was a
+   * matrix over a field and the record row had no verified field, so the
+   * matrix was attached to the record as a representability certificate.
+   */
+  certificateAttached?: boolean
 }
 
 /** The current record matroid for every ground-set size that has one. */
@@ -234,6 +244,8 @@ interface RecordRow {
   alpha_num: number
   alpha_den: number
   bases_hash: string
+  field: string | null
+  cert_field: string | null
 }
 
 /** Exact fraction comparison; the cross products exceed 2^63 for large basis
@@ -255,12 +267,13 @@ export async function recordMatroid(
   const basesHash = result.basesHash
   const currentFor = (n: number) =>
     env.DB.prepare(
-      'SELECT id, alpha_num, alpha_den, bases_hash FROM matroids WHERE n = ? ORDER BY id DESC LIMIT 1',
+      `SELECT id, alpha_num, alpha_den, bases_hash, field, cert_field
+         FROM matroids WHERE n = ? ORDER BY id DESC LIMIT 1`,
     )
       .bind(n)
       .first<RecordRow>()
 
-  const notRecorded = (row: RecordRow): RecordStatus => {
+  const notRecorded = async (row: RecordRow): Promise<RecordStatus> => {
     const status: RecordStatus = {
       recorded: false,
       recordAlphaNum: row.alpha_num,
@@ -272,6 +285,26 @@ export async function recordMatroid(
     // canonically, so matroid equality is hash equality.
     if (row.alpha_num === result.alphaNum && row.alpha_den === result.alphaDen) {
       status.tiedExact = row.bases_hash === basesHash
+      // An exact resubmission can still add information: a matrix over a
+      // field, tying a record that has no verified field, becomes a
+      // representability certificate on the existing row rather than being
+      // discarded. (The guard in the UPDATE keeps this race-safe and
+      // first-certificate-wins.)
+      if (
+        status.tiedExact &&
+        result.representationType === 'matrix' &&
+        result.field !== null &&
+        row.field === null &&
+        row.cert_field === null
+      ) {
+        const upd = await env.DB.prepare(
+          `UPDATE matroids SET cert_field = ?, cert_matrix = ?
+             WHERE id = ? AND field IS NULL AND cert_field IS NULL`,
+        )
+          .bind(result.field, result.representation, row.id)
+          .run()
+        if ((upd.meta.changes ?? 0) > 0) status.certificateAttached = true
+      }
     }
     return status
   }

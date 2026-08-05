@@ -100,7 +100,7 @@ app.get('/database.json', async (c) => {
   const { results } = await c.env.DB.prepare(
     `SELECT m.id, m.n, m.rank, m.num_bases, m.alpha_num, m.alpha_den, m.alpha_value,
             m.max_pairs, m.max_counts, m.representation_type, m.representation,
-            m.field, m.bases, m.provenance, m.created_at,
+            m.field, m.cert_field, m.cert_matrix, m.bases, m.provenance, m.created_at,
             u.display_name AS submitter,
             (m.id = (SELECT MAX(id) FROM matroids WHERE n = m.n)) AS is_current
        FROM matroids m LEFT JOIN users u ON u.id = m.submitter_user_id
@@ -118,6 +118,8 @@ app.get('/database.json', async (c) => {
     representation_type: string
     representation: string
     field: string | null
+    cert_field: string | null
+    cert_matrix: string | null
     bases: string | null
     provenance: string | null
     created_at: string
@@ -143,6 +145,8 @@ app.get('/database.json', async (c) => {
     representation_type: r.representation_type,
     representation: parse(r.representation),
     field: r.field,
+    cert_field: r.cert_field,
+    cert_matrix: parse(r.cert_matrix),
     bases: parse(r.bases),
     provenance: r.provenance,
     submitter: r.submitter,
