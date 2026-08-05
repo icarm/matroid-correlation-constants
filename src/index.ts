@@ -343,6 +343,55 @@ function parseMeta(raw: {
   return meta
 }
 
+/** Parse an optional claimed α: an exact nonnegative fraction as "a/b", an
+ * integer, or {"numerator", "denominator"}. Decimals are refused — the whole
+ * point of the claim is exactness. Returns null when absent. */
+function parseClaimedAlpha(
+  raw: unknown,
+): { num: bigint; den: bigint } | null | { error: string } {
+  if (raw === undefined || raw === null || raw === '') return null
+  let text: string
+  if (typeof raw === 'string') text = raw.trim()
+  else if (typeof raw === 'number' && Number.isSafeInteger(raw) && raw >= 0) text = String(raw)
+  else if (typeof raw === 'object') {
+    const o = raw as { numerator?: unknown; denominator?: unknown }
+    if (
+      typeof o.numerator === 'number' &&
+      Number.isSafeInteger(o.numerator) &&
+      typeof o.denominator === 'number' &&
+      Number.isSafeInteger(o.denominator)
+    ) {
+      text = `${o.numerator}/${o.denominator}`
+    } else {
+      return { error: 'claimed α must be "a/b", an integer, or {"numerator": a, "denominator": b}' }
+    }
+  } else {
+    return { error: 'claimed α must be "a/b", an integer, or {"numerator": a, "denominator": b}' }
+  }
+  if (text === '') return null
+  const m = /^(\d{1,15})(?:\s*\/\s*([1-9]\d{0,14}))?$/.exec(text)
+  if (!m) {
+    return {
+      error: `could not parse the claimed α ${JSON.stringify(text)}: give an exact nonnegative fraction like "100/81" (decimals are not exact)`,
+    }
+  }
+  return { num: BigInt(m[1]), den: m[2] ? BigInt(m[2]) : 1n }
+}
+
+/** Exact claim-versus-computed comparison; a mismatch is the tripwire for
+ * "the data does not describe the matroid the submitter had in mind". */
+function claimMismatch(
+  claim: { num: bigint; den: bigint },
+  result: { alphaNum: number; alphaDen: number; alphaValue: number },
+): string | null {
+  if (BigInt(result.alphaNum) * claim.den === claim.num * BigInt(result.alphaDen)) return null
+  return (
+    `the claimed α = ${claim.num}/${claim.den} does not match the verified α = ` +
+    `${result.alphaNum}/${result.alphaDen} ≈ ${result.alphaValue.toFixed(6)} — ` +
+    'check that the data describes the intended matroid (nothing was recorded)'
+  )
+}
+
 function verifyFromText(
   nText: string,
   typeText: string,
@@ -424,6 +473,7 @@ app.post('/verify', async (c) => {
     aiChatUrlValue: typeof body.ai_chat_url === 'string' ? body.ai_chat_url : '',
     citationValue: typeof body.citation === 'string' ? body.citation : '',
     provenanceValue: typeof body.provenance === 'string' ? body.provenance : '',
+    claimedAlphaValue: typeof body.claimed_alpha === 'string' ? body.claimed_alpha : '',
   }
   const meta = parseMeta({
     name: form.nameValue,
@@ -436,8 +486,17 @@ app.post('/verify', async (c) => {
     citation: form.citationValue,
     provenance: form.provenanceValue,
   })
-  const result: VerifyResult =
-    'error' in meta ? { ok: false, error: meta.error } : verifyFromText(nText, typeText, fieldText, dataText)
+  const claim = parseClaimedAlpha(form.claimedAlphaValue)
+  let result: VerifyResult =
+    'error' in meta
+      ? { ok: false, error: meta.error }
+      : claim !== null && 'error' in claim
+        ? { ok: false, error: claim.error }
+        : verifyFromText(nText, typeText, fieldText, dataText)
+  if (result.ok && claim !== null && !('error' in claim)) {
+    const mismatch = claimMismatch(claim, result)
+    if (mismatch) result = { ok: false, error: mismatch }
+  }
   let record: RecordStatus | undefined
   if (result.ok && !('error' in meta)) {
     record = await recordMatroid(c.env, result, meta, user.id)
@@ -488,16 +547,18 @@ app.post('/api/verify', async (c) => {
   } catch {
     return c.json({ ok: false, error: 'request body must be JSON' }, 400)
   }
-  const { n, type, field, data, provenance, name, citation, discovery } = (body ?? {}) as {
-    n?: unknown
-    type?: unknown
-    field?: unknown
-    data?: unknown
-    provenance?: unknown
-    name?: unknown
-    citation?: unknown
-    discovery?: unknown
-  }
+  const { n, type, field, data, provenance, name, citation, discovery, claimed_alpha } =
+    (body ?? {}) as {
+      n?: unknown
+      type?: unknown
+      field?: unknown
+      data?: unknown
+      provenance?: unknown
+      name?: unknown
+      citation?: unknown
+      discovery?: unknown
+      claimed_alpha?: unknown
+    }
   if (typeof n !== 'number' || typeof type !== 'string' || data === undefined) {
     return c.json(
       {
@@ -521,8 +582,14 @@ app.post('/api/verify', async (c) => {
     aiChatUrl: disc.ai_chat_url,
   })
   if ('error' in meta) return c.json({ ok: false, error: meta.error }, 400)
+  const claim = parseClaimedAlpha(claimed_alpha)
+  if (claim !== null && 'error' in claim) return c.json({ ok: false, error: claim.error }, 400)
   const result = verify(n, type, fieldText, data)
   if (!result.ok) return c.json(result, 400)
+  if (claim !== null) {
+    const mismatch = claimMismatch(claim, result)
+    if (mismatch) return c.json({ ok: false, error: mismatch }, 400)
+  }
   const record = await recordMatroid(c.env, result, meta, user.id)
   // Echoing the (possibly large) bases and description back is redundant for
   // API users.

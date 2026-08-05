@@ -185,6 +185,7 @@ export interface FormState {
   aiChatUrlValue?: string
   citationValue?: string
   provenanceValue?: string
+  claimedAlphaValue?: string
 }
 
 /** A stored matroid as a plot point: the row id, ground-set size, its
@@ -398,6 +399,12 @@ function verifierForm(state: FormState, user: User | null, openAttribution = fal
       <label for="data">Data <span class="hint" id="data-hint">${DATA_HINTS[selectedType]}</span></label>
       <textarea id="data" name="data" rows="8" required
                 placeholder="${escapeHtml(DATA_PLACEHOLDERS[selectedType])}">${escapeHtml(state.dataValue ?? '')}</textarea>
+      <div class="form-row">
+        <label for="claimed_alpha">Claimed ${alphaVar} <span class="hint">(optional; exact fraction &mdash;
+          a mismatch with the computed value fails the submission, catching paste mistakes)</span>
+        <input id="claimed_alpha" name="claimed_alpha" type="text" maxlength="40"
+               placeholder="e.g. 100/81" value="${escapeHtml(state.claimedAlphaValue ?? '')}" /></label>
+      </div>
       <details class="attribution"${
         openAttribution ||
         [
@@ -727,6 +734,7 @@ export function apiDocsPage(user: User | null = null): string {
   -H 'authorization: Bearer matroid_...' \\
   -d '{ "n": 4, "type": "matrix", "field": "3",
         "data": [[1,0,1,1],[0,1,1,2]],
+        "claimed_alpha": "1/4",
         "name": "Uniform matroid U(2,4)",
         "discovery": { "date": "1935-01", "discoverers": "classical",
                        "ai_used": false },
@@ -792,6 +800,10 @@ export function apiDocsPage(user: User | null = null): string {
       <p>Returns <code>200</code> with the verdict, <code>401</code> without a valid token, or
       <code>400</code> when the body is malformed, the description violates the matroid axioms
       (the error pinpoints a failing exchange or circuit elimination), or a limit is exceeded.
+      An optional <code>claimed_alpha</code> (<code>"a/b"</code>, an integer, or
+      <code>{"numerator", "denominator"}</code>) is compared exactly against the computed
+      constant, and a mismatch fails the submission with both values &mdash; so a record entry is
+      a verified <em>claim</em>, and pasting the wrong matroid is caught rather than recorded.
       Verification itself never requires attribution, but a submission that would <em>enter the
       record book</em> does: without a complete discovery record (<code>discovery.discoverers</code>,
       <code>discovery.date</code>, and <code>discovery.ai_used</code>, plus the model and role when
