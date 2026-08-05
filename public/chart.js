@@ -46,15 +46,15 @@
 
   // claim: 'exact' (solid) or 'lower' (dashed, certified lower bounds).
   const FAMILIES = [
-    { id: 'spikes', name: 'Huh–Schröter–Wang finite-field spikes', short: 'HSW spikes', claim: 'exact',
+    { id: 'hsw-finite-field-spikes', name: 'Huh–Schröter–Wang finite-field spikes', short: 'HSW spikes', claim: 'exact',
       color: '#8c3d2f', fields: [2, 3, 5, 7], series: [{ id: 'p', label: 'Mₚ⁵', points: spikePoints }] },
-    { id: 'uniform', name: 'Uniform self-sum extensions', short: 'Uniform extensions', claim: 'lower',
+    { id: 'uniform-self-sum-extensions', name: 'Uniform self-sum extensions', short: 'Uniform extensions', claim: 'lower',
       color: '#176b72', fields: [], series: [{ id: 'r', label: 'Pᵣ', points: uniformPoints }] },
-    { id: 'affine', name: 'Affine-geometry self-sum extensions', short: 'Affine extensions', claim: 'lower',
+    { id: 'affine-self-sum-extensions', name: 'Affine-geometry self-sum extensions', short: 'Affine extensions', claim: 'lower',
       color: '#6d4c93', fields: [], series: [2, 3, 5, 7].map((q) => ({ id: 'q' + q, label: 'q = ' + q, points: affine[q] })) },
-    { id: 'projective', name: 'Projective-geometry self-sum extensions', short: 'Projective extensions', claim: 'lower',
+    { id: 'projective-self-sum-extensions', name: 'Projective-geometry self-sum extensions', short: 'Projective extensions', claim: 'lower',
       color: '#b5652a', fields: [], series: [2, 3, 5, 7].map((q) => ({ id: 'q' + q, label: 'q = ' + q, points: projective[q] })) },
-    { id: 'steiner', name: 'Steiner-system sparse-paving extensions', short: 'Steiner extensions', claim: 'lower',
+    { id: 'steiner-system-self-sum-extensions', name: 'Steiner-system sparse-paving extensions', short: 'Steiner extensions', claim: 'lower',
       color: '#34745b', fields: [], series: [
         { id: 's23', label: 'S(2,3,n)', points: steinerTriples },
         { id: 's34', label: 'S(3,4,n)', points: steinerQuadruples },
