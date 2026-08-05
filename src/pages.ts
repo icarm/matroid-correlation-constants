@@ -54,7 +54,7 @@ export function escapeHtml(s: unknown): string {
     .replace(/'/g, '&#39;')
 }
 
-const SITE_NAME = 'Matroid correlation constants'
+const SITE_NAME = 'Matroid Correlation Constants'
 const SITE_DESCRIPTION =
   'Pick a random basis of a matroid: can one element make another more likely? ' +
   'The record book for the matroid correlation constant α(M). ' +
@@ -105,9 +105,27 @@ export function layout(title: string, bodyInner: string, user: User | null = nul
   </head>
   <body>
     <header>
-      <div class="inner">
-        <h1><a href="/">Matroid correlation constants</a></h1>
-        <nav><span class="auth-nav">${authNav(user)}</span></nav>
+      <div class="header-inner">
+        <a class="brand" href="/" aria-label="${escapeHtml(SITE_NAME)} home">
+          <svg class="brand-mark" viewBox="0 0 64 64" aria-hidden="true">
+            <circle cx="32" cy="32" r="23" fill="none" stroke="currentColor" stroke-width="2.5"/>
+            <path d="M16 32h32M32 16v32M20 20l24 24M44 20 20 44" fill="none" stroke="currentColor" stroke-width="1.6"/>
+            <g fill="var(--bg-bright)" stroke="var(--accent)" stroke-width="2.5">
+              <circle cx="32" cy="16" r="4.5"/><circle cx="48" cy="32" r="4.5"/>
+              <circle cx="32" cy="48" r="4.5"/><circle cx="16" cy="32" r="4.5"/>
+              <circle cx="32" cy="32" r="4.5"/>
+            </g>
+          </svg>
+          <h1>Matroid Correlation<br/>Constants</h1>
+        </a>
+        <nav class="primary-nav" aria-label="Primary navigation">
+          <a href="/">Explore</a>
+          <a href="/matroids">Matroids</a>
+          <a href="/recent">Activity</a>
+          <a href="/api">API</a>
+        </nav>
+        <a class="button-dark" href="/#submit">Submit a matroid</a>
+        <span class="auth-nav">${authNav(user)}</span>
       </div>
     </header>
     <main>${bodyInner}</main>

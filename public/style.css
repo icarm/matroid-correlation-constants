@@ -61,45 +61,112 @@ a:hover {
   white-space: nowrap;
 }
 
+/* Sticky topbar over blurred paper, following the draft site: brand mark +
+   serif wordmark, primary nav, a dark submit pill, and (ours) the auth nav. */
 header {
-  border-bottom: 1px solid var(--panel-edge);
-  background: var(--bg-bright);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  border-bottom: 1px solid rgba(21, 56, 59, 0.1);
+  background: rgba(247, 245, 238, 0.92);
+  backdrop-filter: blur(18px);
 }
 
-header .inner {
-  max-width: 780px;
+.header-inner {
+  width: min(1160px, calc(100% - 2rem));
+  min-height: 72px;
   margin: 0 auto;
-  padding: 1.2rem 1.5rem;
+  padding: 0.5rem 0;
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 1rem;
+  align-items: center;
+  gap: 1.4rem;
   flex-wrap: wrap;
 }
 
-header h1 {
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-}
-
-header h1 a {
-  color: var(--fg);
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
   text-decoration: none;
+  color: var(--fg);
 }
 
-header h1 a:hover {
-  color: var(--accent);
+.brand:hover {
+  color: var(--fg);
 }
 
-header nav .auth-nav {
+.brand-mark {
+  width: 36px;
+  height: 36px;
+  color: var(--fg);
+  flex: 0 0 auto;
+}
+
+.brand h1 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.primary-nav {
+  display: flex;
+  gap: 1.3rem;
+  margin-left: auto;
+  font-size: 0.95rem;
+}
+
+.primary-nav a {
+  color: var(--muted);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.primary-nav a:hover {
+  color: var(--fg);
+}
+
+.button-dark {
+  background: var(--fg);
+  color: var(--bg-bright);
+  border-radius: 999px;
+  padding: 0.5rem 1.2rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.button-dark:hover {
+  background: var(--ink-deep);
+  color: var(--bg-bright);
+}
+
+@media (max-width: 900px) {
+  .primary-nav {
+    display: none;
+  }
+
+  .header-inner {
+    justify-content: space-between;
+  }
+}
+
+/* Anchored sections land clear of the sticky bar. */
+#submit,
+#definition {
+  scroll-margin-top: 92px;
+}
+
+.auth-nav {
   font-size: 0.9rem;
   color: var(--muted);
   white-space: nowrap;
 }
 
-header nav .auth-nav a.auth-login {
+.auth-nav a.auth-login {
   display: inline-block;
   padding: 0.35rem 0.9rem;
   border: 1px solid var(--accent-dim);
@@ -110,7 +177,7 @@ header nav .auth-nav a.auth-login {
   text-decoration: none;
 }
 
-header nav .auth-nav a.auth-login:hover {
+.auth-nav a.auth-login:hover {
   border-color: var(--accent);
   background: rgba(23, 107, 114, 0.08);
 }
