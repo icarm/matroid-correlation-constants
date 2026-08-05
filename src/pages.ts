@@ -529,7 +529,9 @@ function verifierForm(state: FormState, user: User | null, openAttribution = fal
       order ${MAX_EXT_FIELD_ORDER}. Over &#8474;,
       entries may be integers or fraction strings like <code>"-3/5"</code>; over
       GF(p<sup>d</sup>), integers (subfield constants) or coefficient lists like
-      <code>[0,1]</code> in the Conway polynomial basis, as in Sage or GAP.</p>
+      <code>[0,1]</code> in the Conway polynomial basis, as in Sage or GAP.
+      Proposing an <em>infinite family</em> instead? That takes a proof and human review
+      &mdash; see <a href="/families#propose">how family proposals work</a>.</p>
     </form>
     <script>
       // Progressive enhancement only: match the data box's placeholder and
