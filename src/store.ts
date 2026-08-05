@@ -253,6 +253,13 @@ export interface RecordStatus {
    * matrix was attached to the record as a representability certificate.
    */
   certificateAttached?: boolean
+  /**
+   * Set when the submission would have entered the record book but was not
+   * saved because it lacked a complete discovery record (discoverers, date,
+   * and an AI-use declaration). Verification itself succeeded; resubmitting
+   * with the attribution fields records it.
+   */
+  needsDiscovery?: boolean
 }
 
 /** Every stored matroid as a plot point — current records and the superseded
@@ -337,10 +344,29 @@ export async function recordMatroid(
     return status
   }
 
+  // Anything entering the record book must carry a complete discovery
+  // record — discoverers, a discovery date, and an explicit AI-use
+  // declaration (with model and role when AI was used). Casual verification
+  // stays free-form; the permanent catalog does not.
+  const discoveryComplete =
+    meta.discoverers !== null &&
+    meta.discoveryDate !== null &&
+    meta.aiUsed !== null &&
+    (meta.aiUsed === false || (meta.aiModel !== null && meta.aiRole !== null))
+
   for (let attempt = 0; attempt < 3; attempt++) {
     const row = await currentFor(result.n)
     if (row && atLeast(row.alpha_num, row.alpha_den, result.alphaNum, result.alphaDen)) {
       return notRecorded(row)
+    }
+    if (!discoveryComplete) {
+      return {
+        recorded: false,
+        needsDiscovery: true,
+        recordAlphaNum: row?.alpha_num ?? result.alphaNum,
+        recordAlphaDen: row?.alpha_den ?? result.alphaDen,
+        matroidId: row?.id ?? 0,
+      }
     }
     const ins = await env.DB.prepare(
       `INSERT INTO matroids (n, rank, num_bases, alpha_num, alpha_den, alpha_value,

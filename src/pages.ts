@@ -368,7 +368,7 @@ const DATA_HINTS: Record<string, string> = {
   hyperplanes: '(JSON: the complete list of hyperplanes, as lists of element labels)',
 }
 
-function verifierForm(state: FormState, user: User | null): string {
+function verifierForm(state: FormState, user: User | null, openAttribution = false): string {
   const submit = user
     ? '<button type="submit">Verify</button>'
     : '<a class="login-to-submit" href="/auth/github">Log in to submit</a>'
@@ -399,6 +399,7 @@ function verifierForm(state: FormState, user: User | null): string {
       <textarea id="data" name="data" rows="8" required
                 placeholder="${escapeHtml(DATA_PLACEHOLDERS[selectedType])}">${escapeHtml(state.dataValue ?? '')}</textarea>
       <details class="attribution"${
+        openAttribution ||
         [
           state.nameValue,
           state.discoverersValue,
@@ -490,6 +491,12 @@ function recordSection(result: { alphaNum: number; alphaDen: number; n: number }
   const recordLink = (text: string) =>
     record.matroidId ? `<a href="/matroid/${record.matroidId}">${text}</a>` : text
   const recordAlpha = fmtAlphaLong(record.recordAlphaNum, record.recordAlphaDen)
+  if (record.needsDiscovery) {
+    return `<p class="record-new">This matroid would set the record for n = ${result.n} &mdash; but
+      record entries need a discovery record. Fill in <em>discovered by</em>, the
+      <em>discovery date</em>, and the <em>AI-use declaration</em> under
+      &ldquo;Attribution &amp; discovery&rdquo; below, then resubmit to record it.</p>`
+  }
   if (record.recorded) {
     return `<p class="record-new">New record: the largest verified ${alphaVar} for n = ${result.n}. Saved as ${recordLink(
       `matroid #${record.matroidId}`,
@@ -615,7 +622,7 @@ export function resultPage(
       <p class="page-nav"><a href="/">&larr; home</a></p>
     </section>
     ${resultSection(result, record)}
-    ${verifierForm(form, user)}`
+    ${verifierForm(form, user, record?.needsDiscovery === true)}`
   return layout(`Result — ${SITE_NAME}`, body, user)
 }
 
@@ -785,6 +792,12 @@ export function apiDocsPage(user: User | null = null): string {
       <p>Returns <code>200</code> with the verdict, <code>401</code> without a valid token, or
       <code>400</code> when the body is malformed, the description violates the matroid axioms
       (the error pinpoints a failing exchange or circuit elimination), or a limit is exceeded.
+      Verification itself never requires attribution, but a submission that would <em>enter the
+      record book</em> does: without a complete discovery record (<code>discovery.discoverers</code>,
+      <code>discovery.date</code>, and <code>discovery.ai_used</code>, plus the model and role when
+      AI was used), a record-setting result is returned with
+      <code>record.needsDiscovery: true</code> and is not saved &mdash; resubmit with the
+      discovery object to record it.
       On success, <code>record.recorded</code> reports whether the record book changed; on a tie,
       <code>record.tiedExact</code> reports whether the submission is the record matroid itself
       (<code>true</code>) or a different matroid with the same constant (<code>false</code>).
