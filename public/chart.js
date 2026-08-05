@@ -23,7 +23,6 @@
   } catch { /* leave empty */ }
   const allSeries = FAMILIES.flatMap((family) =>
     family.series.map((series) => ({ family, series, key: family.id + ':' + series.id })))
-  const bestValue = records.reduce((best, r) => Math.max(best, r.value), 0)
 
   // ---------------------------------------------------------------------
   // State, synced with the URL so views are shareable.
@@ -312,10 +311,9 @@
     })
 
     for (const r of concrete) {
-      const isBest = r.value === bestValue
       const dot = el('circle', {
-        cx: X(xVal(r)), cy: Y(r.value), r: isBest ? 8 : 6.5,
-        class: 'matroid-point' + (isBest ? ' global-record' : ''),
+        cx: X(xVal(r)), cy: Y(r.value), r: 6.5,
+        class: 'matroid-point',
         tabindex: 0, role: 'link',
         'aria-label': `matroid #${r.id}, value ${r.label}`,
       })

@@ -620,7 +620,6 @@ var {
   stroke: var(--bg-bright);
   stroke-width: 2;
 }
-.atlas-chart .matroid-point.global-record { fill: var(--rust); }
 .atlas-chart .matroid-point:hover, .atlas-chart .matroid-point:focus { r: 10; }
 
 .chart-legend {
