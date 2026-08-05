@@ -233,7 +233,7 @@ export interface RecordStatus {
  * history behind them, flagged apart. */
 export async function recordPoints(env: Bindings): Promise<RecordPoint[]> {
   const { results } = await env.DB.prepare(
-    `SELECT id, n, rank, num_bases, alpha_num, alpha_den, alpha_value,
+    `SELECT id, n, rank, num_bases, alpha_num, alpha_den, alpha_value, field, cert_field,
             (id = (SELECT MAX(id) FROM matroids WHERE n = m.n)) AS is_current
        FROM matroids m
        ORDER BY n, id`,

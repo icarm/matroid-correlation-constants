@@ -196,6 +196,15 @@ var {
   padding: 0.05em 0.35em 0;
 }
 
+/* The records panel breaks out of the 780px prose column and fills the
+   window (up to a sane maximum), since the chart earns the width. */
+.panel.records {
+  width: min(1160px, calc(100vw - 2rem));
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
 .records-plot {
   width: 100%;
   height: auto;
@@ -203,6 +212,219 @@ var {
   background: var(--bg);
   border: 1px solid var(--panel-edge);
   border-radius: 6px;
+}
+
+/* The interactive explorer: filter sidebar + chart, stacking on narrow
+   screens. Rendered by /chart.js; hidden without JS. */
+.explorer-note {
+  font-size: 0.9rem;
+  margin: 0 0 0.8rem;
+}
+
+.explorer-shell {
+  display: grid;
+  grid-template-columns: 15rem 1fr;
+  gap: 1.2rem;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .explorer-shell {
+    grid-template-columns: 1fr;
+  }
+}
+
+.filter-panel {
+  background: var(--bg);
+  border: 1px solid var(--panel-edge);
+  border-radius: 8px;
+  padding: 0.9rem 1rem 1rem;
+  font-size: 0.9rem;
+}
+
+.filter-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.filter-heading h3 {
+  margin: 0;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.filter-panel .field-label {
+  display: block;
+  margin: 0.8rem 0 0.25rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.filter-panel input[type='search'],
+.filter-panel select {
+  width: 100%;
+  background: var(--panel);
+  color: var(--fg);
+  border: 1px solid var(--panel-edge);
+  border-radius: 6px;
+  padding: 0.35rem 0.5rem;
+  font-family: inherit;
+  font-size: 0.9rem;
+}
+
+.filter-panel input[type='range'] {
+  width: 100%;
+  accent-color: var(--accent);
+}
+
+.filter-panel .range-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.filter-panel output {
+  color: var(--fg);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.85rem;
+}
+
+.filter-panel fieldset {
+  border: none;
+  border-top: 1px solid var(--panel-edge);
+  margin: 1rem 0 0;
+  padding: 0.6rem 0 0;
+}
+
+.filter-panel legend {
+  color: var(--muted);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding-right: 0.5rem;
+}
+
+.filter-panel .check-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin: 0.35rem 0;
+  color: var(--fg);
+  font-size: 0.88rem;
+}
+
+.filter-panel .check-row input {
+  accent-color: var(--accent);
+  width: auto;
+}
+
+.chart-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  font-size: 0.85rem;
+  margin-bottom: 0.3rem;
+}
+
+.atlas-chart {
+  width: 100%;
+  height: auto;
+  background: var(--bg);
+  border: 1px solid var(--panel-edge);
+  border-radius: 6px;
+}
+
+.atlas-chart .grid-line { stroke: var(--panel-edge); stroke-width: 1; }
+.atlas-chart .grid-line.target { stroke: var(--accent-dim); stroke-width: 1.6; stroke-dasharray: 4 5; }
+.atlas-chart .axis-line { stroke: var(--muted); stroke-width: 1.5; }
+.atlas-chart .tick-label {
+  fill: var(--muted);
+  font-size: 12px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+.atlas-chart .axis-label {
+  fill: var(--muted);
+  font-size: 13px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+.atlas-chart .target-label {
+  fill: var(--accent);
+  font-size: 12px;
+  font-style: italic;
+  font-family: Georgia, "Times New Roman", serif;
+}
+.atlas-chart .curve-path {
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.atlas-chart .curve-path.lower-bound { stroke-dasharray: 9 7; }
+.atlas-chart .curve-point { stroke: var(--bg); stroke-width: 1.5; }
+.atlas-chart .curve-point:hover, .atlas-chart .curve-point:focus { r: 6; }
+.atlas-chart .matroid-point {
+  fill: var(--fg);
+  stroke: var(--bg);
+  stroke-width: 2;
+}
+.atlas-chart .matroid-point.global-record { fill: var(--accent); }
+.atlas-chart .matroid-point:hover, .atlas-chart .matroid-point:focus { r: 10; }
+
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
+}
+
+.legend-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: var(--bg);
+  border: 1px solid var(--panel-edge);
+  border-radius: 999px;
+  color: var(--fg);
+  font: inherit;
+  font-size: 0.8rem;
+  padding: 0.15rem 0.7rem;
+  cursor: pointer;
+}
+
+.legend-chip:hover { border-color: var(--accent-dim); }
+.legend-chip.off { opacity: 0.45; }
+
+.legend-swatch {
+  display: inline-block;
+  width: 1.1em;
+  height: 0;
+  border-top: 3px solid var(--swatch);
+}
+
+.legend-swatch.dashed { border-top-style: dashed; }
+
+.chart-tooltip {
+  position: fixed;
+  z-index: 10;
+  max-width: 20rem;
+  background: var(--panel);
+  border: 1px solid var(--panel-edge);
+  border-radius: 6px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
+  padding: 0.5rem 0.7rem;
+  font-size: 0.82rem;
+  pointer-events: none;
+  line-height: 1.45;
+}
+
+.chart-tooltip strong {
+  display: block;
+  color: var(--accent);
+  margin-bottom: 0.15rem;
 }
 
 .records-plot .grid { stroke: var(--panel-edge); stroke-width: 1; }

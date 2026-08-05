@@ -189,6 +189,8 @@ export interface RecordPoint {
   alpha_num: number
   alpha_den: number
   alpha_value: number
+  field: string | null
+  cert_field: string | null
   is_current: number // SQLite boolean
 }
 
@@ -255,21 +257,89 @@ function recordsPlot(pts: RecordPoint[]): string {
 }
 
 function recordsSection(records: RecordPoint[]): string {
-  const inner =
+  const fallbackInner =
     records.length === 0
       ? '<p class="muted">No verified records yet &mdash; submit a matroid to put the first dot on the board.</p>'
-      : `<div class="plot-panel">${recordsPlot(records)}</div>`
-  return `
-  <section class="panel records">
-    ${inner}
+      : `<div class="plot-panel">${recordsPlot(records)}</div>
     <p class="muted plot-caption">Each dot is a record-setting matroid &mdash; the current record
     for its n, or a superseded one kept as history. Dots with ${alphaVar} &le; 1 fall below the
     frame. Huh&ndash;Schr&ouml;ter&ndash;Wang: ${alphaVar}(<var>M</var>) &le; 2 for every matroid.
-    Matroids on at most 7 elements never exceed 1.</p>
+    Matroids on at most 7 elements never exceed 1.</p>`
+  // Data for the interactive explorer (progressive enhancement in /chart.js);
+  // <-escaping keeps the JSON safe inside a script element.
+  const chartData = JSON.stringify({
+    records: records.map((r) => ({
+      id: r.id,
+      n: r.n,
+      rank: r.rank,
+      bases: r.num_bases,
+      label: fmtAlpha(r.alpha_num, r.alpha_den),
+      value: r.alpha_value,
+      field: r.field,
+      certField: r.cert_field,
+      current: !!r.is_current,
+    })),
+  }).replace(/</g, '\\u003c')
+  const check = (id: string, label: string, checked: boolean): string =>
+    `<label class="check-row"><input id="${id}" type="checkbox"${checked ? ' checked' : ''} /> ${label}</label>`
+  return `
+  <section class="panel records">
+    <div id="records-fallback">${fallbackInner}</div>
+    <div id="records-explorer" hidden>
+      <p class="muted explorer-note">Solid curves are proved exact family values; dashed curves are
+      certified lower bounds from a distinguished pair (from the
+      <a class="external" href="https://arxiv.org/abs/1806.02675">HSW</a> and August 2026 discovery
+      records). Dots are this site&rsquo;s verified record submissions &mdash; click one for its page.</p>
+      <div class="explorer-shell">
+        <aside class="filter-panel" aria-label="Chart filters">
+          <div class="filter-heading"><h3>Filter</h3>
+            <button class="link-button" id="reset-filters" type="button">reset</button></div>
+          <label class="field-label" for="search-input">Search</label>
+          <input id="search-input" type="search" placeholder="family, parameter, matroid&hellip;" />
+          <label class="field-label" for="field-filter">Verified field</label>
+          <select id="field-filter">
+            <option value="all">All fields</option>
+            <option value="2">GF(2)</option>
+            <option value="3">GF(3)</option>
+            <option value="5">GF(5)</option>
+            <option value="7">GF(7)</option>
+          </select>
+          <label class="field-label" for="rank-filter">Rank</label>
+          <select id="rank-filter"><option value="all">All ranks</option></select>
+          <div class="range-label">
+            <label class="field-label" for="max-n">Ground-set size</label>
+            <output id="max-n-output" for="max-n">&le; 300</output>
+          </div>
+          <input id="max-n" type="range" min="20" max="1000" value="300" step="10" />
+          <fieldset><legend>Show</legend>
+            ${check('show-points', 'Record submissions', true)}
+            ${check('show-exact', 'Exact family curves', true)}
+            ${check('show-lower', 'Lower-bound curves', true)}
+          </fieldset>
+          <fieldset><legend>Scale</legend>
+            ${check('show-below-one', 'Include values below 1', false)}
+            ${check('full-y-scale', 'Use full 1&ndash;2 scale', false)}
+          </fieldset>
+        </aside>
+        <div class="chart-panel">
+          <div class="chart-toolbar">
+            <div class="muted"><span id="visible-count"></span> &middot; <span id="visible-series-count"></span></div>
+            <button class="link-button" id="toggle-x-axis" type="button" aria-pressed="false"
+              title="Switch the horizontal axis between ground-set size and rank">x-axis: |E|</button>
+          </div>
+          <svg id="atlas-chart" class="atlas-chart" viewBox="0 0 980 520" role="img"></svg>
+          <p id="empty-chart" class="muted" hidden>Nothing matches the current filters.</p>
+          <div id="chart-legend" class="chart-legend"></div>
+        </div>
+      </div>
+    </div>
+    <div id="chart-tooltip" class="chart-tooltip" hidden></div>
     <p class="plot-caption"><a href="/matroids">Browse all matroids &rarr;</a> &nbsp;&middot;&nbsp;
     <a href="/recent">Recent activity &rarr;</a> &nbsp;&middot;&nbsp;
     <a class="external nowrap" href="https://icarm.zulipchat.com/#narrow/channel/589006-Matroid-Database">Discuss on Zulip</a></p>
     <p class="plot-caption"><a class="nowrap" href="/database.json" download>Download all records (JSON) &darr;</a></p>
+    <script type="application/json" id="chart-data">${chartData}</script>
+    <script src="/chart.js" defer></script>
   </section>`
 }
 
