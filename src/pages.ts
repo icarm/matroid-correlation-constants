@@ -198,10 +198,14 @@ const INNER_H = PLOT.H - PLOT.T - PLOT.B
 const NMIN = 1
 const plotX = (n: number) => PLOT.L + ((n - NMIN) / (MAX_ELEMENTS - NMIN)) * INNER_W
 
+// The frame starts at α = 1: negatively correlated records are not
+// interesting enough for wall space, and the action lives between 1 and 4/3.
+const PLOT_YMIN = 1
+
 function recordsPlot(pts: RecordPoint[]): string {
   let ymax = 1.45
   for (const p of pts) ymax = Math.max(ymax, p.alpha_value + 0.1)
-  const Y = (v: number) => PLOT.T + INNER_H - (v / ymax) * INNER_H
+  const Y = (v: number) => PLOT.T + INNER_H - ((v - PLOT_YMIN) / (ymax - PLOT_YMIN)) * INNER_H
 
   let grid = ''
   for (let n = 2; n <= MAX_ELEMENTS; n += 2) {
@@ -209,9 +213,10 @@ function recordsPlot(pts: RecordPoint[]): string {
     grid += `<line class="grid" x1="${x}" y1="${PLOT.T}" x2="${x}" y2="${PLOT.T + INNER_H}"/>`
     grid += `<text class="tick" x="${x}" y="${PLOT.T + INNER_H + 18}" text-anchor="middle">${n}</text>`
   }
-  for (let v = 0; v <= ymax + 1e-9; v += 0.5) {
+  for (let t = 10; t / 10 <= ymax + 1e-9; t++) {
+    const v = t / 10
     const y = Y(v).toFixed(1)
-    if (v > 0) grid += `<line class="grid" x1="${PLOT.L}" y1="${y}" x2="${PLOT.W - PLOT.R}" y2="${y}"/>`
+    if (v > PLOT_YMIN) grid += `<line class="grid" x1="${PLOT.L}" y1="${y}" x2="${PLOT.W - PLOT.R}" y2="${y}"/>`
     grid += `<text class="tick" x="${PLOT.L - 8}" y="${(Y(v) + 4).toFixed(1)}" text-anchor="end">${v.toFixed(1)}</text>`
   }
 
@@ -219,11 +224,11 @@ function recordsPlot(pts: RecordPoint[]): string {
     `<line class="${cls}" x1="${PLOT.L}" y1="${Y(v).toFixed(1)}" x2="${PLOT.W - PLOT.R}" y2="${Y(v).toFixed(1)}"/>
       <text class="guide-label" x="${PLOT.W - PLOT.R - 8}" y="${(Y(v) + dy).toFixed(1)}" text-anchor="end">${label}</text>`
   const guides =
-    hline(1, 'guide guide-one', 'negative correlation barrier', 14) +
     hline(8 / 7, 'guide guide-known', '8/7', -5) +
     hline(4 / 3, 'guide guide-goal', 'the 4/3 challenge', -6)
 
   const dots = pts
+    .filter((p) => p.alpha_value >= PLOT_YMIN)
     .map((p) => {
       const beats = beatsGoal(p.alpha_num, p.alpha_den)
       const title = `n = ${p.n}: record α = ${fmtAlpha(p.alpha_num, p.alpha_den)} ≈ ${p.alpha_value.toFixed(
@@ -255,7 +260,8 @@ function recordsSection(records: RecordPoint[]): string {
   <section class="panel records">
     ${inner}
     <p class="muted plot-caption">Each dot is the largest verified ${alphaVar} among submitted matroids
-    on n elements. Huh&ndash;Schr&ouml;ter&ndash;Wang: ${alphaVar}(<var>M</var>) &le; 2 for every matroid.
+    on n elements; records with ${alphaVar} &le; 1 fall below the frame.
+    Huh&ndash;Schr&ouml;ter&ndash;Wang: ${alphaVar}(<var>M</var>) &le; 2 for every matroid.
     Matroids on at most 7 elements never exceed 1.</p>
     <p class="plot-caption"><a href="/matroids">Browse all matroids &rarr;</a> &nbsp;&middot;&nbsp;
     <a href="/recent">Recent activity &rarr;</a> &nbsp;&middot;&nbsp;
