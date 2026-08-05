@@ -89,6 +89,14 @@ GitHub login needs a dev OAuth app (callback
 
 ## Deploy
 
+Pushes to `main` on GitHub deploy automatically
+(`.github/workflows/deploy.yml`): typecheck and tests run first, then the
+remote D1 migrations are applied, then the worker is deployed. The workflow
+needs a `CLOUDFLARE_API_TOKEN` repository secret (the "Edit Cloudflare
+Workers" token template, plus D1 edit permission for migrations).
+
+Manual deploys work the same way:
+
     npx wrangler d1 migrations apply matroid-correlation-constants --remote
     npm run deploy
 
