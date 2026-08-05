@@ -298,8 +298,8 @@ function verifierForm(state: FormState, user: User | null): string {
       ${submit}
       <p class="muted form-note">Verification is exact: the matroid axioms are checked, every basis is
       enumerated, and all ratios are compared by integer cross multiplication. Limits:
-      n &le; ${MAX_ELEMENTS} (25 or 26 elements only in low rank, where enumeration stays feasible;
-      circuit and hyperplane descriptions up to 24), at most
+      n &le; ${MAX_ELEMENTS} (more than 24 elements only in low rank, where enumeration stays
+      feasible; circuit and hyperplane descriptions up to 24), at most
       ${MAX_LISTED_SETS.toLocaleString('en-US')} listed sets or
       ${MAX_MATRIX_CELLS.toLocaleString('en-US')} matrix entries; matrix fields are &#8474;, a prime
       GF(p), or a prime power GF(p<sup>d</sup>) up to order ${MAX_EXT_FIELD_ORDER}. Over &#8474;,
@@ -575,9 +575,10 @@ export function apiDocsPage(user: User | null = null): string {
       <var>a</var> is a root of the Conway polynomial C<sub>p,d</sub> &mdash; the same convention
       as Sage, GAP, and Macaulay2, so matrices copy across unchanged. For the other types,
       <code>data</code> is the complete list of bases, circuits, or hyperplanes as lists of
-      element labels. Limits: n &le; ${MAX_ELEMENTS} for matrices and bases (on 25 or 26
-      elements only ranks with a feasible enumeration, roughly rank &le; 10, are accepted;
-      circuit and hyperplane descriptions stop at 24), at most
+      element labels. Limits: n &le; ${MAX_ELEMENTS} for matrices and bases (on more than 24
+      elements only ranks with a feasible enumeration are accepted &mdash; roughly rank &le; 10
+      at n = 26 down to rank &le; 8 at n = 30; circuit and hyperplane descriptions stop at 24),
+      at most
       ${MAX_LISTED_SETS.toLocaleString('en-US')} listed sets or
       ${MAX_MATRIX_CELLS.toLocaleString('en-US')} matrix entries.</p>
       <p>Requires an <code>Authorization: Bearer &lt;token&gt;</code> header &mdash; create a token

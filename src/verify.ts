@@ -18,13 +18,13 @@
 // checked exactly, and every ratio is compared by exact integer cross
 // multiplication (in BigInt: the products can exceed 2^53).
 
-// The ground-set ceiling is set by full basis enumeration in a Worker
-// (128 MB memory, ~30 s CPU). The enumeration visits every independent set,
-// so the real cost driver is Σ_{k ≤ rank} C(n, k), bounded below by
-// INDEPENDENT_SET_BUDGET: everything on ≤ 24 elements fits (the bound is
-// exactly 2^24), while 25 or 26 elements are admitted only in low enough
-// rank (e.g. rank ≤ 10 at n = 26).
-export const MAX_ELEMENTS = 26
+// The ground-set ceiling: subsets are int32 bitmasks, so n ≤ 30. What is
+// actually verifiable is decided by enumeration cost, not n — the search
+// visits every independent set, so the driver is Σ_{k ≤ rank} C(n, k),
+// bounded by INDEPENDENT_SET_BUDGET. Everything on ≤ 24 elements fits (the
+// bound is exactly 2^24); 25 to 30 elements are admitted only in low enough
+// rank (e.g. rank ≤ 10 at n = 26, rank ≤ 8 at n = 30).
+export const MAX_ELEMENTS = 30
 const INDEPENDENT_SET_BUDGET = 2 ** 24
 
 // The circuit and hyperplane checks tabulate dependence over all 2^n
@@ -44,10 +44,11 @@ export const PROVENANCE_MAX = 2000
 export const BASES_JSON_MAX_COUNT = 5000
 
 // Elementary-operation budget for basis enumeration, so runaway inputs fail
-// cleanly instead of burning worker CPU. Rational matrices use exact BigInt
-// elimination whose per-op cost is much higher, so their ops are charged at
-// a multiple (FieldOps.costFactor).
-const OP_BUDGET = 4_000_000_000
+// cleanly instead of burning worker CPU (sized against the raised cpu_ms
+// limit in wrangler.jsonc). Rational matrices use exact BigInt elimination
+// whose per-op cost is much higher, so their ops are charged at a multiple
+// (FieldOps.costFactor).
+const OP_BUDGET = 8_000_000_000
 
 export const REPRESENTATION_TYPES = ['matrix', 'bases', 'circuits', 'hyperplanes'] as const
 export type RepresentationType = (typeof REPRESENTATION_TYPES)[number]

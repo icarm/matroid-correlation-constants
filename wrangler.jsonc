@@ -5,6 +5,9 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-06-01",
   "routes": [{ "pattern": "matroid-correlation-constants.icarm.cloud", "custom_domain": true }],
+  // Headroom over the 30 s default for the largest admitted verifications
+  // (the worst case the independent-set budget allows measures ~20-30 s).
+  "limits": { "cpu_ms": 120000 },
   "assets": {
     "directory": "./public"
   },

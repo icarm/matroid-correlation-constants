@@ -281,6 +281,38 @@ if (eur26.ok) {
   )
 }
 
+// The HSW spike M_7^5 at n = 30, the bitmask limit: α = 8/7 with the 2x2
+// counts (1372, 28812, 2401, 14406) from the Section 5 formulas at p = 7.
+{
+  const p = 7, d = 5
+  const cols = [[1, 0, 0, 0, 0], [0, 1, 1, 1, 1]]
+  for (let m = 1; m < d; m++) {
+    for (let k = 1; k <= p; k++) {
+      const v = [k % p, 0, 0, 0, 0]
+      v[m] = 1
+      cols.push(v)
+    }
+  }
+  const rows = Array.from({ length: d }, (_, r) => cols.map((c) => c[r]))
+  const s = verify(30, 'matrix', '7', rows)
+  check('spike M_7^5 (n=30): verifies', s.ok, alphaOf(s))
+  if (s.ok) {
+    check('spike M_7^5: rank 5, 46,991 bases', s.rank === 5 && s.numBases === 46991, String(s.numBases))
+    check('spike M_7^5: α = 8/7', s.alphaNum === 8 && s.alphaDen === 7, alphaOf(s))
+    check(
+      'spike M_7^5: HSW counts (1372, 28812, 2401, 14406)',
+      s.maxCounts.containBoth === 1372 &&
+        s.maxCounts.avoidBoth === 28812 &&
+        s.maxCounts.onlyI === 2401 &&
+        s.maxCounts.onlyJ === 14406,
+      JSON.stringify(s.maxCounts),
+    )
+  }
+}
+
+const tooMany = verify(31, 'matrix', '2', [Array.from({ length: 31 }, () => 1)])
+check('n = 31 rejected', !tooMany.ok && /at most 30/.test(tooMany.error), alphaOf(tooMany))
+
 // High rank on 26 elements must be declined by the independent-set budget.
 {
   const p = 65521
@@ -291,6 +323,11 @@ if (eur26.ok) {
   )
   const big = verify(26, 'matrix', String(p), cauchy)
   check('rank 13 on 26 elements declined', !big.ok && /too large to verify/.test(big.error), alphaOf(big))
+  const cauchy30 = Array.from({ length: 9 }, (_, i) =>
+    Array.from({ length: 30 }, (_, j) => inv(i + j + 100)),
+  )
+  const big30 = verify(30, 'matrix', String(p), cauchy30)
+  check('rank 9 on 30 elements declined', !big30.ok && /too large to verify/.test(big30.error), alphaOf(big30))
 }
 
 const bigCircuits = verify(25, 'circuits', '', [[0, 1, 2]])
