@@ -155,9 +155,41 @@ header {
 }
 
 /* Anchored sections land clear of the sticky bar. */
-#submit,
-#definition {
+main [id] {
   scroll-margin-top: 92px;
+}
+
+/* The mathematics page: a compact table of contents, and display math is
+   handled by MathJax. */
+.math-toc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 1.1rem;
+  font-size: 0.9rem;
+  border: 1px solid var(--panel-edge);
+  background: var(--bg-bright);
+  border-radius: 8px;
+  padding: 0.6rem 0.9rem;
+  margin: 1rem 0 1.5rem;
+}
+
+.math-toc a {
+  text-decoration: none;
+}
+
+.math-page h3 {
+  margin-top: 2.2rem;
+}
+
+.math-page h3 .muted {
+  font-family: Inter, ui-sans-serif, -apple-system, sans-serif;
+  font-size: 0.85rem;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+.references li {
+  margin: 0.5rem 0;
 }
 
 .auth-nav {

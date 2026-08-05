@@ -84,7 +84,12 @@ function authNav(user: User | null): string {
   return `<a class="auth-login" href="/auth/github">log in with GitHub</a>`
 }
 
-export function layout(title: string, bodyInner: string, user: User | null = null): string {
+export function layout(
+  title: string,
+  bodyInner: string,
+  user: User | null = null,
+  headExtra = '',
+): string {
   return `<!doctype html>
 <html lang="en">
   <head>
@@ -102,6 +107,7 @@ export function layout(title: string, bodyInner: string, user: User | null = nul
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="stylesheet" href="/style.css" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    ${headExtra}
   </head>
   <body>
     <header>
@@ -121,6 +127,7 @@ export function layout(title: string, bodyInner: string, user: User | null = nul
         <nav class="primary-nav" aria-label="Primary navigation">
           <a href="/">Explore</a>
           <a href="/matroids">Matroids</a>
+          <a href="/mathematics">Mathematics</a>
           <a href="/recent">Activity</a>
           <a href="/api">API</a>
         </nav>
@@ -223,6 +230,8 @@ function definitionSection(): string {
       independently, August 2026). Known infinite families approach 4/3 without reaching it
       &mdash; whether any single matroid attains ${alphaVar}(<var>M</var>) &ge; 4/3 is open.
     </p>
+    <p><a href="/mathematics">Full definitions, the discovery record, and proofs of every family
+    formula &rarr;</a></p>
   </section>`
 }
 
