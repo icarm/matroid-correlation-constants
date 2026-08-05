@@ -180,7 +180,6 @@ function heroSection(records: RecordPoint[]): string {
         <p class="record-card-value">4/3</p>
         <p class="record-card-approx">&approx; 1.3333 &mdash; reached by known families only in the limit</p>
         <p class="record-card-meta">${bestLine}</p>
-        <p class="record-card-goal">verify ${alphaVar}(<var>M</var>) &ge; 4/3 for a single matroid to claim it</p>
       </div>`
   return `
   <section class="hero">

@@ -451,14 +451,6 @@ var {
   font-size: 0.92rem;
 }
 
-.record-card-goal {
-  color: var(--muted);
-  font-size: 0.82rem;
-  margin: 0.6rem 0 0;
-  border-top: 1px solid var(--panel-edge);
-  padding-top: 0.6rem;
-}
-
 .records-plot {
   width: 100%;
   height: auto;
