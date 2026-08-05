@@ -270,12 +270,31 @@ function recordsSection(records: RecordPoint[]): string {
   </section>`
 }
 
+// Per-description placeholders and hints for the data box — all four are the
+// same matroid, U(2,4), so the examples double as a format tutorial. Swapped
+// by a small inline script when the selection changes; without JS the
+// matrix-flavored default stays, which is still accurate guidance.
+const DATA_PLACEHOLDERS: Record<string, string> = {
+  matrix: 'e.g. [[1,0,1,1],[0,1,1,2]] over GF(3) — rows of a matrix whose columns are the elements',
+  bases: 'e.g. [[0,1],[0,2],[0,3],[1,2],[1,3],[2,3]] — every basis, as lists of element labels',
+  circuits: 'e.g. [[0,1,2],[0,1,3],[0,2,3],[1,2,3]] — every circuit, as lists of element labels',
+  hyperplanes: 'e.g. [[0],[1],[2],[3]] — every hyperplane, as lists of element labels',
+}
+const DATA_HINTS: Record<string, string> = {
+  matrix: '(JSON: a list of rows; columns are the elements)',
+  bases: '(JSON: the complete list of bases, as lists of element labels)',
+  circuits: '(JSON: the complete list of circuits, as lists of element labels)',
+  hyperplanes: '(JSON: the complete list of hyperplanes, as lists of element labels)',
+}
+
 function verifierForm(state: FormState, user: User | null): string {
   const submit = user
     ? '<button type="submit">Verify</button>'
     : '<a class="login-to-submit" href="/auth/github">Log in to submit</a>'
+  const selectedType =
+    state.typeValue && state.typeValue in DATA_PLACEHOLDERS ? state.typeValue : 'matrix'
   const typeOption = (value: string, label: string): string =>
-    `<option value="${value}"${(state.typeValue ?? 'matrix') === value ? ' selected' : ''}>${label}</option>`
+    `<option value="${value}"${selectedType === value ? ' selected' : ''}>${label}</option>`
   return `
   <section class="panel" id="submit">
     <h2>Submit a matroid</h2>
@@ -295,9 +314,9 @@ function verifierForm(state: FormState, user: User | null): string {
         <input id="field" name="field" type="text" placeholder="e.g. 3, 7, or Q"
                value="${escapeHtml(state.fieldValue ?? '')}" /></label>
       </div>
-      <label for="data">Data <span class="hint">(JSON: a list of matrix rows, or a list of sets of element labels)</span></label>
+      <label for="data">Data <span class="hint" id="data-hint">${DATA_HINTS[selectedType]}</span></label>
       <textarea id="data" name="data" rows="8" required
-                placeholder="e.g. [[1,0,1,1],[0,1,1,2]] over GF(3), or bases [[0,1],[0,2],[0,3],[1,2],[1,3],[2,3]]">${escapeHtml(state.dataValue ?? '')}</textarea>
+                placeholder="${escapeHtml(DATA_PLACEHOLDERS[selectedType])}">${escapeHtml(state.dataValue ?? '')}</textarea>
       <label for="provenance">Attribution <span class="hint">(optional: discoverers, discovery date, AI-use disclosure)</span></label>
       <textarea id="provenance" name="provenance" rows="2"
                 placeholder="e.g. found by X and Y, 2026-08, using Z; no AI / AI model and role">${escapeHtml(state.provenanceValue ?? '')}</textarea>
@@ -313,6 +332,26 @@ function verifierForm(state: FormState, user: User | null): string {
       GF(p<sup>d</sup>), integers (subfield constants) or coefficient lists like
       <code>[0,1]</code> in the Conway polynomial basis, as in Sage or GAP.</p>
     </form>
+    <script>
+      // Progressive enhancement only: match the data box's placeholder and
+      // hint to the selected description, and dim the field input when it
+      // does not apply. Without JS the server-rendered text stands.
+      (function () {
+        var type = document.getElementById('type');
+        var data = document.getElementById('data');
+        var hint = document.getElementById('data-hint');
+        var field = document.getElementById('field');
+        var placeholders = ${JSON.stringify(DATA_PLACEHOLDERS)};
+        var hints = ${JSON.stringify(DATA_HINTS)};
+        function update() {
+          data.placeholder = placeholders[type.value] || '';
+          hint.textContent = hints[type.value] || '';
+          field.disabled = type.value !== 'matrix';
+        }
+        type.addEventListener('change', update);
+        update();
+      })();
+    </script>
   </section>`
 }
 
