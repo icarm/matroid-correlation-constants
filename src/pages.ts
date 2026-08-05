@@ -2,6 +2,7 @@
 
 import {
   MAX_ELEMENTS,
+  MAX_DP_ELEMENTS,
   MAX_EXT_FIELD_ORDER,
   MAX_LISTED_SETS,
   MAX_MATRIX_CELLS,
@@ -522,7 +523,7 @@ function verifierForm(state: FormState, user: User | null, openAttribution = fal
       <p class="muted form-note">Verification is exact: the matroid axioms are checked, every basis is
       enumerated, and all ratios are compared by integer cross multiplication. Limits:
       n &le; ${MAX_ELEMENTS} (more than 24 elements only in low rank, where enumeration stays
-      feasible; circuit and hyperplane descriptions up to 24), at most
+      feasible; circuit and hyperplane descriptions up to ${MAX_DP_ELEMENTS}), at most
       ${MAX_LISTED_SETS.toLocaleString('en-US')} listed sets or
       ${MAX_MATRIX_CELLS.toLocaleString('en-US')} matrix entries; matrix fields are &#8474;, any
       prime GF(p) with p &lt; 10<sup>6</sup>, or a proper prime power GF(p<sup>d</sup>) up to
@@ -850,7 +851,7 @@ export function apiDocsPage(user: User | null = null): string {
       <code>data</code> is the complete list of bases, circuits, or hyperplanes as lists of
       element labels. Limits: n &le; ${MAX_ELEMENTS} for matrices and bases (on more than 24
       elements only ranks with a feasible enumeration are accepted &mdash; roughly rank &le; 10
-      at n = 26 down to rank &le; 8 at n = 30; circuit and hyperplane descriptions stop at 24),
+      at n = 26 down to rank &le; 9 at n = 30; circuit and hyperplane descriptions stop at ${MAX_DP_ELEMENTS}),
       at most
       ${MAX_LISTED_SETS.toLocaleString('en-US')} listed sets or
       ${MAX_MATRIX_CELLS.toLocaleString('en-US')} matrix entries.</p>
@@ -1020,7 +1021,7 @@ export function matroidDetailPage(
         <div><dt>bases</dt><dd>${m.num_bases.toLocaleString('en-US')}</dd></div>
         <div><dt>${alphaVar}(M)</dt><dd class="score">${fmtAlphaLong(m.alpha_num, m.alpha_den)}</dd></div>
       </dl>
-      <dl class="witness-meta">
+      <dl class="detail-meta">
         <dt>status</dt><dd>${status}</dd>
         ${discoveryRows.join('\n        ')}
         <dt>submitted by</dt><dd>${submitter}</dd>
@@ -1280,7 +1281,7 @@ export function matroidsPage(
         &nbsp;&middot;&nbsp; ${sizeFilter}
         &nbsp;&middot;&nbsp; <a href="/database.json" download>Download (JSON) &darr;</a></div>
       <div class="table-scroll">
-      <table class="tokens-table witnesses-table">
+      <table class="tokens-table matroids-table">
         <thead><tr>
           ${th('id', 'matroid')}
           ${th('n', 'n', 'num')}

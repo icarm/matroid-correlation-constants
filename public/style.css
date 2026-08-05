@@ -810,29 +810,29 @@ a.record-card:hover {
   overflow-x: auto;
 }
 
-.witnesses-table {
+.matroids-table {
   white-space: nowrap;
 }
 
-.witnesses-table th a.sort {
+.matroids-table th a.sort {
   color: var(--muted);
   text-decoration: none;
 }
 
-.witnesses-table th a.sort:hover {
+.matroids-table th a.sort:hover {
   color: var(--accent);
 }
 
-.witnesses-table th a.sort.asc,
-.witnesses-table th a.sort.desc {
+.matroids-table th a.sort.asc,
+.matroids-table th a.sort.desc {
   color: var(--fg);
 }
 
-.witnesses-table th a.sort.asc::after {
+.matroids-table th a.sort.asc::after {
   content: " \2191"; /* up arrow */
 }
 
-.witnesses-table th a.sort.desc::after {
+.matroids-table th a.sort.desc::after {
   content: " \2193"; /* down arrow */
 }
 
@@ -901,17 +901,17 @@ a.record-card:hover {
 
 /* Matroid pages, commentary, recent activity */
 
-.witness-meta {
+.detail-meta {
   margin: 1rem 0;
 }
 
-.witness-meta dt {
+.detail-meta dt {
   color: var(--muted);
   font-size: 0.9rem;
   margin-top: 0.6rem;
 }
 
-.witness-meta dd {
+.detail-meta dd {
   margin: 0.1rem 0 0;
 }
 
@@ -1257,15 +1257,6 @@ form button:hover {
 
 .result-valid h2 {
   color: var(--valid);
-}
-
-.result-invalid {
-  background: var(--invalid-bg);
-  border-color: var(--invalid);
-}
-
-.result-invalid h2 {
-  color: var(--invalid);
 }
 
 .result-error {

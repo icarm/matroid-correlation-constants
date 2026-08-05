@@ -310,7 +310,6 @@ function matroidFromHyperplanes(n: number, data: unknown): number[] | Fail {
 // elimination work across subsets.
 
 interface FieldOps<T> {
-  fromCell(cell: unknown, row: number, col: number): T | Fail
   isZero(x: T): boolean
   /** Eliminate pivot's leading position from v (exact, scale-tolerant). */
   eliminate(v: T[], pivot: T[], pos: number): void
@@ -326,7 +325,13 @@ function isPrime(p: number): boolean {
   return true
 }
 
-function gfOps(p: number): FieldOps<number> {
+/** Finite-field ops also parse matrix cells; the rational path instead
+ * clears denominators row-by-row before any elimination. */
+type FiniteFieldOps = FieldOps<number> & {
+  fromCell(cell: unknown, row: number, col: number): number | Fail
+}
+
+function gfOps(p: number): FiniteFieldOps {
   // Modular inverse via exponentiation is overkill; extended Euclid.
   const inv = (a: number): number => {
     let [old_r, r] = [a % p, p]
@@ -490,7 +495,7 @@ export function conwayPolynomial(p: number, d: number): number[] {
 // for c_0 + c_1 a + ... + c_{d-1} a^{d-1} with a a root of C_{p,d}.
 // Multiplication runs on log/antilog tables (a is primitive, so its powers
 // enumerate every nonzero element); addition and negation are tabulated too.
-function gfExtOps(p: number, d: number): FieldOps<number> {
+function gfExtOps(p: number, d: number): FiniteFieldOps {
   const q = p ** d
   const conway = conwayPolynomial(p, d)
   const digits = (e: number): number[] => {
@@ -573,15 +578,6 @@ const RATIONAL_RE = /^([+-]?\d{1,15})(?:\/([1-9]\d{0,14}))?$/
 
 function rationalOps(): FieldOps<bigint> {
   return {
-    // Cells over Q are safe integers or strings like "-3/5". Each parsed cell
-    // is a pair encoded lazily: we clear denominators per row before the
-    // search, so here cells stay as [num, den] via a closure-side table.
-    // (fromCell is only used by the integer pipeline below; rational input is
-    // pre-scaled in matroidFromMatrix.)
-    fromCell(cell, row, col) {
-      void cell
-      return fail(`internal error parsing rational entry at row ${row}, column ${col}`)
-    },
     isZero: (x) => x === 0n,
     eliminate(v, pivot, pos) {
       // Fraction-free: v ← v·pivot[pos] − pivot·v[pos], then shrink by gcd.

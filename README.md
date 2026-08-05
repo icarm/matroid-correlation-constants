@@ -24,7 +24,12 @@ families approach 4/3. The challenge: a concrete matroid with α(M) ≥ 4/3.
   finite field — any prime GF(p), or GF(p^d) up to order 1024 using the
   Conway polynomial convention (as in Sage/GAP/Macaulay2; the polynomials
   are computed from the definition, not transcribed) — or as the complete
-  list of bases, circuits, or hyperplanes.
+  list of bases, circuits, or hyperplanes. An optional claimed α is
+  cross-checked exactly, so a record entry is a verified claim; entering
+  the record book requires a discovery record (discoverers, date, and an
+  explicit AI-use declaration). An exact resubmission of a record as a
+  matrix attaches a representability certificate instead of being
+  discarded.
   Verification is pure TypeScript (`src/verify.ts`): the matroid axioms are
   checked (basis exchange, or the circuit axioms), every basis is
   enumerated, and all ratios are compared by exact integer cross
@@ -39,9 +44,13 @@ families approach 4/3. The challenge: a concrete matroid with α(M) ≥ 4/3.
   hyperplane descriptions stop at 24 elements, since their axiom checks
   tabulate all 2^n subsets.)
 - **Records.** A submission whose constant strictly beats the record for
-  its ground-set size n is saved and attributed; beaten records are kept as
-  history. The landing page plots the record α against n with the
-  negative-correlation barrier (1) and the 4/3 challenge drawn in.
+  its ground-set size n is saved and attributed; beaten records are kept
+  as history. The landing page opens with a hero and an interactive
+  explorer (`public/chart.js`, progressive enhancement over a
+  server-rendered SVG): every stored matroid plotted against the twelve
+  known family curves, with the draft site's filters and the 4/3 target
+  line. A `/mathematics` page carries the definitions, background, and
+  full proofs of the family formulas (the one page that loads MathJax).
 - **Matroid pages** with the description, the maximizing pair's 2×2 basis
   counts, optional attribution (discoverers, date, AI disclosure), and a
   single editable commentary each (full edit history kept), plus a
