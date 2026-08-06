@@ -1,4 +1,8 @@
-# matroid-correlation-constants
+# matroid-correlation-constants (branch: cloudflare-workers)
+
+Since 2026-08-05 the repository default branch (main) carries Chris
+Eur's static site + Julia verifier stack; this branch holds the
+Workers/D1/KV record-book site described below.
 
 A record-keeping site for matroid correlation constants
 (α(M) = max over pairs of B[∋i,∋j]·B[∌i,∌j] / (B[∋i,∌j]·B[∌i,∋j])).
@@ -64,7 +68,7 @@ case).
     npm test
     npx wrangler d1 migrations apply matroid-correlation-constants --local
 
-Deploy: pushes to main on GitHub run .github/workflows/deploy.yml
+Deploy: pushes to this branch (cloudflare-workers) on GitHub run .github/workflows/deploy.yml
 (typecheck + tests, then remote migrations, then wrangler deploy; needs
 the CLOUDFLARE_API_TOKEN repo secret). Manual fallback (this environment
 has no wrangler auth — the user runs it):
