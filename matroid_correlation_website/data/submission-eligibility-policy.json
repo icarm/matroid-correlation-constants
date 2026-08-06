@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "updated": "2026-08-04",
+  "human_review_required": true,
+  "finite_on_the_nose": {
+    "comparison": "greater_than_or_equal",
+    "threshold": {
+      "numerator": 4,
+      "denominator": 3
+    }
+  },
+  "family_in_the_limit": {
+    "comparison": "greater_than_or_equal",
+    "threshold": {
+      "numerator": 4,
+      "denominator": 3
+    }
+  },
+  "finite_field_records": [
+    {
+      "field_order": 2,
+      "numerator": 8,
+      "denominator": 7,
+      "source": "Huh–Schröter–Wang finite-field spike"
+    },
+    {
+      "field_order": 3,
+      "numerator": 100,
+      "denominator": 81,
+      "source": "Ternary rank-6 benchmark"
+    },
+    {
+      "field_order": 5,
+      "numerator": 8,
+      "denominator": 7,
+      "source": "Huh–Schröter–Wang finite-field spike"
+    },
+    {
+      "field_order": 7,
+      "numerator": 8,
+      "denominator": 7,
+      "source": "Huh–Schröter–Wang finite-field spike"
+    }
+  ],
+  "classifications": [
+    "eligible-for-review",
+    "below-publication-thresholds",
+    "verification-failed",
+    "accepted-and-published"
+  ]
+}

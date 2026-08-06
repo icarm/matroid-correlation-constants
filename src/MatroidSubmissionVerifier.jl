@@ -428,51 +428,167 @@ function _finite_entry(value, field, finite_field_parent, context::String)
     )
 end
 
-function _generic_rank(rows::Vector{<:AbstractVector})
-    row_count = length(rows)
-    column_count = isempty(rows) ? 0 : length(first(rows))
-    matrix = Matrix{Any}(undef, row_count, column_count)
-    for row in 1:row_count, column in 1:column_count
-        matrix[row, column] = rows[row][column]
+# ---------------------------------------------------------------------------
+# Basis enumeration by shared-work depth-first search.
+#
+# Earlier revisions ran an independent Gaussian elimination for every
+# C(n, rank) column subset (matrix_rank_mod_p for prime fields; a Matrix{Any}
+# eliminator otherwise), allocating per subset. The searches below visit
+# every independent column set exactly once, keeping the elimination state of
+# the current set on a stack: extending an independent set by one column
+# costs a single in-place column reduction. The resulting basis set — and
+# therefore the colex encoding rendered from it — is identical.
+
+function _reduce_mod_p!(
+    scratch::Vector{Int},
+    pivots::Vector{Vector{Int}},
+    positions::Vector{Int},
+    p::Int,
+)
+    for k in eachindex(pivots)
+        factor = scratch[positions[k]]
+        factor == 0 && continue
+        pivot = pivots[k]
+        @inbounds for idx in eachindex(scratch)
+            scratch[idx] = mod(scratch[idx] - factor * pivot[idx], p)
+        end
     end
-    pivot_row = 1
-    for column in 1:column_count
-        pivot = findfirst(row -> !iszero(matrix[row, column]), pivot_row:row_count)
-        pivot === nothing && continue
-        pivot_index = pivot_row - 1 + pivot
-        if pivot_index != pivot_row
-            for other_column in 1:column_count
-                matrix[pivot_row, other_column], matrix[pivot_index, other_column] =
-                    matrix[pivot_index, other_column], matrix[pivot_row, other_column]
-            end
-        end
-        pivot_inverse = inv(matrix[pivot_row, column])
-        for other_column in column:column_count
-            matrix[pivot_row, other_column] *= pivot_inverse
-        end
-        for row in 1:row_count
-            row == pivot_row && continue
-            factor = matrix[row, column]
-            iszero(factor) && continue
-            for other_column in column:column_count
-                matrix[row, other_column] -= factor * matrix[pivot_row, other_column]
-            end
-        end
-        pivot_row += 1
-        pivot_row > row_count && break
-    end
-    return pivot_row - 1
+    return findfirst(!=(0), scratch)
 end
 
-function _generic_encoding(rows, n::Int, rank::Int)
-    characters = Char[]
-    sizehint!(characters, binomial(n, rank))
-    for mask in colex_masks(n, rank)
-        indices = findall(column -> mask & (UInt64(1) << (column - 1)) != 0, 1:n)
-        submatrix = [[row[column] for column in indices] for row in rows]
-        push!(characters, _generic_rank(submatrix) == rank ? '*' : '0')
+function _normalize_mod_p!(vector::Vector{Int}, position::Int, p::Int)
+    inverse = invmod(vector[position], p)
+    @inbounds for idx in eachindex(vector)
+        vector[idx] = mod(vector[idx] * inverse, p)
     end
-    return String(characters)
+    return vector
+end
+
+function _dfs_mod_p!(
+    bases::Vector{UInt64},
+    columns::Vector{Vector{Int}},
+    p::Int,
+    rank::Int,
+    pivots::Vector{Vector{Int}},
+    positions::Vector{Int},
+    scratch::Vector{Int},
+    start::Int,
+    mask::UInt64,
+)
+    depth = length(pivots)
+    if depth == rank
+        push!(bases, mask)
+        return nothing
+    end
+    for column in start:(length(columns) - (rank - depth) + 1)
+        copyto!(scratch, columns[column])
+        position = _reduce_mod_p!(scratch, pivots, positions, p)
+        position === nothing && continue
+        push!(pivots, _normalize_mod_p!(copy(scratch), position, p))
+        push!(positions, position)
+        _dfs_mod_p!(
+            bases, columns, p, rank, pivots, positions, scratch,
+            column + 1, mask | (UInt64(1) << (column - 1)),
+        )
+        pop!(pivots)
+        pop!(positions)
+    end
+    return nothing
+end
+
+function _basis_masks_mod_p(columns::Vector{Vector{Int}}, p::Int)
+    pivots = Vector{Vector{Int}}()
+    positions = Int[]
+    scratch = Vector{Int}(undef, length(first(columns)))
+    for column in columns
+        copyto!(scratch, column)
+        position = _reduce_mod_p!(scratch, pivots, positions, p)
+        position === nothing && continue
+        push!(pivots, _normalize_mod_p!(copy(scratch), position, p))
+        push!(positions, position)
+    end
+    rank = length(pivots)
+    bases = UInt64[]
+    if rank > 0
+        empty!(pivots)
+        empty!(positions)
+        _dfs_mod_p!(bases, columns, p, rank, pivots, positions, scratch, 1, UInt64(0))
+    end
+    return rank, bases
+end
+
+function _reduce_field!(
+    scratch::Vector{T},
+    pivots::Vector{Vector{T}},
+    positions::Vector{Int},
+) where {T}
+    for k in eachindex(pivots)
+        factor = scratch[positions[k]]
+        iszero(factor) && continue
+        pivot = pivots[k]
+        for idx in eachindex(scratch)
+            scratch[idx] = scratch[idx] - factor * pivot[idx]
+        end
+    end
+    return findfirst(!iszero, scratch)
+end
+
+function _normalize_field!(vector::Vector{T}, position::Int) where {T}
+    inverse = inv(vector[position])
+    for idx in eachindex(vector)
+        vector[idx] = vector[idx] * inverse
+    end
+    return vector
+end
+
+function _dfs_field!(
+    bases::Vector{UInt64},
+    columns::Vector{Vector{T}},
+    rank::Int,
+    pivots::Vector{Vector{T}},
+    positions::Vector{Int},
+    start::Int,
+    mask::UInt64,
+) where {T}
+    depth = length(pivots)
+    if depth == rank
+        push!(bases, mask)
+        return nothing
+    end
+    for column in start:(length(columns) - (rank - depth) + 1)
+        scratch = copy(columns[column])
+        position = _reduce_field!(scratch, pivots, positions)
+        position === nothing && continue
+        push!(pivots, _normalize_field!(scratch, position))
+        push!(positions, position)
+        _dfs_field!(
+            bases, columns, rank, pivots, positions,
+            column + 1, mask | (UInt64(1) << (column - 1)),
+        )
+        pop!(pivots)
+        pop!(positions)
+    end
+    return nothing
+end
+
+function _basis_masks_field(columns::Vector{Vector{T}}) where {T}
+    pivots = Vector{Vector{T}}()
+    positions = Int[]
+    for column in columns
+        scratch = copy(column)
+        position = _reduce_field!(scratch, pivots, positions)
+        position === nothing && continue
+        push!(pivots, _normalize_field!(scratch, position))
+        push!(positions, position)
+    end
+    rank = length(pivots)
+    bases = UInt64[]
+    if rank > 0
+        empty!(pivots)
+        empty!(positions)
+        _dfs_field!(bases, columns, rank, pivots, positions, 1, UInt64(0))
+    end
+    return rank, bases
 end
 
 function _normalized_rows(raw_rows, field, context::String)
@@ -539,18 +655,26 @@ end
 function _matrix_encoding(spec, n::Int, context::String)
     raw_rows, field = _raw_matrix_rows(spec, n, context)
     rows, normalized_rows = _normalized_rows(raw_rows, field, context)
-    if field.kind == :finite && field.degree == 1
+    if field.kind == :finite && field.degree == 1 && field.characteristic <= 2_147_483_647
         columns = [
             [rows[row][column] for row in eachindex(rows)]
             for column in 1:n
         ]
-        rank = matrix_rank_mod_p(columns, field.characteristic)
-        encoding = encoding_from_columns(columns, field.characteristic, rank)
+        rank, basis_masks = _basis_masks_mod_p(columns, field.characteristic)
     else
-        rank = _generic_rank(rows)
-        encoding = _generic_encoding(rows, n, rank)
+        element_rows = rows
+        if field.kind == :finite && field.degree == 1
+            parent = GF(field.characteristic)
+            element_rows = [[parent(entry) for entry in row] for row in rows]
+        end
+        columns = [
+            [element_rows[row][column] for row in eachindex(element_rows)]
+            for column in 1:n
+        ]
+        rank, basis_masks = _basis_masks_field(columns)
     end
     1 <= rank < n || invalid("automatic correlation verification requires 1 <= matrix rank < n")
+    encoding = _encoding_from_basis_masks(basis_masks, n, rank)
     _declared_rank(spec, rank)
     representation = (
         field_kind=String(field.kind),
