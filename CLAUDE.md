@@ -90,4 +90,7 @@ API token may be present at `~/.matroid-correlation-token.txt`.
   paving) for explorer filters. Family-proposal intake is BUILT
   (.github/ISSUE_TEMPLATE/propose-family.yml + screening workflow +
   /families CTA) — it activates when issues open on the GitHub repo.
+- If weighted-alpha support ever lands: the matroids table needs an
+  invariant column (everything today is the unweighted constant), with
+  separate records per invariant — mirror the catalog convention on main.
 - Construction-expression DSL deliberately deferred (see project memory).
