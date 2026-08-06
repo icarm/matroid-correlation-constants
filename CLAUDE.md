@@ -15,6 +15,12 @@ This branch is Chris Eur's stack, adopted as primary on 2026-08-05:
   issues get numeric threshold screening. Active only while this is the
   repository's default branch.
 
+Data convention: every catalog entry and certificate names its invariant
+("unweighted-alpha-bar" today; a future weighted alpha would use
+"weighted-alpha" with separate records/curves/leaderboards — never merged
+or compared across invariants; weighted claims are not machine-verifiable
+and would go through proof review like families).
+
 The `cloudflare-workers` branch holds the Workers/D1/KV record-book site
 previously served at matroid-correlation-constants.icarm.cloud (its own
 CLAUDE.md documents it); its TypeScript verifier cross-validates this

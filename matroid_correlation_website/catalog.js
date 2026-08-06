@@ -20,6 +20,15 @@ export const fraction = (numerator, denominator) => {
   };
 };
 
+// Every catalog entry states which invariant its value measures. The only
+// invariant with entries today is the unweighted correlation constant
+// (alpha-bar); if the weighted alpha (sup over positive weights) is ever
+// supported, its entries carry invariant: "weighted-alpha" and get their own
+// records, curves, and leaderboards — values of different invariants are
+// never compared or merged. The Julia verifier stamps the same discriminator
+// on every certificate (correlation.invariant).
+export const UNWEIGHTED = "unweighted-alpha-bar";
+
 export const siteConfig = {
   title: "Matroid Correlation Constants",
   dataVersion: "public beta · revised 2026-08-04",
@@ -66,6 +75,7 @@ const spikeMembers = [
 export const matroids = [
   {
     id: "ternary-100-81",
+    invariant: UNWEIGHTED,
     name: "Ternary rank-6 benchmark",
     shortName: "100/81 benchmark",
     n: 12,
@@ -102,6 +112,7 @@ export const matroids = [
   },
   ...spikeMembers.map((member) => ({
     ...member,
+    invariant: UNWEIGHTED,
     shortName: member.name,
     exact: fraction(8, 7),
     fields: [member.field],
@@ -284,6 +295,7 @@ const steinerQuadruplePoints = Array.from({ length: 67 }, (_, index) => index + 
 export const families = [
   {
     id: "hsw-finite-field-spikes",
+    invariant: UNWEIGHTED,
     name: "Huh–Schröter–Wang finite-field spikes",
     shortName: "HSW spikes",
     claimType: "exact",
@@ -321,6 +333,7 @@ export const families = [
   },
   {
     id: "uniform-self-sum-extensions",
+    invariant: UNWEIGHTED,
     name: "Uniform self-sum extensions",
     shortName: "Uniform extensions",
     claimType: "lower-bound",
@@ -359,6 +372,7 @@ export const families = [
   },
   {
     id: "affine-self-sum-extensions",
+    invariant: UNWEIGHTED,
     name: "Affine-geometry self-sum extensions",
     shortName: "Affine extensions",
     claimType: "lower-bound",
@@ -394,6 +408,7 @@ export const families = [
   },
   {
     id: "projective-self-sum-extensions",
+    invariant: UNWEIGHTED,
     name: "Projective-geometry self-sum extensions",
     shortName: "Projective extensions",
     claimType: "lower-bound",
@@ -428,6 +443,7 @@ export const families = [
   },
   {
     id: "steiner-system-self-sum-extensions",
+    invariant: UNWEIGHTED,
     name: "Steiner-system sparse-paving extensions",
     shortName: "Steiner extensions",
     claimType: "lower-bound",
