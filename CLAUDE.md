@@ -4,7 +4,9 @@ This branch is Chris Eur's stack, adopted as primary on 2026-08-05:
 
 - `matroid_correlation_website/` — the static site, deployed to
   Cloudflare Pages by `.github/workflows/deploy-website.yml` on pushes
-  to main (project `matroid-correlation-website`).
+  to main (project `matroid-correlation-website`; served at
+  https://matroid-correlation.icarm.cloud, with
+  matroid-correlation-website.pages.dev as the underlying URL).
 - `src/`, `scripts/`, `test/` — the trusted Julia verifier (Oscar-based;
   basis enumeration optimized by shared-work DFS, outputs byte-identical
   to the handoff version). `julia --project=. test/runtests.jl`.

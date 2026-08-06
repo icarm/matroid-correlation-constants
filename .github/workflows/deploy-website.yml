@@ -1,5 +1,7 @@
 # Deploy the static website (Chris Eur's draft, matroid_correlation_website/)
-# to Cloudflare Pages on every push to this branch.
+# to Cloudflare Pages on every push to this branch. Served at
+# https://matroid-correlation.icarm.cloud (custom domain attached to the
+# Pages project in the dashboard).
 #
 # One-time setup: the CLOUDFLARE_API_TOKEN secret needs "Cloudflare Pages:
 # Edit" permission (in addition to the Workers/D1 permissions the main
