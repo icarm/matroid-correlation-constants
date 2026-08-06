@@ -1,0 +1,527 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="A public, reproducible record book for correlation constants of matroids."
+    />
+    <meta name="theme-color" content="#0d3b3f" />
+    <title>Matroid Correlation Constants</title>
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./styles.css" />
+    <script>
+      window.mathJaxReady = new Promise((resolve) => {
+        window.resolveMathJaxReady = resolve;
+      });
+      window.MathJax = {
+        tex: {
+          inlineMath: [["\\(", "\\)"]],
+          displayMath: [["\\[", "\\]"]],
+          processEscapes: true,
+        },
+        chtml: {
+          scale: 0.98,
+        },
+        startup: {
+          typeset: false,
+          ready() {
+            MathJax.startup.defaultReady();
+            window.resolveMathJaxReady();
+          },
+        },
+      };
+    </script>
+    <script
+      defer
+      src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js"
+    ></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#explore">Skip to the record book</a>
+
+    <header class="site-header">
+      <div class="header-inner">
+        <a class="brand" href="#top" aria-label="Matroid Correlation Constants home">
+          <span class="brand-mark" aria-hidden="true">
+            <span></span><span></span><span></span><span></span>
+          </span>
+          <span>
+            <strong>Matroid Correlation Constants</strong>
+          </span>
+        </a>
+
+        <nav class="primary-nav" aria-label="Primary navigation">
+          <a href="#explore">Explore</a>
+          <a href="#families">Families</a>
+          <a href="#challenges">Challenges</a>
+          <a href="./mathematics.html">Mathematics</a>
+        </nav>
+
+        <a class="button button-small button-dark" href="./submission-guide.html">
+          Submit a result
+        </a>
+      </div>
+    </header>
+
+    <main id="top">
+      <section class="hero section-shell">
+        <div class="hero-copy">
+          <p class="eyebrow">
+            <span class="live-dot"></span>
+            Public beta · exact verification
+          </p>
+          <h1>A shared record book for correlation constants of matroids.</h1>
+          <p class="hero-lede">
+            Explore verified constructions, compare infinite families, and
+            collaborate on pushing
+            <span class="tex-inline">\(\overline{\alpha}\)</span>
+            higher.
+          </p>
+          <div class="hero-actions">
+            <a class="button button-primary" href="#explore">Explore the records</a>
+            <a class="button button-quiet" href="#submit">Propose a construction</a>
+          </div>
+        </div>
+
+        <aside class="record-card" aria-labelledby="record-card-title">
+          <div class="record-card-topline">
+            <span class="status-pill status-verified" id="hero-record-status">
+              in the limit
+            </span>
+            <span id="hero-record-kind">family benchmark</span>
+          </div>
+          <p id="record-card-title">Current score to beat</p>
+          <div class="record-value">
+            <span class="tex-inline">\(\overline{\alpha}\)</span>
+            <span>=</span>
+            <strong id="hero-record-fraction">
+              <span class="tex-inline">\(\frac{4}{3}\)</span>
+            </strong>
+          </div>
+          <p id="hero-record-name">Four double-free extension families</p>
+          <button
+            class="text-button"
+            id="hero-record-action"
+            type="button"
+          >
+            Inspect the benchmark
+            <span aria-hidden="true">→</span>
+          </button>
+        </aside>
+      </section>
+
+      <section class="metrics-strip" aria-label="Atlas summary">
+        <div class="section-shell metrics-grid">
+          <div>
+            <strong id="metric-matroids">5</strong>
+            <span>standalone certificates</span>
+          </div>
+          <div>
+            <strong id="metric-families">5</strong>
+            <span>family entries</span>
+          </div>
+          <div>
+            <strong id="metric-curves">12</strong>
+            <span>visible curve series</span>
+          </div>
+          <div>
+            <strong id="metric-benchmark">
+              <span class="tex-inline">\(\frac{4}{3}\)</span>
+            </strong>
+            <span>overall threshold</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="section-shell section-block" id="explore">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Explore the records</p>
+            <h2>Verified constructions and family curves</h2>
+          </div>
+          <p>
+            Solid curves are proved exact. Dashed curves are certified lower
+            bounds from a distinguished element pair.
+          </p>
+        </div>
+
+        <div class="explorer-shell">
+          <aside class="filter-panel" aria-label="Atlas filters">
+            <div class="filter-panel-heading">
+              <h3>Filter</h3>
+              <button class="text-button compact" id="reset-filters" type="button">
+                Reset
+              </button>
+            </div>
+
+            <label class="field-label" for="search-input">Search</label>
+            <div class="search-wrap">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="10.5" cy="10.5" r="6.5"></circle>
+                <path d="m15.5 15.5 5 5"></path>
+              </svg>
+              <input
+                id="search-input"
+                type="search"
+                placeholder="Name, family, contributor…"
+              />
+            </div>
+
+            <label class="field-label" for="field-filter">Verified field</label>
+            <select id="field-filter">
+              <option value="all">All fields</option>
+              <option value="2">GF(2)</option>
+              <option value="3">GF(3)</option>
+              <option value="5">GF(5)</option>
+              <option value="7">GF(7)</option>
+            </select>
+
+            <label class="field-label" for="rank-filter">Rank</label>
+            <select id="rank-filter">
+              <option value="all">All ranks</option>
+            </select>
+
+            <div class="range-label">
+              <label class="field-label" for="max-n">Ground-set size</label>
+              <output id="max-n-output" for="max-n">≤ 120</output>
+            </div>
+            <input id="max-n" type="range" min="20" max="1000" value="300" step="10" />
+
+            <fieldset>
+              <legend>Show</legend>
+              <label class="check-row">
+                <input id="show-points" type="checkbox" checked />
+                <span class="check-box"></span>
+                Individually cataloged matroids
+              </label>
+              <label class="check-row">
+                <input id="show-exact" type="checkbox" checked />
+                <span class="check-box"></span>
+                Exact family curves
+              </label>
+              <label class="check-row">
+                <input id="show-lower" type="checkbox" checked />
+                <span class="check-box"></span>
+                Lower-bound curves
+              </label>
+            </fieldset>
+
+            <fieldset>
+              <legend>Scale</legend>
+              <label class="check-row">
+                <input id="show-below-one" type="checkbox" />
+                <span class="check-box"></span>
+                Include values below 1
+              </label>
+              <label class="check-row">
+                <input id="full-y-scale" type="checkbox" />
+                <span class="check-box"></span>
+                Use full 1–2 scale
+              </label>
+            </fieldset>
+
+            <div class="filter-note">
+              <strong>About field filters</strong>
+              <p>
+                A badge records a supplied representation. Its absence does
+                not prove nonrepresentability.
+              </p>
+            </div>
+          </aside>
+
+          <div class="chart-panel">
+            <div class="chart-toolbar">
+              <div>
+                <span id="visible-count">5 catalog points</span>
+                <span class="toolbar-separator">·</span>
+                <span id="visible-series-count">6 curve series</span>
+              </div>
+              <div class="chart-toolbar-actions">
+                <button
+                  class="icon-button"
+                  id="toggle-x-axis"
+                  type="button"
+                  aria-pressed="false"
+                  title="Switch the horizontal axis to rank"
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M5 4v15h15"></path>
+                    <path d="m9 14 3-4 3 2 4-5"></path>
+                  </svg>
+                  <span id="x-axis-toggle-label">X-axis: ground-set size</span>
+                </button>
+                <button class="icon-button" id="copy-view" type="button">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M8 12.5 12 16l4-3.5"></path>
+                    <path d="M12 3v13"></path>
+                    <path d="M5 20h14"></path>
+                  </svg>
+                  Copy view
+                </button>
+              </div>
+            </div>
+
+            <div class="chart-wrap">
+              <svg
+                id="atlas-chart"
+                role="img"
+                aria-label="Plot of correlation ratio against matroid ground-set size"
+                viewBox="0 0 980 520"
+                preserveAspectRatio="xMidYMid meet"
+              ></svg>
+              <div class="chart-tooltip" id="chart-tooltip" role="tooltip"></div>
+              <div class="empty-chart" id="empty-chart" hidden>
+                No entries match these filters.
+              </div>
+            </div>
+
+            <div class="chart-legend" id="chart-legend"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section-shell section-block compact-top" id="records">
+        <div class="section-heading align-end">
+          <div>
+            <p class="eyebrow">Finite certificates</p>
+            <h2>Individually cataloged matroids</h2>
+          </div>
+          <p id="record-table-caption">
+            This is a certificate catalog, not the overall leaderboard;
+            finite members of accepted families remain on their curves above.
+          </p>
+        </div>
+
+        <div class="table-card">
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Construction</th>
+                  <th>
+                    <span class="tex-inline">\(\overline{\alpha}\)</span>
+                  </th>
+                  <th>Size</th>
+                  <th>Rank</th>
+                  <th>Discovery</th>
+                  <th>Verified field</th>
+                  <th>Status</th>
+                  <th><span class="sr-only">Open details</span></th>
+                </tr>
+              </thead>
+              <tbody id="records-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="family-section section-block" id="families">
+        <div class="section-shell">
+          <div class="section-heading light-heading">
+            <div>
+              <p class="eyebrow">Infinite constructions</p>
+              <h2>Every accepted family gets a curve.</h2>
+            </div>
+            <p>
+              Each page explains the construction, admissible parameters,
+              plotted formula, proof scope, and whether its benchmark is
+              attained or approached.
+            </p>
+          </div>
+          <div class="family-grid" id="family-grid"></div>
+        </div>
+      </section>
+
+      <section class="section-shell section-block" id="challenges">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Collaborate</p>
+            <h2>Open challenges</h2>
+          </div>
+          <p>
+            Beat the overall threshold on the nose, beat it in the limit, or
+            improve a record with a verified finite-field representation.
+          </p>
+        </div>
+        <div class="challenge-grid" id="challenge-grid"></div>
+      </section>
+
+      <section class="submission-section section-block" id="submit">
+        <div class="section-shell">
+          <div class="section-heading submission-heading">
+            <div>
+              <p class="eyebrow">Short, GitHub-authenticated forms</p>
+              <h2>Contribute in one of two ways.</h2>
+            </div>
+            <p>
+              Choose a short issue form. GitHub supplies the account identity
+              and public discussion; no fork, branch, JSON file, or pull
+              request is required. Concrete claims are checked exactly, while
+              family proofs receive mathematical review.
+            </p>
+          </div>
+
+          <div class="submission-grid">
+            <article class="submission-card">
+              <span class="submission-number">01</span>
+              <p class="eyebrow">Automatically verifiable</p>
+              <h3>Submit a concrete matroid</h3>
+              <p>
+                Give \(n\), \(r\), a claimed exact
+                \(\overline{\alpha}\), and exactly one of: a matrix with its
+                field, all bases, all circuits, or all hyperplanes. A matrix
+                certificate over a finite field or \(\mathbb Q\) is optional
+                when the primary description is combinatorial.
+              </p>
+              <ul class="check-list">
+                <li>Exact rational recomputation</li>
+                <li>Automatic challenge classification</li>
+                <li>Automatic submission timestamp</li>
+                <li>Discovery date and explicit AI disclosure</li>
+                <li>Deterministic downloadable certificate</li>
+              </ul>
+              <a
+                class="button button-primary github-submission-link"
+                data-issue-template="concrete-matroid.yml"
+                href="./submission-guide.html#concrete-submissions"
+              >Open the concrete form</a>
+              <a class="submission-guide-link" href="./submission-guide.html#concrete-submissions">
+                Concrete submission details →
+              </a>
+            </article>
+
+            <article class="submission-card">
+              <span class="submission-number">02</span>
+              <p class="eyebrow">Mathematical review</p>
+              <h3>Propose an infinite family</h3>
+              <p>
+                Define the parameterized construction, its plotted formula,
+                supremum, attainment behavior, and proof. Small members are
+                encouraged as reproducible evidence and may be submitted
+                separately to the concrete verifier.
+              </p>
+              <ul class="check-list">
+                <li>Automatic numeric threshold screening</li>
+                <li>Solid exact or dashed lower-bound curve</li>
+                <li>Public proof review in a GitHub issue</li>
+                <li>Discovery date, credits, and explicit AI disclosure</li>
+              </ul>
+              <a
+                class="button button-primary github-submission-link"
+                data-issue-template="infinite-family.yml"
+                href="./submission-guide.html#family-submissions"
+              >Open the family form</a>
+              <a class="submission-guide-link" href="./submission-guide.html#family-submissions">
+                Family review requirements →
+              </a>
+            </article>
+          </div>
+
+          <div class="repo-notice" id="repo-notice">
+            <span aria-hidden="true">i</span>
+            <p>
+              <strong>Exact verification is installed.</strong> The
+              issue workflow reads the form as inert data, reconstructs the
+              matroid, checks its axioms and claimed value, and posts an exact
+              verification result with a challenge classification. Family
+              limits receive numeric screening before human proof review.
+              Nothing submitted by a contributor is executed.
+              <a href="./submission-guide.html">Read the submission guide.</a>
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section-shell section-block methods-section" id="methods">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Verification language</p>
+            <h2>Exact claims stay separate from lower bounds.</h2>
+          </div>
+          <p>
+            The site records the unweighted invariant
+            <span class="tex-inline">
+              \(\overline{\alpha}(M)=\max_{i\ne j}
+              |B^{ij}(M)|\,|B_{ij}(M)|/
+              (|B^i_j(M)|\,|B^j_i(M)|)\).
+            </span>
+            See the definitions, family proofs, and representability argument
+            on the <a class="inline-link" href="./mathematics.html">mathematics page</a>.
+          </p>
+        </div>
+
+        <div class="methods-grid">
+          <article>
+            <span class="line-sample solid-line"></span>
+            <p class="eyebrow">Solid curve</p>
+            <h3>Exact family value</h3>
+            <p>
+              The proof identifies an attaining pair and shows that no other
+              eligible pair has a larger ratio.
+            </p>
+          </article>
+          <article>
+            <span class="line-sample dashed-line"></span>
+            <p class="eyebrow">Dashed curve</p>
+            <h3>Certified lower bound</h3>
+            <p>
+              A distinguished pair is evaluated exactly, but it has not yet
+              been proved to maximize the full invariant.
+            </p>
+          </article>
+          <article>
+            <span class="point-sample"></span>
+            <p class="eyebrow">Catalog point</p>
+            <h3>Automatic exact check</h3>
+            <p>
+              The finite matroid is reconstructed and every eligible pair is
+              enumerated by trusted verifier code.
+            </p>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="section-shell footer-inner">
+        <div class="footer-copy">
+          <a class="brand footer-brand" href="#top">
+            <span class="brand-mark" aria-hidden="true">
+              <span></span><span></span><span></span><span></span>
+            </span>
+            <span><strong>Matroid Correlation Constants</strong></span>
+          </a>
+          <p>An open record book for reproducible mathematical collaboration.</p>
+          <p class="site-credit">Website created by Chris Eur using ChatGPT 5.6 Sol Max on Codex.</p>
+        </div>
+        <div class="footer-meta">
+          <span id="data-version">loading verified data</span>
+          <a href="./mathematics.html">Mathematics</a>
+          <a href="./submission-guide.html">Submit</a>
+        </div>
+      </div>
+    </footer>
+
+    <dialog class="detail-dialog" id="detail-dialog">
+      <button class="dialog-close" id="dialog-close" type="button" aria-label="Close">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="m6 6 12 12M18 6 6 18"></path>
+        </svg>
+      </button>
+      <div id="detail-content"></div>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <noscript>
+      <div class="noscript">
+        The interactive record book needs JavaScript. The mathematics and submission
+        guide remain available as static pages.
+      </div>
+    </noscript>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

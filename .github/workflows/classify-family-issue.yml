@@ -31,6 +31,9 @@ jobs:
         with:
           version: "1.12"
 
+      - name: Cache Julia packages
+        uses: julia-actions/cache@v2
+
       - name: Instantiate the locked environment
         run: julia --project=. -e 'using Pkg; Pkg.instantiate()'
 

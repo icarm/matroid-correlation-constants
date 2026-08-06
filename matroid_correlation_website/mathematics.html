@@ -1,0 +1,866 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Definitions, exact formulas, proofs, history, and references for Matroid Correlation Constants."
+    />
+    <meta name="theme-color" content="#0d3b3f" />
+    <title>Mathematics · Matroid Correlation Constants</title>
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./styles.css" />
+    <script>
+      window.MathJax = {
+        tex: {
+          inlineMath: [["\\(", "\\)"]],
+          displayMath: [["\\[", "\\]"]],
+          processEscapes: true,
+        },
+        chtml: { scale: 0.98 },
+      };
+    </script>
+    <script
+      defer
+      src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js"
+    ></script>
+  </head>
+  <body class="article-page">
+    <a class="skip-link" href="#content">Skip to the mathematics</a>
+
+    <header class="site-header">
+      <div class="header-inner">
+        <a class="brand" href="./index.html" aria-label="Matroid Correlation Constants home">
+          <span class="brand-mark" aria-hidden="true">
+            <span></span><span></span><span></span><span></span>
+          </span>
+          <span>
+            <strong>Matroid Correlation Constants</strong>
+          </span>
+        </a>
+        <nav class="primary-nav" aria-label="Primary navigation">
+          <a href="./index.html#explore">Explore</a>
+          <a href="./index.html#families">Families</a>
+          <a href="#history">History</a>
+          <a href="#references">References</a>
+        </nav>
+        <a class="button button-small button-dark" href="./submission-guide.html">
+          Submit a result
+        </a>
+      </div>
+    </header>
+
+    <main id="content" class="document-shell">
+      <header class="document-hero">
+        <p class="eyebrow">Definitions, proofs, and provenance</p>
+        <h1>The mathematics behind the records</h1>
+        <p>
+          A solid curve is a proved value of the full invariant. A dashed curve
+          is an exact value for a specified pair and therefore a certified
+          lower bound. This page fixes the notation, proves every displayed
+          family formula, and records who found each construction.
+        </p>
+      </header>
+
+      <nav class="document-toc" aria-label="On this page">
+        <a href="#invariants">Definition</a>
+        <a href="#background">Background</a>
+        <a href="#history">Discovery record</a>
+        <a href="#verification">Finite certificates</a>
+        <a href="#double-free-families">Double-(co)-extended families</a>
+        <a class="toc-subitem" href="#double-free">Counting identity</a>
+        <a class="toc-subitem" href="#two-designs">2-design mechanism</a>
+        <a class="toc-subitem" href="#uniform-family">Uniform family</a>
+        <a class="toc-subitem" href="#geometry-families">Geometries</a>
+        <a class="toc-subitem" href="#steiner-family">Steiner systems</a>
+        <a class="toc-subitem" href="#representability">Representability</a>
+        <a href="#references">References</a>
+      </nav>
+
+      <section class="document-section" id="invariants">
+        <p class="eyebrow">Definition</p>
+        <h2>Unweighted and weighted correlation ratios</h2>
+        <p>
+          Let \(M\) be a matroid on \([n]=\{1,\ldots,n\}\). For distinct
+          \(i,j\in[n]\), set
+        </p>
+        <div class="math-panel">
+          \[
+          \begin{aligned}
+          B^{ij}(M)
+            &:=\{B\text{ a basis of }M:i,j\notin B\},\\
+          B_{ij}(M)
+            &:=\{B\text{ a basis of }M:i,j\in B\},\\
+          B^i_j(M)
+            &:=\{B\text{ a basis of }M:i\notin B,\ j\in B\}.
+          \end{aligned}
+          \]
+          \[
+          R_{ij}(M)
+          :=
+          \frac{|B^{ij}(M)|\,|B_{ij}(M)|}
+               {|B^i_j(M)|\,|B^j_i(M)|},
+          \qquad
+          \overline{\alpha}(M)
+          :=
+          \max_{i\ne j}R_{ij}(M),
+          \]
+        </div>
+        <p>
+          where the maximum ranges over pairs of nonloop, noncoloop elements.
+          For such a pair the two denominator factors are positive. If \(M\)
+          consists only of loops and coloops, the convention is
+          \(\overline{\alpha}(M)=0\).
+        </p>
+        <p>
+          For positive weights \(w=(w_x)_{x\in E(M)}\), replace each
+          cardinality by its weighted basis sum; for example,
+        </p>
+        <div class="math-panel">
+          \[
+          B^{ij}(M,w)
+          :=
+          \sum_{B\in B^{ij}(M)}\prod_{x\in B}w_x.
+          \]
+          \[
+          \alpha(M)
+          :=
+          \sup_{\substack{i\ne j\\w\in\mathbb R_{>0}^{E(M)}}}
+          \frac{B^{ij}(M,w)\,B_{ij}(M,w)}
+               {B^i_j(M,w)\,B^j_i(M,w)}.
+          \]
+        </div>
+        <p>
+          Thus \(\overline{\alpha}\) is the exact unweighted invariant
+          cataloged in the first release, while \(\alpha\) permits arbitrary
+          positive weights.
+        </p>
+      </section>
+
+      <section class="document-section" id="background">
+        <p class="eyebrow">Background</p>
+        <h2>Negative correlation, balance, and the half-plane property</h2>
+        <p>
+          Choose a basis \(B\) of \(M\) uniformly at random. For distinct
+          nonloop, noncoloop elements \(i,j\), negative correlation means
+        </p>
+        <div class="math-panel">
+          \[
+          \Pr(i,j\in B)\leq \Pr(i\in B)\Pr(j\in B).
+          \]
+          <p class="math-panel-note">
+            For the associated \(2\times2\) table, this is equivalent to
+          </p>
+          \[
+          |B^{ij}(M)|\,|B_{ij}(M)|
+          \leq
+          |B^i_j(M)|\,|B^j_i(M)|,
+          \]
+          <p class="math-panel-note">
+            or simply \(R_{ij}(M)\leq1\).
+          </p>
+        </div>
+        <p>
+          Negative correlation does not hold for every matroid. Seymour and
+          Welsh gave the first example with a positively correlated pair:
+          the eight-element binary matroid \(S_8\), for which
+          \(R_{ij}(S_8)>1\) for some pair \(i,j\).<sup class="reference-mark"><a href="#ref-seymour-welsh" aria-label="Reference 9">[9]</a></sup>
+        </p>
+        <p>
+          A matroid is <em>balanced</em> if this uniform negative-correlation
+          inequality holds for every pair in every minor. In particular, a
+          balanced matroid satisfies \(\overline{\alpha}(M)\leq1\). The
+          terminology and systematic study of balanced matroids are due to
+          Feder and Mihail.<sup class="reference-mark"><a href="#ref-feder-mihail" aria-label="Reference 2">[2]</a></sup>
+        </p>
+        <p>The basis-generating polynomial is</p>
+        <div class="math-panel">
+          \[
+          Z_M(z)=\sum_{B\in\mathcal B(M)}\prod_{e\in B}z_e.
+          \]
+        </div>
+        <p>
+          The matroid has the <em>half-plane property</em> (HPP) when
+          \(Z_M(z)\neq0\) whenever every variable has positive real part.<sup class="reference-mark"><a href="#ref-hpp" aria-label="Reference 3">[3]</a></sup>
+          The HPP implies the weighted Rayleigh inequality for every pair and
+          every positive weight vector—that is, it implies
+          \(\alpha(M)\leq1\), also called the \(1\)-Rayleigh property.<sup class="reference-mark"><a href="#ref-hpp" aria-label="Reference 3">[3]</a><a href="#ref-branden" aria-label="Reference 5">[5]</a></sup>
+          Taking weights to zero or infinity passes this inequality to
+          deletions and contractions, so every \(1\)-Rayleigh matroid is
+          balanced.<sup class="reference-mark"><a href="#ref-rayleigh" aria-label="Reference 4">[4]</a></sup>
+          Thus
+        </p>
+        <div class="math-panel emphasized">
+          \[
+          \mathrm{HPP}
+          \Longrightarrow
+          1\text{-Rayleigh}
+          \Longrightarrow
+          \text{balanced}
+          \Longrightarrow
+          \overline{\alpha}(M)\leq1.
+          \]
+        </div>
+        <p>
+          Examples with the HPP, and hence examples of balanced matroids,
+          include uniform matroids and regular matroids. In particular,
+          graphic matroids and cographic matroids have the HPP; more
+          generally, every sixth-root-of-unity matroid has the HPP. The HPP
+          class is also closed under minors, duality, direct sums, and
+          \(2\)-sums, among several other standard operations.<sup class="reference-mark"><a href="#ref-feder-mihail" aria-label="Reference 2">[2]</a><a href="#ref-hpp" aria-label="Reference 3">[3]</a></sup>
+        </p>
+        <p>
+          Not every matroid is balanced or \(1\)-Rayleigh. Nevertheless,
+          <a href="https://arxiv.org/abs/1806.02675" target="_blank" rel="noreferrer">Huh–Schröter–Wang</a><sup class="reference-mark"><a href="#ref-hsw" aria-label="Reference 1">[1]</a></sup>
+          proved the universal bound
+        </p>
+        <div class="math-panel emphasized">
+          \[
+          \boxed{
+          \overline{\alpha}(M)\leq\alpha(M)\leq2
+          }
+          \]
+          <p class="math-panel-note">for every matroid \(M\).</p>
+        </div>
+      </section>
+
+      <section class="document-section" id="history">
+        <p class="eyebrow">Discovery record</p>
+        <h2>Known values and how they were found</h2>
+        <div class="definition-grid history-grid">
+          <article>
+            <span>Literature family · June 2018</span>
+            <strong>\(\overline{\alpha}=8/7\)</strong>
+            <p>
+              The family is due to June Huh, Benjamin Schröter, and Botong
+              Wang; it appears in Section 5 of their
+              <a href="https://arxiv.org/abs/1806.02675" target="_blank" rel="noreferrer">paper on correlation bounds</a>.<sup class="reference-mark"><a href="#ref-hsw" aria-label="Reference 1">[1]</a></sup>
+              No AI use is reported in that discovery record.
+            </p>
+          </article>
+          <article>
+            <span>Finite example · August 2026</span>
+            <strong>\(\overline{\alpha}=100/81\)</strong>
+            <p>
+              Chris Eur and David Renshaw found the ternary example in a
+              computer search using
+              <a href="https://arxiv.org/abs/2506.13131" target="_blank" rel="noreferrer">AlphaEvolve</a>.<sup class="reference-mark"><a href="#ref-alphaevolve" aria-label="Reference 6">[6]</a></sup>
+              The exact AlphaEvolve system version is not recorded here.
+              Independently, June Huh found it through the study of Mathieu
+              groups with ChatGPT 5.5 Pro assisting the exploration. No
+              public chat or run link is currently recorded for either search.
+            </p>
+          </article>
+          <article>
+            <span>Infinite lower-bound family · August 2026</span>
+            <strong>\(R_{e,f}\longrightarrow4/3\)</strong>
+            <p>
+              Alexander Divoux and Shouda Wang first found this family with
+              the aid of ChatGPT 5.6 Sol Ultra. Its reinterpretation as a
+              double free-extension is due to humans. The original
+              formulation used transversal matroids. No public chat link is
+              currently recorded.
+            </p>
+          </article>
+        </div>
+        <p>
+          Huh observed additional structure in the \(100/81\) example:
+          contracting two elements yields the matroid of the Steiner system
+          \(S(3,4,10)\), and the relevant linear subclasses are related to the
+          duads and synthemes for the permutation group on six letters. The
+          complete matrix and exact maximizing-pair certificate are available
+          in the
+          <a href="./index.html?detail=matroid:ternary-100-81">finite record</a>.
+        </p>
+        <p>
+          In August 2026, using the double-free construction, Chris Eur found
+          the affine-geometry, projective-geometry, and Steiner-system
+          families below via ChatGPT 5.6 Sol Max on Codex, which assisted the
+          mathematical exploration and formula checks. The organizing
+          observation is that the bases of all four starting matroids form
+          \(2\)-designs. A public chat link is not currently recorded.
+        </p>
+      </section>
+
+      <section class="document-section" id="verification">
+        <p class="eyebrow">Exact finite check</p>
+        <h2>What a concrete certificate proves</h2>
+        <p>
+          The trusted Julia verifier reconstructs a submitted matroid from
+          one complete description—matrix, bases, circuits, or hyperplanes.
+          It validates the relevant matroid axioms, enumerates every basis,
+          computes the four sets above for every eligible pair, and compares
+          ratios by exact integer cross multiplication. A matrix supplied as
+          an optional representability certificate is accepted only when it
+          defines the same labeled matroid.
+        </p>
+        <p>
+          The resulting certificate records the exact reduced fraction, every
+          maximizing pair, the four corresponding basis counts, structural
+          invariants, and verified field certificates. Contributor-supplied
+          code is never executed.
+        </p>
+      </section>
+
+      <section class="document-section family-program" id="double-free-families">
+        <p class="eyebrow">Construction program</p>
+        <h2>Families built by double-(co)-extending self-direct-sums</h2>
+        <p class="family-program-intro">
+          All four families below use the same template: begin with a
+          matroid \(M\), form \(M\oplus M\), freely extend by \(e\), and
+          freely coextend by \(f\). The next subsections give the common
+          counting identity, explain the shared \(2\)-design mechanism,
+          analyze the four choices of \(M\), and record what can be asserted
+          about representability.
+        </p>
+
+        <div class="family-program-body">
+      <section class="family-subsection" id="double-free">
+        <p class="eyebrow">Counting identity</p>
+        <h3>Free extension, free coextension, and a self-direct-sum</h3>
+        <p>
+          Write \(N+e\times f\) for the free coextension by \(f\) of the
+          free extension by \(e\) of \(N\). Let \(M\) have rank \(m\), and
+          define the four adjacent-rank counts
+        </p>
+        <div class="math-panel">
+          \[
+          \begin{aligned}
+          i&=\#\{I\subseteq E(M):|I|=m-1,\ I\text{ independent}\},\\
+          b&=|\mathcal B(M)|,\\
+          a&=\#\{A\subseteq E(M):|A|=m,\
+               \operatorname{rk}_M(A)\ge m-1\},\\
+          s&=\#\{S\subseteq E(M):|S|=m+1,\
+               \operatorname{rk}_M(S)=m\}.
+          \end{aligned}
+          \]
+        </div>
+        <p>
+          The four basis classes of \(M+e\times f\), according to whether
+          they contain \(e\) and \(f\), correspond respectively to the
+          independent \((m-1)\)-sets, bases, rank-\(m\) sets of rank at least
+          \(m-1\), and spanning \((m+1)\)-sets of \(M\). Hence
+        </p>
+        <div class="math-panel">
+          \[
+          \boxed{
+          \epsilon(M)
+          :=R_{ef}(M+e\times f)
+          =\frac{is}{ab}.
+          }
+          \tag{1}
+          \]
+        </div>
+        <p>
+          For \(N=M\oplus M\), distributing an almost-basis or an
+          almost-spanning set between the two summands gives
+        </p>
+        <div class="math-panel">
+          \[
+          b_N=b^2,\qquad
+          i_N=2ib,\qquad
+          s_N=2sb,\qquad
+          a_N=2ab-b^2+2is.
+          \]
+          \[
+          \boxed{
+          \epsilon(M\oplus M)
+          =
+          R_{ef}((M\oplus M)+e\times f)
+          =
+          \frac{4is}{2ab-b^2+2is}.
+          }
+          \tag{2}
+          \]
+        </div>
+        <p>
+          Equivalently, with \(Q(M)=is/b^2\), \(Z(M)=a/b\), and
+          \(\beta(M)=b/a\),
+        </p>
+        <div class="math-panel">
+          \[
+          \epsilon(M\oplus M)
+          =
+          \frac{4Q(M)}{2Z(M)-1+2Q(M)}
+          =
+          \frac{4\epsilon(M)}
+               {2(1+\epsilon(M))-\beta(M)}.
+          \tag{3}
+          \]
+        </div>
+      </section>
+
+      <section class="family-subsection" id="two-designs">
+        <p class="eyebrow">Common mechanism</p>
+        <h3>Why the starting matroids all have the uniform value</h3>
+        <p>
+          Suppose the bases of a rank-\(r\) matroid \(M\) form a
+          \(2\)-\((n,r,\lambda)\) design, and let \(b=|\mathcal B(M)|\).
+          Double counting bases through zero, one, or two specified elements
+          gives, for every distinct \(i,j\),
+        </p>
+        <div class="math-panel">
+          \[
+          \begin{aligned}
+          |B_{ij}(M)|
+            &=\frac{br(r-1)}{n(n-1)},\\
+          |B^i_j(M)|=|B^j_i(M)|
+            &=\frac{br(n-r)}{n(n-1)},\\
+          |B^{ij}(M)|
+            &=\frac{b(n-r)(n-r-1)}{n(n-1)}.
+          \end{aligned}
+          \]
+          \[
+          \boxed{
+          \overline{\alpha}(M)
+          =
+          \frac{(r-1)(n-r-1)}{r(n-r)}
+          =
+          \overline{\alpha}(U_{r,n}).
+          }
+          \tag{4}
+          \]
+        </div>
+        <p>
+          The \(2\)-design condition determines these four basis-incidence
+          counts, but it does not determine \(i,a,s\). Therefore it fixes
+          \(\overline{\alpha}(M)\) without fixing
+          \(\epsilon(M\oplus M)\). This is precisely the room exploited by
+          the geometry and Steiner constructions.
+        </p>
+      </section>
+
+      <section class="family-subsection" id="uniform-family">
+        <p class="eyebrow">Family 1</p>
+        <h3>Uniform self-sum extensions</h3>
+        <p>
+          Take \(M=U_{r,2r}\) and
+          \(P_r=(M\oplus M)+e\times f\). Then
+        </p>
+        <div class="math-panel">
+          \[
+          a=b=\binom{2r}{r},
+          \qquad
+          i=s=\binom{2r}{r-1}.
+          \]
+          \[
+          Q(M)
+          =
+          \left(\frac{\binom{2r}{r-1}}{\binom{2r}{r}}\right)^2
+          =
+          \frac{r^2}{(r+1)^2},
+          \qquad Z(M)=1.
+          \]
+          \[
+          \boxed{
+          R_{ef}(P_r)
+          =
+          \frac{4r^2}{3r^2+2r+1}
+          \longrightarrow\frac43.
+          }
+          \tag{5}
+          \]
+        </div>
+        <p>
+          The displayed value is exact for \((e,f)\), so it proves
+          \(\overline{\alpha}(P_r)\ge R_{ef}(P_r)\). It is not presently
+          asserted that \((e,f)\) maximizes the full invariant for every
+          \(r\); this is why the curve is dashed.
+        </p>
+        <aside class="document-callout">
+          <strong>Credit.</strong>
+          Alexander Divoux and Shouda Wang first found this family with the
+          aid of ChatGPT 5.6 Sol Ultra. Its reinterpretation as a double
+          free-extension is due to humans. The discovery was made in August
+          2026, and the original formulation used transversal matroids. No
+          public chat link is currently recorded.
+        </aside>
+      </section>
+
+      <section class="family-subsection" id="geometry-families">
+        <p class="eyebrow">Families 2 and 3</p>
+        <h3>Affine and projective geometries</h3>
+        <p>
+          Let \(G\) be either
+          \(\operatorname{AG}(d-1,q)\), of rank \(d\) on \(q^{d-1}\)
+          points, or \(\operatorname{PG}(d-1,q)\), of rank \(d\) on
+          \((q^d-1)/(q-1)\) points. Their point-automorphism groups are
+          \(2\)-transitive, so their bases form \(2\)-designs and (4)
+          applies.
+        </p>
+
+        <h4>Exact finite values</h4>
+        <p>
+          For a rank-\(d\) geometry \(G\), let
+          \(\sigma_G(k)\) be the number of spanning \(k\)-subsets. Möbius
+          inversion on the flat lattice gives
+        </p>
+        <div class="math-panel">
+          \[
+          \sigma_{\operatorname{PG}(d-1,q)}(k)
+          =
+          \sum_{j=0}^{d}
+          {d\brack j}_q
+          (-1)^{d-j}q^{\binom{d-j}{2}}
+          \binom{(q^j-1)/(q-1)}{k},
+          \tag{6}
+          \]
+          \[
+          \sigma_{\operatorname{AG}(d-1,q)}(k)
+          =
+          \sum_{j=1}^{d}
+          q^{d-j}{d-1\brack j-1}_q
+          (-1)^{d-j}q^{\binom{d-j}{2}}
+          \binom{q^{j-1}}{k}.
+          \tag{7}
+          \]
+        </div>
+        <p>
+          Here \({d\brack j}_q\) denotes a Gaussian binomial coefficient.
+          Let \(h_G\) be the number of hyperplanes of \(G\), and let \(H\)
+          denote one such hyperplane. Every independent \((d-1)\)-set spans
+          a unique hyperplane, as does every nonspanning \(d\)-set of rank
+          \(d-1\). Consequently the four inputs to (2) are
+        </p>
+        <div class="math-panel">
+          \[
+          i=h_G\sigma_H(d-1),\qquad
+          b=\sigma_G(d),\qquad
+          a=b+h_G\sigma_H(d),\qquad
+          s=\sigma_G(d+1).
+          \tag{8}
+          \]
+        </div>
+        <p>
+          Equations (2), (6)–(8) give every plotted affine and projective
+          point as an exact rational number, without enumerating subsets of
+          their exponentially large ground sets.
+        </p>
+
+        <h4>Fixed field, growing rank</h4>
+        <p>
+          Fix \(q\) and let \(d\to\infty\). Translating one affine point to
+          the origin turns affine spanning into ordinary linear spanning.
+          For projective geometry, choose nonzero representatives of the
+          sampled projective points. In either case, collisions among
+          \(d+O(1)\) samples have probability \(o(1)\), so the relevant rank
+          probabilities converge to those for random matrices over
+          \(\operatorname{GF}(q)\).
+        </p>
+        <p>
+          If \(p_0(d)\) is the nonsingularity probability for a random
+          \(d\times d\) matrix, while \(p_-(d)\), \(p_+(d)\), and \(p_1(d)\)
+          are respectively the full-rank probabilities in sizes
+          \(d\times(d-1)\), \(d\times(d+1)\), and the probability of rank
+          \(d-1\) in size \(d\times d\), then
+        </p>
+        <div class="math-panel">
+          \[
+          \frac{p_-(d)}{p_0(d)}=\frac1{1-q^{-1}},
+          \qquad
+          \frac{p_+(d)}{p_0(d)}
+          =\frac{1-q^{-(d+1)}}{1-q^{-1}},
+          \]
+          \[
+          \frac{p_1(d)}{p_0(d)}
+          =\frac{q(1-q^{-d})}{(q-1)^2}.
+          \]
+          \[
+          Q(G)\longrightarrow\frac{q^2}{(q-1)^2},
+          \qquad
+          Z(G)\longrightarrow
+          \frac{q^2-q+1}{(q-1)^2}.
+          \]
+          \[
+          \boxed{
+          R_{ef}((G\oplus G)+e\times f)
+          \longrightarrow
+          \frac{4q^2}{3q^2+1}.
+          }
+          \tag{9}
+          \]
+        </div>
+
+        <h4>Fixed rank, growing field</h4>
+        <p>
+          Fix \(d\) and let \(q\to\infty\). Almost every subset of size at
+          most \(d\) is independent and almost every subset of size at least
+          \(d\) is spanning. Thus the geometry is asymptotically uniform in
+          all counts relevant to (2), and
+        </p>
+        <div class="math-panel">
+          \[
+          \boxed{
+          R_{ef}((G\oplus G)+e\times f)
+          \longrightarrow
+          \frac{4d}{3d+1}.
+          }
+          \tag{10}
+          \]
+        </div>
+        <p>
+          Either a subsequent limit \(q\to\infty\) in (9), or
+          \(d\to\infty\) in (10), approaches \(4/3\).
+        </p>
+
+        <aside class="document-callout">
+          <strong>Credit.</strong>
+          Chris Eur discovered both geometry families in August 2026 via
+          ChatGPT 5.6 Sol Max on Codex, which assisted the mathematical
+          exploration and formula checks. The work used the double-free
+          construction. No public chat link is currently recorded.
+        </aside>
+      </section>
+
+      <section class="family-subsection" id="steiner-family">
+        <p class="eyebrow">Family 4</p>
+        <h3>Steiner-system sparse-paving matroids</h3>
+        <p>
+          Let the circuit-hyperplanes of a rank-\(r\) sparse-paving matroid
+          \(M_{r,n}\) be the blocks of a Steiner system
+          \(S(r-1,r,n)\). Two blocks intersect in at most \(r-2\) elements,
+          so this is a valid sparse-paving matroid. The blocks form a
+          \(2\)-design, and therefore so does their complement among the
+          \(r\)-subsets—the set of bases of \(M_{r,n}\).
+        </p>
+        <p>
+          Put \(c=n-r\). The number of circuit-hyperplanes is
+        </p>
+        <div class="math-panel">
+          \[
+          h=\frac1r\binom n{r-1}
+           =\frac1{c+1}\binom nr.
+          \]
+        </div>
+        <p>
+          Every \((r-1)\)-set is independent, every \(r\)-set has rank at
+          least \(r-1\), and every \((r+1)\)-set is spanning. Hence
+        </p>
+        <div class="math-panel">
+          \[
+          i=\binom n{r-1},\qquad
+          b=\binom nr-h=\frac{c}{c+1}\binom nr,\qquad
+          a=\binom nr,\qquad
+          s=\binom n{r+1}.
+          \]
+          \[
+          \epsilon(M_{r,n})=\frac r{r+1},
+          \qquad
+          \beta(M_{r,n})=\frac c{c+1}.
+          \]
+        </div>
+        <p>
+          Substitution in (3) proves the displayed family formula:
+        </p>
+        <div class="math-panel">
+          \[
+          \boxed{
+          R_{ef}((M_{r,n}\oplus M_{r,n})+e\times f)
+          =
+          \frac{4r(c+1)}{(3r+1)c+4r+2}.
+          }
+          \tag{11}
+          \]
+          \[
+          \lim_{n\to\infty}
+          R_{ef}((M_{r,n}\oplus M_{r,n})+e\times f)
+          =
+          \frac{4r}{3r+1},
+          \qquad
+          \lim_{r\to\infty}\frac{4r}{3r+1}=\frac43.
+          \]
+        </div>
+        <p>
+          The first two explicit subfamilies plotted on the site are
+        </p>
+        <div class="math-panel">
+          \[
+          \begin{array}{c|c|c}
+          \text{systems}&\text{admissible }n&
+          R_{ef}((M_{r,n}\oplus M_{r,n})+e\times f)\\
+          \hline
+          S(2,3,n)&n\equiv1,3\pmod6&
+          \dfrac{6(n-2)}{5n-8}\longrightarrow\dfrac65\\[6pt]
+          S(3,4,n)&n\equiv2,4\pmod6&
+          \dfrac{16(n-3)}{13n-34}\longrightarrow\dfrac{16}{13}.
+          \end{array}
+          \]
+        </div>
+        <p>
+          The existence of \(S(3,4,n)\) for every
+          \(n\equiv2,4\pmod6\) is Hanani's theorem.<sup class="reference-mark"><a href="#ref-hanani" aria-label="Reference 8">[8]</a></sup>
+        </p>
+        <p>
+          For every fixed \(r\), Peter Keevash's
+          <a href="https://arxiv.org/abs/1401.3665" target="_blank" rel="noreferrer">existence theorem for designs</a>
+          <sup class="reference-mark"><a href="#ref-keevash" aria-label="Reference 7">[7]</a></sup>
+          supplies \(S(r-1,r,n)\) for all sufficiently large admissible
+          \(n\) satisfying the standard divisibility conditions. This makes
+          (11) an infinite family at every fixed rank, not merely a formal
+          parameter calculation.
+        </p>
+        <aside class="document-callout">
+          <strong>Credit.</strong>
+          Chris Eur discovered the Steiner-system family in August 2026,
+          beginning with Steiner triples, via ChatGPT 5.6 Sol Max on Codex,
+          which assisted the mathematical exploration and formula checks.
+          The construction uses the double-free construction and the shared
+          \(2\)-design mechanism. No public chat link is currently recorded.
+        </aside>
+      </section>
+
+      <section class="family-subsection" id="representability">
+        <p class="eyebrow">Field of representation</p>
+        <h3>Representability may require a field extension</h3>
+        <p>
+          Suppose that the starting matroid is represented over a finite
+          field \(K\). After passing to a sufficiently large finite extension
+          \(L/K\), the finitely many linear spans of its nonspanning flats
+          cannot cover the entire ambient \(L\)-vector space. Choosing a
+          vector outside their union realizes a free extension. Applying the
+          same argument to the dual realizes a free coextension, possibly
+          after enlarging the field once more. Consequently, if the starting
+          matroid is representable in characteristic \(p\), then so is the
+          final double-(co)-extended matroid.
+        </p>
+        <p>
+          This does not imply representability over the original field. For
+          example, let \(G=\operatorname{AG}(d-1,2)\) with \(d\geq3\). Its
+          standard binary columns are \((1,x)\), with
+          \(x\in\operatorname{GF}(2)^{d-1}\). Every nonzero binary vector is
+          either one of these columns or is the sum of two of them. It
+          therefore lies in the span of a nonspanning set of at most two
+          columns and cannot represent a freely added element. Thus
+          \(G+e\) is not binary. The same componentwise argument shows that
+          \((G\oplus G)+e\) is not binary, and
+        </p>
+        <div class="math-panel">
+          \[
+          \bigl((G\oplus G)+e\times f\bigr)/f
+          = (G\oplus G)+e.
+          \]
+        </div>
+        <p>
+          Since binary representability is inherited by minors, the final
+          affine-geometry construction is not representable over
+          \(\operatorname{GF}(2)\), although it is representable over a
+          sufficiently large finite field of characteristic \(2\).
+        </p>
+      </section>
+        </div>
+      </section>
+
+      <section class="document-section" id="references">
+        <p class="eyebrow">Sources</p>
+        <h2>References</h2>
+        <ol class="reference-list">
+          <li id="ref-hsw">
+            June Huh, Benjamin Schröter, and Botong Wang,
+            <a href="https://doi.org/10.4171/JEMS/1119" target="_blank" rel="noreferrer">
+              “Correlation bounds for fields and matroids”
+            </a>,
+            <em>Journal of the European Mathematical Society</em> 24 (2022),
+            1335–1351. This proves the general correlation bound and contains
+            the \(8/7\) family in Section 5.
+          </li>
+          <li id="ref-feder-mihail">
+            Tomás Feder and Milena Mihail,
+            <a href="https://doi.org/10.1145/129712.129716" target="_blank" rel="noreferrer">
+              “Balanced matroids”
+            </a>,
+            <em>Proceedings of the Twenty-Fourth Annual ACM Symposium on
+            Theory of Computing</em> (1992), 26–38. This introduces balanced
+            matroids and proves balance for graphic and regular matroids.
+          </li>
+          <li id="ref-hpp">
+            Young-Bin Choe, James G. Oxley, Alan D. Sokal, and David G.
+            Wagner,
+            <a href="https://doi.org/10.1016/S0196-8858(03)00078-2" target="_blank" rel="noreferrer">
+              “Homogeneous multivariate polynomials with the half-plane property”
+            </a>,
+            <em>Advances in Applied Mathematics</em> 32 (2004), 88–187.
+            This develops the HPP for basis-generating polynomials, proves it
+            for sixth-root-of-unity matroids, and establishes its closure
+            under the operations cited above.
+          </li>
+          <li id="ref-rayleigh">
+            Young-Bin Choe and David G. Wagner,
+            <a href="https://doi.org/10.1017/S0963548306007541" target="_blank" rel="noreferrer">
+              “Rayleigh matroids”
+            </a>,
+            <em>Combinatorics, Probability and Computing</em> 15 (2006),
+            765–781. This develops the weighted Rayleigh class and its
+            relationship with balanced matroids.
+          </li>
+          <li id="ref-branden">
+            Petter Brändén,
+            <a href="https://doi.org/10.1016/j.aim.2007.05.011" target="_blank" rel="noreferrer">
+              “Polynomials with the half-plane property and matroid theory”
+            </a>,
+            <em>Advances in Mathematics</em> 216 (2007), 302–320. This gives
+            the multiaffine stability criterion underlying the strong
+            Rayleigh inequalities.
+          </li>
+          <li id="ref-alphaevolve">
+            Alexander Novikov et al.,
+            <a href="https://arxiv.org/abs/2506.13131" target="_blank" rel="noreferrer">
+              “AlphaEvolve: A coding agent for scientific and algorithmic discovery”
+            </a>.
+            This is the system used in the Eur–Renshaw search that found the
+            \(100/81\) example.
+          </li>
+          <li id="ref-keevash">
+            Peter Keevash,
+            <a href="https://arxiv.org/abs/1401.3665" target="_blank" rel="noreferrer">
+              “The existence of designs”
+            </a>.
+            This supplies the general Steiner systems used in the
+            sparse-paving family.
+          </li>
+          <li id="ref-hanani">
+            Haim Hanani,
+            <a href="https://doi.org/10.4153/CJM-1960-013-3" target="_blank" rel="noreferrer">
+              “On quadruple systems”
+            </a>,
+            <em>Canadian Journal of Mathematics</em> 12 (1960), 145–157.
+            In particular, Steiner quadruple systems exist exactly in the
+            admissible congruence classes used above.
+          </li>
+          <li id="ref-seymour-welsh">
+            P. D. Seymour and D. J. A. Welsh,
+            <a href="https://doi.org/10.1017/S0305004100051306" target="_blank" rel="noreferrer">
+              “Combinatorial applications of an inequality from statistical mechanics”
+            </a>,
+            <em>Mathematical Proceedings of the Cambridge Philosophical
+            Society</em> 77 (1975), 485–495. This contains the first example
+            of a matroid with a positively correlated pair, the binary
+            matroid now denoted \(S_8\).
+          </li>
+        </ol>
+      </section>
+
+      <div class="document-actions">
+        <a class="button button-primary" href="./index.html#families">
+          Explore all family curves
+        </a>
+        <a class="button button-quiet" href="./submission-guide.html">
+          Submit a result
+        </a>
+      </div>
+    </main>
+
+    <footer>
+      <div class="section-shell footer-inner">
+        <div class="footer-copy">
+          <p class="footer-heading">Matroid Correlation Constants · definitions and proof record</p>
+          <p class="site-credit">Website created by Chris Eur using ChatGPT 5.6 Sol Max on Codex.</p>
+        </div>
+        <div class="footer-meta">
+          <a href="./index.html">Explore</a>
+          <a href="./submission-guide.html">Submit</a>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

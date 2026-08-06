@@ -1,0 +1,428 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Submit a concrete matroid or infinite family to Matroid Correlation Constants."
+    />
+    <meta name="theme-color" content="#0d3b3f" />
+    <title>Submit · Matroid Correlation Constants</title>
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./styles.css" />
+    <script>
+      window.MathJax = {
+        tex: {
+          inlineMath: [["\\(", "\\)"]],
+          displayMath: [["\\[", "\\]"]],
+          processEscapes: true,
+        },
+        chtml: { scale: 0.98 },
+      };
+    </script>
+    <script
+      defer
+      src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js"
+    ></script>
+  </head>
+  <body class="article-page">
+    <a class="skip-link" href="#content">Skip to the submission guide</a>
+
+    <header class="site-header">
+      <div class="header-inner">
+        <a class="brand" href="./index.html" aria-label="Matroid Correlation Constants home">
+          <span class="brand-mark" aria-hidden="true">
+            <span></span><span></span><span></span><span></span>
+          </span>
+          <span>
+            <strong>Matroid Correlation Constants</strong>
+          </span>
+        </a>
+        <nav class="primary-nav" aria-label="Primary navigation">
+          <a href="./index.html#explore">Explore</a>
+          <a href="./mathematics.html">Mathematics</a>
+          <a href="#family-submissions">Families</a>
+          <a href="#security">Safety</a>
+        </nav>
+        <a class="button button-small button-dark" href="#choose-route">
+          Submit a result
+        </a>
+      </div>
+    </header>
+
+    <main id="content" class="document-shell">
+      <header class="document-hero">
+        <p class="eyebrow">GitHub-authenticated collaboration</p>
+        <h1>Submit through a short online form</h1>
+        <p>
+          Anyone with a GitHub account may submit. There is no repository
+          fork, branch, JSON file, or pull request to prepare. Concrete claims
+          receive an exact automated check; infinite-family claims receive
+          public mathematical review.
+        </p>
+      </header>
+
+      <div class="definition-grid submission-overview" id="choose-route">
+        <article>
+          <span>Concrete matroid</span>
+          <strong>Exact Julia verification</strong>
+          <p>
+            Supply \(n\), \(r\), a claimed
+            \(\overline{\alpha}\), one complete finite description, and a
+            short discovery and AI-use disclosure.
+          </p>
+          <a
+            class="button button-primary github-submission-link"
+            data-issue-template="concrete-matroid.yml"
+            href="#concrete-submissions"
+          >Open the concrete form</a>
+        </article>
+        <article>
+          <span>Infinite family</span>
+          <strong>Proof review</strong>
+          <p>
+            Define the family and prove its curve value, supremum or limsup,
+            and attainment status; record its discovery date and any AI role.
+          </p>
+          <a
+            class="button button-primary github-submission-link"
+            data-issue-template="infinite-family.yml"
+            href="#family-submissions"
+          >Open the family form</a>
+        </article>
+      </div>
+
+      <section class="document-section" id="concrete-submissions">
+        <p class="eyebrow">Route 01</p>
+        <h2>Concrete matroid submissions</h2>
+        <p>
+          The form asks for the mathematical information needed by the checker
+          and a short provenance record:
+        </p>
+        <ul class="document-list">
+          <li>the ground-set size \(n\);</li>
+          <li>the rank \(r\);</li>
+          <li>the claimed exact fraction \(\overline{\alpha}(M)\); and</li>
+          <li>
+            exactly one complete description: a matrix, all bases, all
+            circuits, or all hyperplanes.
+          </li>
+          <li>the discoverer or discoverers and the discovery date;</li>
+          <li>
+            whether AI was used and, if so, its model and version, a brief
+            description of its role, and preferably a public chat or run link.
+          </li>
+        </ul>
+        <p>
+          The ground set is labeled \(0,1,\ldots,n-1\). GitHub automatically
+          supplies the submitter identity, issue URL, and submission timestamp.
+          These are distinct from the requested discoverer names and discovery
+          date: a submitter may be entering someone else's earlier result. A
+          title and brief notes are optional.
+        </p>
+
+        <h3>Discovery history and AI disclosure</h3>
+        <p>
+          Give at least the month and year, preferably as <code>YYYY-MM</code>;
+          use <code>YYYY-MM-DD</code> if the day is known. If AI
+          was used, identify the provider or system, model, and version as
+          precisely as known, then describe its role in one or two sentences.
+          A public link to the relevant chat or run is preferred whenever one
+          exists. If no AI was used, select <strong>No</strong> and enter
+          <code>None</code> in the required model and role boxes.
+        </p>
+
+        <h3>How to enter the data</h3>
+        <div class="table-scroll document-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Description</th>
+                <th>What to paste in the data box</th>
+                <th>What is checked</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Matrix</td>
+                <td>
+                  A JSON list of rows; columns are elements
+                  \(0,\ldots,n-1\). Also specify \(\mathbb Q\) or
+                  \(\operatorname{GF}(q)\).
+                </td>
+                <td>Exact matrix rank and the matroid of column dependencies</td>
+              </tr>
+              <tr>
+                <td>Bases</td>
+                <td>A JSON list containing every basis as a list of labels</td>
+                <td>Cardinality, duplicates, labels, and basis exchange</td>
+              </tr>
+              <tr>
+                <td>Circuits</td>
+                <td>A JSON list containing every circuit</td>
+                <td>Incomparability and circuit elimination</td>
+              </tr>
+              <tr>
+                <td>Hyperplanes</td>
+                <td>A JSON list containing every hyperplane</td>
+                <td>The circuit axioms for complementary cocircuits</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          For example, the row matrix
+          <code>[[1,0,1,1],[0,1,1,2]]</code> over
+          \(\operatorname{GF}(3)\) represents \(U_{2,4}\). Its complete
+          basis list is
+          <code>[[0,1],[0,2],[0,3],[1,2],[1,3],[2,3]]</code>.
+        </p>
+
+        <h3>Optional representability certificate</h3>
+        <p>
+          If the primary description is bases, circuits, or hyperplanes, you
+          may additionally supply a matrix over a specified field. The
+          current trusted input language supports rational fields and all
+          finite fields:
+        </p>
+        <ul class="document-list">
+          <li>
+            over \(\mathbb Q\), entries are integers or quoted fractions such
+            as <code>"-3/5"</code>;
+          </li>
+          <li>
+            over a prime field, entries are integers reduced modulo the
+            characteristic;
+          </li>
+          <li>
+            over \(\operatorname{GF}(p^d)\) with \(d&gt;1\), an entry may be
+            a length-\(d\) coefficient list in the polynomial basis
+            \(1,a,\ldots,a^{d-1}\).
+          </li>
+        </ul>
+        <p>
+          The verifier issues a field badge only if the matrix represents the
+          same labeled matroid as the primary description.
+        </p>
+
+        <h3>What happens after submission</h3>
+        <ol class="workflow-list">
+          <li>
+            <strong>The issue is parsed as inert form data.</strong>
+            The trusted workflow runs from the repository's default branch.
+          </li>
+          <li>
+            <strong>The matroid is reconstructed.</strong>
+            Incomplete set lists, invalid axioms, incorrect ranks, and
+            mismatched matrix certificates are rejected.
+          </li>
+          <li>
+            <strong>Every eligible pair is checked.</strong>
+            The four quantities
+            \(|B^{ij}(M)|,|B_{ij}(M)|,|B^i_j(M)|,|B^j_i(M)|\)
+            are counted exactly and all ratios are compared by integer cross
+            multiplication.
+          </li>
+          <li>
+            <strong>The workflow comments on the issue.</strong>
+            It either records the verified fraction, size, rank, number of
+            bases, maximizing-pair count, and automatic eligibility
+            classification, or gives a validation error. Editing the issue
+            reruns the check.
+          </li>
+          <li>
+            <strong>Curatorial acceptance remains separate.</strong>
+            Passing the checker proves the finite claim but does not
+            automatically publish duplicate, poorly attributed, or
+            out-of-scope entries.
+          </li>
+        </ol>
+
+        <h3>Automatic eligibility classification</h3>
+        <p>
+          Exact verification and publication are separate decisions. After a
+          concrete claim is verified, a machine-readable policy assigns one
+          of the following statuses:
+        </p>
+        <div class="table-scroll document-table">
+          <table>
+            <thead>
+              <tr><th>Status</th><th>Meaning</th><th>Assigned by</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Eligible for review</td>
+                <td>The exact value is at least \(4/3\), or it strictly beats a supported finite-field record</td>
+                <td>Automation</td>
+              </tr>
+              <tr>
+                <td>Below publication thresholds</td>
+                <td>The finite claim is correct but meets no current publication challenge</td>
+                <td>Automation</td>
+              </tr>
+              <tr>
+                <td>Verification failed</td>
+                <td>The form, matroid, certificate, or claimed value failed validation</td>
+                <td>Automation</td>
+              </tr>
+              <tr>
+                <td>Accepted and published</td>
+                <td>A curator reviewed the result and incorporated it into the public catalog</td>
+                <td>Human only</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          The supported field records are currently
+          \(8/7\) over \(\operatorname{GF}(2)\), \(100/81\) over
+          \(\operatorname{GF}(3)\), and \(8/7\) over each of
+          \(\operatorname{GF}(5)\) and \(\operatorname{GF}(7)\). Equality
+          qualifies for the global \(4/3\) challenge; a field record must be
+          beaten strictly. Only a verified representation over that exact
+          finite field counts for the field-specific comparison.
+        </p>
+
+        <aside class="document-callout">
+          <strong>Current automatic limits.</strong>
+          At most \(18\) ground-set elements, \(5000\) listed sets,
+          \(5000\) matrix cells, and \(8\) additional matrix certificates.
+          The issue workflow has a \(15\)-minute job timeout. These are
+          resource limits, not mathematical restrictions.
+        </aside>
+      </section>
+
+      <section class="document-section" id="family-submissions">
+        <p class="eyebrow">Route 02</p>
+        <h2>Infinite-family submissions</h2>
+        <p>
+          The family form asks for:
+        </p>
+        <ul class="document-list">
+          <li>a precise parameter domain and construction of \(M_t\);</li>
+          <li>formulas for \(|E(M_t)|\) and rank when available;</li>
+          <li>
+            the exact ordinate at every plotted parameter—either the full
+            value \(\overline{\alpha}(M_t)\) or a clearly identified
+            certified lower bound;
+          </li>
+          <li>
+            the exact supremum or limsup and whether it is attained by a
+            finite member;
+          </li>
+          <li>
+            the numerator and denominator of that exact value in separate
+            fields for automatic threshold screening;
+          </li>
+          <li>
+            a complete proof in the issue or a stable paper/preprint
+            reference with a precise theorem or section; and
+          </li>
+          <li>discoverers, proof authors, citations, and the discovery date;</li>
+          <li>
+            an explicit AI-use declaration, including model and version, a
+            brief role description, and preferably a public chat or run link.
+          </li>
+        </ul>
+        <p>
+          Every accepted family receives a curve. A solid curve means the
+          complete maximum has been proved. A dashed curve means a specified
+          pair or weighting has been evaluated exactly, giving a proved lower
+          bound. Automatically checked small members are useful evidence, but
+          they do not prove a general formula.
+        </p>
+        <p>
+          The family workflow compares the submitted exact fraction with
+          \(4/3\). A value at least \(4/3\) is marked eligible for human
+          review; a smaller value is marked below threshold. This screening
+          does not verify the construction, existence conditions, curve
+          formula, representability statement, or proof.
+        </p>
+        <p>
+          As with a concrete submission, GitHub records the submission time
+          automatically. The form asks separately when the family was actually
+          discovered, since discovery, proof, submission, and publication may
+          occur on different dates.
+        </p>
+      </section>
+
+      <section class="document-section" id="security">
+        <p class="eyebrow">Abuse resistance and trust boundary</p>
+        <h2>Why the public form is not a public execution endpoint</h2>
+        <p>
+          The intake uses
+          <a href="https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/syntax-for-issue-forms" target="_blank" rel="noreferrer">GitHub Issue Forms</a>.
+          A GitHub account is therefore required, and the site itself exposes
+          no anonymous POST endpoint. GitHub supplies platform-level abuse
+          detection and moderation; maintainers can also temporarily
+          <a href="https://docs.github.com/en/communities/moderating-comments-and-conversations/limiting-interactions-in-your-repository" target="_blank" rel="noreferrer">limit repository interactions</a>,
+          including activity from accounts less than \(24\) hours old, if a
+          spam wave occurs.
+        </p>
+        <p>
+          The mathematical defense is independent of account reputation:
+          unverified issues never appear in the catalog; input sizes and job
+          time are capped; edited issues cancel superseded runs; family
+          submissions require human review; and the workflow never evaluates
+          submitted Julia, Python, shell, package instructions, or network
+          requests. It reads JSON arrays and field names only.
+        </p>
+        <p>
+          This is intentionally a conservative first-release policy. If the
+          project later adds a custom form backend, it should add explicit
+          per-account quotas and a challenge such as Turnstile before
+          accepting unauthenticated traffic.
+        </p>
+      </section>
+
+      <section class="document-section" id="local-check">
+        <p class="eyebrow">Optional local reproduction</p>
+        <h2>Run the same verifier yourself</h2>
+        <p>
+          The online form does not require a local checkout. For reproducible
+          development, the repository still includes the normalized JSON
+          schema and command-line verifier:
+        </p>
+        <pre class="code-panel"><code>julia --project=. scripts/verify_matroid_submissions.jl \
+  examples/submissions/uniform-u2-4-matrix.json \
+  /tmp/uniform-u2-4.certificate.json</code></pre>
+        <p>
+          The schema is
+          <code>schemas/matroid-submission.schema.json</code>. The issue
+          workflow uses <code>scripts/verify_matroid_issue.jl</code> to create
+          the normalized data automatically before invoking the same trusted
+          checker.
+        </p>
+      </section>
+
+      <div class="document-actions">
+        <a
+          class="button button-primary github-submission-link"
+          data-issue-template="concrete-matroid.yml"
+          href="#concrete-submissions"
+        >Submit a concrete matroid</a>
+        <a
+          class="button button-quiet github-submission-link"
+          data-issue-template="infinite-family.yml"
+          href="#family-submissions"
+        >Propose an infinite family</a>
+      </div>
+    </main>
+
+    <footer>
+      <div class="section-shell footer-inner">
+        <div class="footer-copy">
+          <p class="footer-heading">Matroid Correlation Constants · open, exact, reproducible</p>
+          <p class="site-credit">Website created by Chris Eur using ChatGPT 5.6 Sol Max on Codex.</p>
+        </div>
+        <div class="footer-meta">
+          <a href="./index.html">Explore</a>
+          <a href="./mathematics.html">Mathematics</a>
+        </div>
+      </div>
+    </footer>
+
+    <script type="module" src="./submission-links.js"></script>
+  </body>
+</html>

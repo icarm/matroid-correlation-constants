@@ -1,0 +1,33 @@
+# Deploy the static website (Chris Eur's draft, matroid_correlation_website/)
+# to Cloudflare Pages on every push to this branch.
+#
+# One-time setup: the CLOUDFLARE_API_TOKEN secret needs "Cloudflare Pages:
+# Edit" permission (in addition to the Workers/D1 permissions the main
+# branch's deploy uses). The Pages project is created on first run.
+
+name: deploy website
+
+on:
+  push:
+    branches: [julia-verifier]
+
+concurrency:
+  group: deploy-website
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: 641ee17fdc075e1c2f3b2cfc7ffdea81
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - name: Create the Pages project if missing
+        run: npx wrangler@4 pages project create matroid-correlation-website --production-branch=julia-verifier 2>/dev/null || true
+      - name: Deploy
+        run: npx wrangler@4 pages deploy matroid_correlation_website --project-name=matroid-correlation-website --branch=julia-verifier
