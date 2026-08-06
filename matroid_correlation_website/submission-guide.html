@@ -348,31 +348,30 @@
       </section>
 
       <section class="document-section" id="security">
-        <p class="eyebrow">Abuse resistance and trust boundary</p>
-        <h2>Why the public form is not a public execution endpoint</h2>
+        <p class="eyebrow">Safety and trust</p>
+        <h2>What happens to your submission</h2>
         <p>
-          The intake uses
-          <a href="https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/syntax-for-issue-forms" target="_blank" rel="noreferrer">GitHub Issue Forms</a>.
-          A GitHub account is therefore required, and the site itself exposes
-          no anonymous POST endpoint. GitHub supplies platform-level abuse
-          detection and moderation; maintainers can also temporarily
-          <a href="https://docs.github.com/en/communities/moderating-comments-and-conversations/limiting-interactions-in-your-repository" target="_blank" rel="noreferrer">limit repository interactions</a>,
-          including activity from accounts less than \(24\) hours old, if a
-          spam wave occurs.
+          Submissions go through
+          <a href="https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/syntax-for-issue-forms" target="_blank" rel="noreferrer">GitHub Issue Forms</a>,
+          so a GitHub account is required. GitHub records you as the
+          submitter &mdash; separately from the discoverers you name in the
+          form &mdash; and provides the authentication and moderation layer.
+          Editing your issue reruns the automated check.
         </p>
         <p>
-          The mathematical defense is independent of account reputation:
-          unverified issues never appear in the catalog; input sizes and job
-          time are capped; edited issues cancel superseded runs; family
-          submissions require human review; and the workflow never evaluates
-          submitted Julia, Python, shell, package instructions, or network
-          requests. It reads JSON arrays and field names only.
+          Your submission is treated purely as data. The checker reads the
+          form's JSON arrays and field values; it never executes code of any
+          kind from a submission, so a verification result reflects exactly
+          the matroid you described and nothing else. Input sizes and
+          checking time are capped, and the verdict is posted back on your
+          issue with a deterministic, downloadable certificate.
         </p>
         <p>
-          This is intentionally a conservative first-release policy. If the
-          project later adds a custom form backend, it should add explicit
-          per-account quotas and a challenge such as Turnstile before
-          accepting unauthenticated traffic.
+          Nothing is published automatically. A verified concrete claim, or a
+          family proposal that passes the numeric screening, still goes to a
+          human curator before it appears in the catalog &mdash; the
+          automated check proves your claim; curation decides how it is
+          displayed and credited.
         </p>
       </section>
 
