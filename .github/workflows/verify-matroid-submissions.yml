@@ -1,0 +1,81 @@
+name: Verify concrete matroid submissions
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/verify-matroid-submissions.yml"
+      - "Manifest.toml"
+      - "Project.toml"
+      - "schemas/matroid-submission.schema.json"
+      - "scripts/verify_matroid_submissions.jl"
+      - "src/**"
+      - "submissions/matroids/**"
+      - "test/**"
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/verify-matroid-submissions.yml"
+      - "Manifest.toml"
+      - "Project.toml"
+      - "schemas/matroid-submission.schema.json"
+      - "scripts/verify_matroid_submissions.jl"
+      - "src/**"
+      - "submissions/matroids/**"
+      - "test/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: matroid-verification-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Exact Julia verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v6
+
+      - name: Install Julia
+        uses: julia-actions/setup-julia@v3
+        with:
+          version: "1.12"
+
+      - name: Instantiate the locked environment
+        run: julia --project=. -e 'using Pkg; Pkg.instantiate()'
+
+      - name: Run verifier and project tests
+        run: julia --project=. test/runtests.jl
+
+      - name: Verify the published worked example
+        run: >-
+          julia --project=. scripts/verify_matroid_submissions.jl
+          examples/submissions/uniform-u2-4-matrix.json
+          "${RUNNER_TEMP}/matroid-certificates/uniform-u2-4-example.certificate.json"
+
+      - name: Exercise family threshold screening
+        run: >-
+          julia --project=. scripts/classify_family_issue.jl
+          test/fixtures/family-issue-event.json
+          "${RUNNER_TEMP}/family-classification-result.json"
+
+      - name: Verify every concrete submission
+        run: >-
+          julia --project=. scripts/verify_matroid_submissions.jl
+          --all submissions/matroids
+          "${RUNNER_TEMP}/matroid-certificates"
+
+      - name: Upload exact verification certificates
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: matroid-verification-certificates
+          path: ${{ runner.temp }}/matroid-certificates
+          if-no-files-found: warn
+          retention-days: 30

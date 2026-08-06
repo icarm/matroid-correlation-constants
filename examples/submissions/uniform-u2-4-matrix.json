@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "kind": "matroid",
+  "id": "uniform-u2-4-example",
+  "proposed_name": "Uniform matroid U(2,4)",
+  "contributors": [
+    {
+      "github": "example-contributor",
+      "display_name": "Example Contributor"
+    }
+  ],
+  "ground_set": {
+    "labels": [0, 1, 2, 3]
+  },
+  "input": {
+    "type": "matrix",
+    "rank": 2,
+    "field": {
+      "order": 3
+    },
+    "rows": [
+      [1, 0, 1, 1],
+      [0, 1, 1, 2]
+    ]
+  },
+  "claimed_alpha_bar": {
+    "numerator": 1,
+    "denominator": 4
+  },
+  "claimed_maximizing_pair": [0, 1],
+  "discovery": {
+    "date": "2026-08",
+    "discoverers": "Example Contributor",
+    "ai_used": false,
+    "ai_model_version": "None",
+    "ai_role": "None"
+  },
+  "submitted_at": "2026-08-04T12:00:00Z",
+  "provenance": "Worked example for the public submission format.",
+  "citation": "",
+  "license": "CC0-1.0",
+  "notes": "Every pair is maximizing."
+}

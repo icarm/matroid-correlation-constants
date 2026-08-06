@@ -1,0 +1,227 @@
+name: Verify concrete matroid issue
+
+on:
+  issues:
+    types:
+      - opened
+      - edited
+      - reopened
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: concrete-matroid-issue-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Exact issue-form verification
+    if: startsWith(github.event.issue.title, '[Concrete]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out trusted verifier code
+        uses: actions/checkout@v6
+
+      - name: Install Julia
+        uses: julia-actions/setup-julia@v3
+        with:
+          version: "1.12"
+
+      - name: Instantiate the locked environment
+        run: julia --project=. -e 'using Pkg; Pkg.instantiate()'
+
+      - name: Parse and verify issue data
+        id: verification
+        continue-on-error: true
+        run: |
+          julia --project=. scripts/verify_matroid_issue.jl \
+            "$GITHUB_EVENT_PATH" \
+            "$RUNNER_TEMP/normalized-submission.json" \
+            "$RUNNER_TEMP/verification-certificate.json" \
+            "$RUNNER_TEMP/verification-result.json"
+
+      - name: Post or update the verification result
+        if: always()
+        uses: actions/github-script@v8
+        env:
+          RESULT_PATH: ${{ runner.temp }}/verification-result.json
+        with:
+          script: |
+            const fs = require("fs");
+            const marker = "<!-- matroid-correlation-constants-verifier -->";
+            let result;
+            try {
+              result = JSON.parse(fs.readFileSync(process.env.RESULT_PATH, "utf8"));
+            } catch (error) {
+              result = {
+                status: "verification-failed",
+                classification: "verification-failed",
+                message: "The verifier did not produce a result file: " + error.message,
+              };
+            }
+
+            const labelDefinitions = {
+              "eligible-for-review": {
+                name: "status: eligible for review",
+                color: "2da44e",
+                description: "Meets an automatic threshold and is ready for the stated human review",
+              },
+              "below-publication-thresholds": {
+                name: "status: below publication thresholds",
+                color: "8c959f",
+                description: "Validly screened or verified but below the current publication challenges",
+              },
+              "verification-failed": {
+                name: "status: verification failed",
+                color: "cf222e",
+                description: "Automatic validation or exact verification failed",
+              },
+              "accepted-and-published": {
+                name: "status: accepted and published",
+                color: "0969da",
+                description: "Human-reviewed and incorporated into the public catalog",
+              },
+            };
+            const classification = labelDefinitions[result.classification]
+              ? result.classification
+              : "verification-failed";
+            const fraction = (ratio) =>
+              ratio ? ratio.numerator + "/" + ratio.denominator : "unknown";
+            const challengeDescription = (challenge) => {
+              if (challenge.id === "finite-on-the-nose") {
+                return "finite value at least " + fraction(challenge.threshold);
+              }
+              if (challenge.id === "finite-field-record") {
+                return "new GF(" + challenge.field_order + ") record above " +
+                  fraction(challenge.threshold);
+              }
+              return challenge.id;
+            };
+
+            let body;
+            if (result.status === "verified") {
+              const eligibility = result.eligibility || {};
+              const challenges = eligibility.qualifying_challenges || [];
+              const eligibilityHeading = classification === "eligible-for-review"
+                ? "Eligible for human review"
+                : "Verified below the publication thresholds";
+              const challengeLines = challenges.length
+                ? challenges.map((challenge) =>
+                    "  - " + challengeDescription(challenge)).join("\n")
+                : "  - None under the current policy";
+              body = marker + "\n\n" +
+                "### Exact verification passed · " + eligibilityHeading + "\n\n" +
+                "- Claimed and computed value: **" +
+                result.exact.numerator + "/" + result.exact.denominator + "**\n" +
+                "- Ground-set size / rank: **" +
+                result.ground_set_size + " / " + result.rank + "**\n" +
+                "- Number of bases: **" + result.number_of_bases + "**\n" +
+                "- Maximizing pairs: **" + result.maximizing_pair_count + "**\n" +
+                "- Automatic classification: **" + classification + "**\n" +
+                "- Qualifying challenges:\n" + challengeLines + "\n\n" +
+                "This checks the finite matroid and the full unweighted maximum exactly. " +
+                (classification === "eligible-for-review"
+                  ? "It is queued for human review; it has not been accepted or published."
+                  : "The claim is valid, but it does not currently qualify for publication review.");
+            } else {
+              const safeMessage = String(result.message || "Unknown verification error")
+                .slice(0, 2000)
+                .replaceAll("&", "&amp;")
+                .replaceAll("<", "&lt;")
+                .replaceAll(">", "&gt;")
+                .replaceAll(String.fromCharCode(96), "&#96;");
+              body = marker + "\n\n" +
+                "### Verification failed\n\n" +
+                safeMessage + "\n\n" +
+                "Edit this issue to correct the form; the verifier will run again automatically.";
+            }
+
+            const parameters = {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            };
+
+            // Exactly one status label is maintained automatically. A curator
+            // applies "accepted and published" only after human review and a
+            // catalog update. Editing the issue reruns this workflow and resets
+            // it to the appropriate automatic classification.
+            try {
+              for (const definition of Object.values(labelDefinitions)) {
+                try {
+                  await github.rest.issues.getLabel({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    name: definition.name,
+                  });
+                } catch (error) {
+                  if (error.status !== 404) throw error;
+                  await github.rest.issues.createLabel({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    name: definition.name,
+                    color: definition.color,
+                    description: definition.description,
+                  });
+                }
+              }
+
+              const currentLabels = (context.payload.issue.labels || []).map(
+                (label) => typeof label === "string" ? label : label.name,
+              );
+              const desiredLabel = labelDefinitions[classification].name;
+              for (const definition of Object.values(labelDefinitions)) {
+                if (definition.name !== desiredLabel && currentLabels.includes(definition.name)) {
+                  await github.rest.issues.removeLabel({
+                    ...parameters,
+                    name: definition.name,
+                  });
+                }
+              }
+              if (!currentLabels.includes(desiredLabel)) {
+                await github.rest.issues.addLabels({
+                  ...parameters,
+                  labels: [desiredLabel],
+                });
+              }
+            } catch (error) {
+              core.warning("Could not synchronize eligibility labels: " + error.message);
+            }
+
+            const comments = await github.paginate(
+              github.rest.issues.listComments,
+              parameters,
+            );
+            const existing = comments.find(
+              (comment) =>
+                comment.user &&
+                comment.user.type === "Bot" &&
+                comment.body &&
+                comment.body.includes(marker),
+            );
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({ ...parameters, body });
+            }
+
+      - name: Upload normalized data and exact certificate
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: concrete-matroid-issue-${{ github.event.issue.number }}
+          path: |
+            ${{ runner.temp }}/normalized-submission.json
+            ${{ runner.temp }}/verification-certificate.json
+            ${{ runner.temp }}/verification-result.json
+          if-no-files-found: warn
+          retention-days: 30

@@ -1,0 +1,167 @@
+name: Submit a concrete matroid
+description: Give one finite description and a claimed exact value of alpha-bar.
+title: "[Concrete] "
+labels:
+  - "submission: concrete"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        No pull request is needed. Your GitHub account and the issue creation
+        time automatically record who submitted the claim and when. The short
+        discovery and AI-use fields below record mathematical provenance.
+        Trusted Julia code parses the form as data, reconstructs the matroid,
+        and checks the claimed value exactly.
+
+        Label the ground set by 0,1,...,n-1. Matrix columns correspond to
+        these labels in order.
+
+  - type: input
+    id: ground-set-size
+    attributes:
+      label: Ground-set size n
+      description: The number of elements.
+      placeholder: "12"
+    validations:
+      required: true
+
+  - type: input
+    id: rank
+    attributes:
+      label: Rank r
+      description: The rank of the matroid.
+      placeholder: "6"
+    validations:
+      required: true
+
+  - type: input
+    id: alpha-bar
+    attributes:
+      label: Claimed alpha-bar
+      description: Enter an exact nonnegative fraction or integer.
+      placeholder: "100/81"
+    validations:
+      required: true
+
+  - type: input
+    id: discoverers
+    attributes:
+      label: Discoverers
+      description: Name the person or people who found this matroid; this may differ from the submitter.
+      placeholder: "Name(s)"
+    validations:
+      required: true
+
+  - type: input
+    id: discovery-date
+    attributes:
+      label: Discovery date
+      description: Give at least the month and year, preferably as YYYY-MM; use YYYY-MM-DD if the day is known.
+      placeholder: "2026-08"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: ai-used
+    attributes:
+      label: Was AI used in the discovery?
+      description: Include search, conjecture generation, computation, proof assistance, and writing assistance related to the discovery.
+      options:
+        - "No"
+        - "Yes"
+    validations:
+      required: true
+
+  - type: input
+    id: ai-model-version
+    attributes:
+      label: AI model and version
+      description: If AI was used, give the system or provider, model, and version as precisely as known. Otherwise enter None.
+      placeholder: "ChatGPT 5.6 Sol Max on Codex (or None)"
+    validations:
+      required: true
+
+  - type: textarea
+    id: ai-role
+    attributes:
+      label: AI role
+      description: Briefly describe what the AI did and what was checked by people. If no AI was used, enter None.
+      placeholder: "Suggested candidates; all values and the proof were checked independently."
+    validations:
+      required: true
+
+  - type: input
+    id: ai-chat-link
+    attributes:
+      label: Optional AI chat link
+      description: A public link to the relevant chat or run is preferred when one is available.
+      placeholder: "https://..."
+    validations:
+      required: false
+
+  - type: dropdown
+    id: description-type
+    attributes:
+      label: Description type
+      description: The data box below must contain exactly this one complete description.
+      options:
+        - Matrix
+        - Bases
+        - Circuits
+        - Hyperplanes
+    validations:
+      required: true
+
+  - type: textarea
+    id: matroid-data
+    attributes:
+      label: Matroid data
+      description: |
+        Paste a JSON array. For a matrix, use a list of rows. For bases,
+        circuits, or hyperplanes, use the complete list of sets. Example
+        matrix: [[1,0,1,1],[0,1,1,2]]. Example basis list:
+        [[0,1],[0,2],[0,3],[1,2],[1,3],[2,3]].
+      render: json
+    validations:
+      required: true
+
+  - type: input
+    id: matrix-field
+    attributes:
+      label: Matrix field
+      description: |
+        Required only when Description type is Matrix. Enter Q or GF(q),
+        where q is a prime power. Rational entries may be strings such as
+        "3/5". Over GF(p^d), an entry may be a length-d coefficient array
+        in the polynomial basis 1,a,...,a^(d-1).
+      placeholder: "GF(3)"
+    validations:
+      required: false
+
+  - type: input
+    id: optional-certificate-field
+    attributes:
+      label: Optional certificate field
+      description: For a combinatorial description, optionally enter Q or GF(q).
+      placeholder: "Q"
+    validations:
+      required: false
+
+  - type: textarea
+    id: optional-certificate-matrix
+    attributes:
+      label: Optional certificate matrix
+      description: |
+        If a certificate field was supplied, paste a JSON list of matrix rows.
+        Its columns must represent the same labeled matroid.
+      render: json
+    validations:
+      required: false
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Optional notes
+      description: A citation or anything else useful to reviewers.
+    validations:
+      required: false

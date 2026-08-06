@@ -1,0 +1,150 @@
+name: Propose an infinite family
+description: Define a family, its curve, its supremum, and the mathematical proof.
+title: "[Family] "
+labels:
+  - "submission: family"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Every accepted family receives a curve. Finite checks are welcome, but
+        the general formula and supremum require public mathematical review.
+        No pull request is required. GitHub records the submitter and submission
+        time automatically; the form separately records discovery and AI use.
+
+  - type: input
+    id: family-name
+    attributes:
+      label: Family name
+      placeholder: "A descriptive name"
+    validations:
+      required: true
+
+  - type: input
+    id: discovery-date
+    attributes:
+      label: Discovery date
+      description: Give at least the month and year, preferably as YYYY-MM; distinguish discovery from later proof or publication dates.
+      placeholder: "2026-08"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: ai-used
+    attributes:
+      label: Was AI used in the discovery or proof?
+      description: Include search, conjecture generation, computation, proof assistance, and writing assistance.
+      options:
+        - "No"
+        - "Yes"
+    validations:
+      required: true
+
+  - type: input
+    id: ai-model-version
+    attributes:
+      label: AI model and version
+      description: If AI was used, give the system or provider, model, and version as precisely as known. Otherwise enter None.
+      placeholder: "ChatGPT 5.6 Sol Max on Codex (or None)"
+    validations:
+      required: true
+
+  - type: textarea
+    id: ai-role
+    attributes:
+      label: AI role
+      description: Briefly describe the AI's role and what was checked by people. Include a public chat or run link here when available; otherwise say that no public link is available. If no AI was used, enter None.
+    validations:
+      required: true
+
+  - type: textarea
+    id: parameter-domain
+    attributes:
+      label: Parameter domain
+      description: State every admissible parameter and any congruence or existence conditions.
+    validations:
+      required: true
+
+  - type: textarea
+    id: construction
+    attributes:
+      label: Precise construction
+      description: Define each matroid in the family, including the ground set and rank.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: curve-claim
+    attributes:
+      label: Curve claim
+      options:
+        - Exact full value of alpha-bar
+        - Certified lower bound from a specified pair or weighting
+    validations:
+      required: true
+
+  - type: textarea
+    id: curve-rule
+    attributes:
+      label: Curve formula or evaluation rule
+      description: Give the exact ordinate at every plotted admissible parameter.
+    validations:
+      required: true
+
+  - type: textarea
+    id: supremum
+    attributes:
+      label: Supremum or limsup
+      description: Explain the exact value and whether it is attained or only approached.
+    validations:
+      required: true
+
+  - type: input
+    id: supremum-numerator
+    attributes:
+      label: Claimed supremum numerator
+      description: Enter the numerator of the exact reduced fraction used for automatic threshold screening.
+      placeholder: "4"
+    validations:
+      required: true
+
+  - type: input
+    id: supremum-denominator
+    attributes:
+      label: Claimed supremum denominator
+      description: Enter the positive denominator of the exact reduced fraction used for automatic threshold screening.
+      placeholder: "3"
+    validations:
+      required: true
+
+  - type: textarea
+    id: proof
+    attributes:
+      label: Mathematical proof
+      description: Give a complete proof here, or a stable paper/preprint link with a precise theorem or section.
+    validations:
+      required: true
+
+  - type: textarea
+    id: finite-checks
+    attributes:
+      label: Optional finite checks
+      description: Give small parameters, computer-ready members, or reproducible data when useful.
+    validations:
+      required: false
+
+  - type: textarea
+    id: representation
+    attributes:
+      label: Optional representability information
+      description: State known fields or characteristics and whether a field extension is needed.
+    validations:
+      required: false
+
+  - type: textarea
+    id: credit
+    attributes:
+      label: Credits and references
+      description: Identify discoverers, proof authors, papers, and other non-AI provenance. AI use is recorded explicitly above.
+    validations:
+      required: true

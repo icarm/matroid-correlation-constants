@@ -1,0 +1,183 @@
+name: Classify infinite-family issue
+
+on:
+  issues:
+    types:
+      - opened
+      - edited
+      - reopened
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: infinite-family-issue-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  classify:
+    name: Threshold screening before mathematical review
+    if: startsWith(github.event.issue.title, '[Family]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out trusted policy code
+        uses: actions/checkout@v6
+
+      - name: Install Julia
+        uses: julia-actions/setup-julia@v3
+        with:
+          version: "1.12"
+
+      - name: Instantiate the locked environment
+        run: julia --project=. -e 'using Pkg; Pkg.instantiate()'
+
+      - name: Screen the claimed family limit
+        continue-on-error: true
+        run: |
+          julia --project=. scripts/classify_family_issue.jl \
+            "$GITHUB_EVENT_PATH" \
+            "$RUNNER_TEMP/family-classification-result.json"
+
+      - name: Post or update the threshold-screening result
+        if: always()
+        uses: actions/github-script@v8
+        env:
+          RESULT_PATH: ${{ runner.temp }}/family-classification-result.json
+        with:
+          script: |
+            const fs = require("fs");
+            const marker = "<!-- matroid-correlation-constants-family-screen -->";
+            let result;
+            try {
+              result = JSON.parse(fs.readFileSync(process.env.RESULT_PATH, "utf8"));
+            } catch (error) {
+              result = {
+                status: "verification-failed",
+                classification: "verification-failed",
+                message: "The screening step did not produce a result file: " + error.message,
+              };
+            }
+
+            const labels = {
+              "eligible-for-review": {
+                name: "status: eligible for review",
+                color: "2da44e",
+                description: "Meets an automatic threshold and is ready for the stated human review",
+              },
+              "below-publication-thresholds": {
+                name: "status: below publication thresholds",
+                color: "8c959f",
+                description: "Validly screened or verified but below the current publication challenges",
+              },
+              "verification-failed": {
+                name: "status: verification failed",
+                color: "cf222e",
+                description: "Automatic form validation or exact verification failed",
+              },
+              "accepted-and-published": {
+                name: "status: accepted and published",
+                color: "0969da",
+                description: "Human-reviewed and incorporated into the public catalog",
+              },
+            };
+            const classification = labels[result.classification]
+              ? result.classification
+              : "verification-failed";
+            const ratio = result.eligibility && result.eligibility.candidate;
+            const fraction = ratio ? ratio.numerator + "/" + ratio.denominator : "unknown";
+            let body;
+            if (result.status === "threshold-screened") {
+              const eligible = classification === "eligible-for-review";
+              body = marker + "\n\n" +
+                "### Family threshold screening · " +
+                (eligible ? "Eligible for human review" : "Below the publication threshold") +
+                "\n\n" +
+                "- Claimed supremum or limsup: **" + fraction + "**\n" +
+                "- Automatic classification: **" + classification + "**\n\n" +
+                "This screening checks only the claimed exact fraction against the current " +
+                "numeric threshold. It does **not** verify the construction, curve formula, " +
+                "existence conditions, representability statement, or proof. " +
+                (eligible
+                  ? "Those items now require human mathematical review."
+                  : "A curator may still override the screening if another challenge applies.");
+            } else {
+              const safeMessage = String(result.message || "Unknown screening error")
+                .slice(0, 2000)
+                .replaceAll("&", "&amp;")
+                .replaceAll("<", "&lt;")
+                .replaceAll(">", "&gt;")
+                .replaceAll(String.fromCharCode(96), "&#96;");
+              body = marker + "\n\n### Family form validation failed\n\n" +
+                safeMessage + "\n\nEdit the issue to rerun the screening.";
+            }
+
+            const parameters = {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            };
+            try {
+              for (const definition of Object.values(labels)) {
+                try {
+                  await github.rest.issues.getLabel({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    name: definition.name,
+                  });
+                } catch (error) {
+                  if (error.status !== 404) throw error;
+                  await github.rest.issues.createLabel({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    name: definition.name,
+                    color: definition.color,
+                    description: definition.description,
+                  });
+                }
+              }
+              const current = (context.payload.issue.labels || []).map(
+                (label) => typeof label === "string" ? label : label.name,
+              );
+              const desired = labels[classification].name;
+              for (const definition of Object.values(labels)) {
+                if (definition.name !== desired && current.includes(definition.name)) {
+                  await github.rest.issues.removeLabel({ ...parameters, name: definition.name });
+                }
+              }
+              if (!current.includes(desired)) {
+                await github.rest.issues.addLabels({ ...parameters, labels: [desired] });
+              }
+            } catch (error) {
+              core.warning("Could not synchronize eligibility labels: " + error.message);
+            }
+
+            const comments = await github.paginate(
+              github.rest.issues.listComments,
+              parameters,
+            );
+            const existing = comments.find(
+              (comment) => comment.user && comment.user.type === "Bot" &&
+                comment.body && comment.body.includes(marker),
+            );
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({ ...parameters, body });
+            }
+
+      - name: Upload the family screening result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: infinite-family-issue-${{ github.event.issue.number }}
+          path: ${{ runner.temp }}/family-classification-result.json
+          if-no-files-found: warn
+          retention-days: 30

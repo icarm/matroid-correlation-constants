@@ -1,0 +1,7 @@
+data/**/*.sqlite
+data/**/*.sqlite-*
+data/**/*.csv
+data/**/*.csv.gz
+figures/**/*.png
+figures/**/*.svg
+
