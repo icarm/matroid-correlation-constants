@@ -25,6 +25,11 @@ jobs:
     steps:
       - name: Check out trusted policy code
         uses: actions/checkout@v6
+        with:
+          # This job processes untrusted issue content; the checkout is
+          # read-only trusted code and the scripts never need git
+          # credentials, so keep the job token out of .git/config.
+          persist-credentials: false
 
       - name: Install Julia
         uses: julia-actions/setup-julia@v3
