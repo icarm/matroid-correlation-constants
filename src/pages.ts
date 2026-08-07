@@ -195,7 +195,7 @@ function heroSection(records: RecordPoint[], families: Family[]): string {
          <a href="/matroid/${club[0].id}">${alphaVar} = ${fmtAlpha(club[0].alpha_num, club[0].alpha_den)}</a>${
            club[0].name ? ` &mdash; ${escapeHtml(club[0].name)}` : ''
          }${club.length > 1 ? ' leads the 4/3 club' : ''}`
-      : 'No concrete matroid has reached it &mdash; the 4/3 club is waiting for its first member.'
+      : 'No concrete matroid has reached it.'
   const card = `<div class="record-card">
         <p class="eyebrow">The record to beat</p>
         <p class="record-card-value">4/3</p>
