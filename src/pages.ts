@@ -172,10 +172,6 @@ const bcount = (sup: string, sub: string): string => `|${bset(sup, sub)}|`
 // The hero: the pitch on the left, the standing record on the right — the
 // text-beside-card geometry every landing section repeats at full width.
 function heroSection(records: RecordPoint[], families: Family[]): string {
-  let best: RecordPoint | null = null
-  for (const r of records) {
-    if (best === null || r.alpha_value > best.alpha_value) best = r
-  }
   // Derived from the live catalog, not asserted: how close the accepted
   // families come to 4/3. If a family attaining it is ever accepted, the
   // card points at the remaining step instead of going stale.
@@ -189,16 +185,22 @@ function heroSection(records: RecordPoint[], families: Family[]): string {
       ? 'reached by <a href="/families">known families</a> only in the limit'
       : 'beyond every <a href="/families">known family</a>, even in the limit'
 
-  const bestLine = best
-    ? `Best single matroid: <a href="/matroid/${best.id}">${alphaVar} = ${fmtAlpha(best.alpha_num, best.alpha_den)}
-       &approx; ${best.alpha_value.toFixed(4)}</a>${best.name ? ` &mdash; ${escapeHtml(best.name)}` : ''}
-       (${best.n} elements${best.field ? `, GF(${escapeHtml(best.field)})` : ''})`
-    : 'No verified records yet &mdash; be the first dot on the board.'
+  // The 4/3 club's live status. Note "reaches", not "comes closest":
+  // family members over large fields get arbitrarily close to 4/3, so
+  // distance-to-goal is not a meaningful frontier — attainment is.
+  const club = records.filter((r) => r.club).sort((a, b) => b.alpha_value - a.alpha_value)
+  const clubLine =
+    club.length > 0
+      ? `Reached by ${club.length === 1 ? 'one concrete matroid' : `${club.length} concrete matroids`}:
+         <a href="/matroid/${club[0].id}">${alphaVar} = ${fmtAlpha(club[0].alpha_num, club[0].alpha_den)}</a>${
+           club[0].name ? ` &mdash; ${escapeHtml(club[0].name)}` : ''
+         }${club.length > 1 ? ' leads the 4/3 club' : ''}`
+      : 'No concrete matroid has reached it &mdash; the 4/3 club is waiting for its first member.'
   const card = `<div class="record-card">
         <p class="eyebrow">The record to beat</p>
         <p class="record-card-value">4/3</p>
         <p class="record-card-approx">&approx; 1.3333 &mdash; ${familiesLine}</p>
-        <p class="record-card-meta">${bestLine}</p>
+        <p class="record-card-meta">${clubLine}</p>
       </div>`
   return `
   <section class="hero">
