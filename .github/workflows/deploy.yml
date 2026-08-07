@@ -11,7 +11,7 @@ name: deploy
 
 on:
   push:
-    branches: [cloudflare-workers]
+    branches: [main]
   pull_request:
 
 concurrency:
@@ -33,7 +33,7 @@ jobs:
 
   deploy:
     needs: test
-    if: github.event_name == 'push' && github.ref == 'refs/heads/cloudflare-workers'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment: production
     steps:
