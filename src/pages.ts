@@ -155,11 +155,21 @@ const bcount = (sup: string, sub: string): string => `|${bset(sup, sub)}|`
 // The wide hero: the pitch on the left, the standing record on the right —
 // so the page opens wide-into-wide against the wide chart below it, and
 // narrow prose only appears further down where it reads as article body.
-function heroSection(records: RecordPoint[]): string {
+function heroSection(records: RecordPoint[], families: Family[]): string {
   let best: RecordPoint | null = null
   for (const r of records) {
     if (r.is_current && (best === null || r.alpha_value > best.alpha_value)) best = r
   }
+  // Derived from the live catalog, not asserted: how close the accepted
+  // families come to 4/3. If a family attaining it is ever accepted, the
+  // card points at the remaining step instead of going stale.
+  const reaching = families.filter((f) => 3 * f.supremum.num >= 4 * f.supremum.den)
+  const familiesLine = reaching.some((f) => f.supremumKind === 'attained')
+    ? 'attained by members of a known family &mdash; verify one concretely to claim it'
+    : reaching.length > 0
+      ? 'reached by known families only in the limit'
+      : 'beyond every known family, even in the limit' 
+
   const bestLine = best
     ? `Best single matroid: <a href="/matroid/${best.id}">${alphaVar} = ${fmtAlpha(best.alpha_num, best.alpha_den)}
        &approx; ${best.alpha_value.toFixed(4)}</a>${best.name ? ` &mdash; ${escapeHtml(best.name)}` : ''}
@@ -168,7 +178,7 @@ function heroSection(records: RecordPoint[]): string {
   const card = `<div class="record-card">
         <p class="eyebrow">The record to beat</p>
         <p class="record-card-value">4/3</p>
-        <p class="record-card-approx">&approx; 1.3333 &mdash; reached by known families only in the limit</p>
+        <p class="record-card-approx">&approx; 1.3333 &mdash; ${familiesLine}</p>
         <p class="record-card-meta">${bestLine}</p>
       </div>`
   return `
@@ -835,7 +845,7 @@ export function landingPage(
     ? '<section class="prose"><p class="muted">That result link has expired &mdash; submit the matroid again below.</p></section>'
     : ''
   const body = `
-    ${heroSection(records)}
+    ${heroSection(records, families)}
     ${expiredNote}
     ${recordsSection(records, families)}
     ${definitionSection()}
