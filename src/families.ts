@@ -79,7 +79,6 @@ export function familiesPage(
       </ul>`
   const body = `
     <section class="prose">
-      <p class="page-nav"><a href="/">&larr; home</a></p>
       <p class="eyebrow">Parameterized constructions</p>
       <h2>Families</h2>
       <p>

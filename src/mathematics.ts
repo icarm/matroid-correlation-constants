@@ -20,7 +20,6 @@ const MATHJAX_HEAD = `
 
 const CONTENT = String.raw`
     <section class="prose math-page">
-      <p class="page-nav"><a href="/">&larr; home</a></p>
       <p class="eyebrow">Definitions, proofs, and provenance</p>
       <h2>The mathematics behind the records</h2>
       <p>

@@ -729,9 +729,6 @@ export function familyProposeResultPage(
   form: FamilyFormState,
 ): string {
   const body = `
-    <section class="prose">
-      <p class="page-nav"><a href="/">&larr; home</a></p>
-    </section>
     <section class="result result-error">
       <h2>Error</h2>
       <p>${escapeHtml(error)}</p>
@@ -869,9 +866,6 @@ export function resultPage(
   form: FormState,
 ): string {
   const body = `
-    <section class="prose">
-      <p class="page-nav"><a href="/">&larr; home</a></p>
-    </section>
     ${resultSection(result, record)}
     ${verifierForm(form, user, record?.needsDiscovery === true)}`
   return layout(`Result — ${SITE_NAME}`, body, user)
@@ -910,7 +904,6 @@ function userMatroidsSection(rows: UserMatroidRow[]): string {
 export function profilePage(user: User, matroids: UserMatroidRow[] = []): string {
   const body = `
     <section class="prose">
-      <p class="page-nav"><a href="/">&larr; home</a></p>
       <h2>Profile</h2>
       <p class="muted">Signed in as ${escapeHtml(user.display_name || user.email || 'user')} (via ${escapeHtml(
         user.provider,
@@ -1003,7 +996,7 @@ export function matroidDetailPage(
     : ''
   const body = `
     <section class="prose">
-      <p class="page-nav"><a href="/">&larr; home</a> &nbsp;&middot;&nbsp; <a href="/matroids">all matroids</a></p>
+      <p class="page-nav"><a href="/matroids">&larr; all matroids</a></p>
       ${justRecorded ? `<p class="record-new">New record: the largest verified ${alphaVar} for n = ${m.n}. Saved. &#127941;</p>` : ''}
       <h2>matroid #${m.id}${m.name ? ` <span class="matroid-name">&mdash; ${escapeHtml(m.name)}</span>` : ''}</h2>
       <dl class="stats">
@@ -1097,7 +1090,6 @@ export function activityPage(
     : `<span class="muted">older &rarr;</span>`
   const body = `
     <section class="prose">
-      <p class="page-nav"><a href="/">&larr; home</a></p>
       <h2>Recent activity</h2>
       <p class="muted">Record matroids, newest first.</p>
       ${list}
@@ -1221,7 +1213,6 @@ export function matroidsPage(
 
   const body = `
     <section class="prose">
-      <p class="page-nav"><a href="/">&larr; home</a></p>
       <h2>${heading}</h2>
       <p class="muted">Every record-setting matroid ever submitted; a superseded row was the
       record for its ground-set size until a larger constant beat it. Click a column header to
@@ -1254,7 +1245,6 @@ export function matroidsPage(
 export function acknowledgePage(user: User | null = null): string {
   const body = `
     <section class="prose">
-      <p class="page-nav"><a href="/">&larr; home</a></p>
       <h2>Acknowledgement</h2>
       <p>The Institute for Computer-Aided Reasoning in Mathematics
       <span class="nowrap">(<a class="external" href="https://icarm.io">ICARM</a>)</span> is supported by
