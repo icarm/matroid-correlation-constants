@@ -86,7 +86,8 @@ export function familiesPage(
         The curves on the <a href="/">Explore</a> chart, as objects: each family is a
         parameterized construction with a proved formula. A <em>solid</em> curve is a proved
         value of the full invariant; a <em>dashed</em> curve certifies a distinguished-pair
-        lower bound. Full proofs live on the <a href="/mathematics">mathematics page</a>.
+        lower bound. Proofs live on the <a href="/mathematics">mathematics page</a> or behind each
+        family&rsquo;s own proof link.
       </p>
       <div class="family-grid">${cards}</div>
       ${pendingSection}

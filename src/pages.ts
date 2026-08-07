@@ -207,8 +207,7 @@ function definitionSection(): string {
     <p>
       with the maximum over pairs of nonloop, noncoloop elements; ${alphaVar}(<var>M</var>) &gt; 1
       means some pair is positively correlated in a uniformly random basis.
-      <a href="/mathematics">Why this is interesting, what is known, and proofs of every family
-      formula &rarr;</a>
+      <a href="/mathematics">Why this is interesting, what is known, and full proofs &rarr;</a>
     </p>
   </section>`
 }
