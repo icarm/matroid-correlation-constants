@@ -147,8 +147,8 @@ export function layout(
           <a class="external" href="https://github.com/icarm/matroid-correlation-constants">source</a> &nbsp;&middot;&nbsp;
           <a class="external" href="https://icarm.io">icarm.io</a>
         </nav>
-        <p class="acknowledgment">This website was created by Chris Eur using ChatGPT-5.6 Sol Max. This website is maintained by the NSF Institute for Computer-Aided
-        Reasoning in Mathematics <span class="nowrap">(<a class="external" href="https://icarm.io">ICARM</a>)</span>.
+        <p class="acknowledgment">This website was created by Chris Eur using ChatGPT-5.6 Sol Max, and is maintained by the
+        NSF Institute for Computer-Aided Reasoning in Mathematics <span class="nowrap">(<a class="external" href="https://icarm.io">ICARM</a>)</span>.
         Please <a href="/acknowledge">acknowledge</a> ICARM and NSF Grant DMS 2425401 in related
         publications, projects, or other scholarly work.</p>
       </div>
