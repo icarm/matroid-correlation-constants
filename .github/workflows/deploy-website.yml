@@ -11,7 +11,7 @@ name: deploy website
 
 on:
   push:
-    branches: [main]
+    branches: [github-flow]
 
 concurrency:
   group: deploy-website
@@ -31,5 +31,8 @@ jobs:
           node-version: 24
       - name: Create the Pages project if missing
         run: npx wrangler@4 pages project create matroid-correlation-website --production-branch=main 2>/dev/null || true
+      # The Pages project's production branch is "main" (fixed at creation);
+      # these are direct-upload deploys, so --branch=main marks them as
+      # production regardless of which git branch triggered the workflow.
       - name: Deploy
         run: npx wrangler@4 pages deploy matroid_correlation_website --project-name=matroid-correlation-website --branch=main

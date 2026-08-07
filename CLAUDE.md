@@ -1,10 +1,10 @@
-# matroid-correlation-constants (main: static site + Julia verifier)
+# matroid-correlation-constants (branch: github-flow — static site + Julia verifier)
 
-This branch is Chris Eur's stack, adopted as primary on 2026-08-05:
+This branch is Chris Eur's stack (site + verifier + GitHub intake):
 
 - `matroid_correlation_website/` — the static site, deployed to
   Cloudflare Pages by `.github/workflows/deploy-website.yml` on pushes
-  to main (project `matroid-correlation-website`; served at
+  to this branch (project `matroid-correlation-website`; served at
   https://matroid-correlation.icarm.cloud, with
   matroid-correlation-website.pages.dev as the underlying URL).
 - `src/`, `scripts/`, `test/` — the trusted Julia verifier (Oscar-based;
@@ -12,8 +12,10 @@ This branch is Chris Eur's stack, adopted as primary on 2026-08-05:
   to the handoff version). `julia --project=. test/runtests.jl`.
 - `.github/ISSUE_TEMPLATE/` + issue workflows — GitHub-issue submission
   intake: `[Concrete]` issues are verified exactly in CI; `[Family]`
-  issues get numeric threshold screening. Active only while this is the
-  repository's default branch.
+  issues get numeric threshold screening. NOTE: GitHub serves issue
+  templates and runs issue-triggered workflows only from the default
+  branch, so this intake is dormant while main (the Workers stack) is
+  default.
 
 Data convention: every catalog entry and certificate names its invariant
 ("unweighted-alpha-bar" today; a future weighted alpha would use
@@ -21,7 +23,7 @@ Data convention: every catalog entry and certificate names its invariant
 or compared across invariants; weighted claims are not machine-verifiable
 and would go through proof review like families).
 
-The `cloudflare-workers` branch holds the Workers/D1/KV record-book site
-previously served at matroid-correlation-constants.icarm.cloud (its own
-CLAUDE.md documents it); its TypeScript verifier cross-validates this
-branch's Julia verifier.
+The `main` branch (default) holds the Workers/D1/KV record-book site
+served at matroid-correlation-constants.icarm.cloud (its own CLAUDE.md
+documents it); its TypeScript verifier cross-validates this branch's
+Julia verifier.
