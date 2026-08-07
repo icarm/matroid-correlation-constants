@@ -682,18 +682,30 @@ const SUBMIT_TABS_SCRIPT = `
             show(this.getAttribute('data-target'));
           });
         }
-        function fromHash() {
-          if (location.hash === '#submit-family') {
-            show('submit-family');
-            var panel = document.getElementById('submit-family');
-            if (panel) panel.scrollIntoView();
-          } else if (location.hash === '#submit') {
-            show('submit');
-          }
+        function goTo(target) {
+          show(target);
+          var panel = document.getElementById(target);
+          if (panel) panel.scrollIntoView();
         }
+        function fromHash() {
+          if (location.hash === '#submit-family') goTo('submit-family');
+          else if (location.hash === '#submit') goTo('submit');
+        }
+        // Same-page links to either form ("Submit a matroid", the propose
+        // CTAs) must work even when the other tab is selected and the hash
+        // will not change (no hashchange event) — reveal the right panel
+        // before the browser's default anchor scroll, which needs the
+        // target visible.
+        document.addEventListener('click', function (e) {
+          var a = e.target && e.target.closest
+            ? e.target.closest('a[href$="#submit"], a[href$="#submit-family"]')
+            : null;
+          if (!a || a.pathname !== location.pathname) return;
+          show(a.hash === '#submit-family' ? 'submit-family' : 'submit');
+        });
         bar.hidden = false;
         show('submit');
-        fromHash();
+        if (location.hash === '#submit-family') goTo('submit-family');
         window.addEventListener('hashchange', fromHash);
       })();
     </script>`
