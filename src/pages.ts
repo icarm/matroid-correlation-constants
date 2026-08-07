@@ -145,11 +145,12 @@ export function layout(
 </html>`
 }
 
-// The four basis-count classes, in Chris Eur's bracket notation:
-// B[∋i,∋j], B[∌i,∌j], B[∋i,∌j], B[∌i,∋j].
-const bc = (i: string, j: string): string => `B[${i}<var>i</var>, ${j}<var>j</var>]`
-const IN = '&ni;'
-const OUT = '&#8716;'
+// The basis-set classes, in the mathematics page's notation: subscripts are
+// contained elements, superscripts avoided ones — B_ij (bases containing i
+// and j), B^ij (avoiding both), B^i_j (avoiding i, containing j).
+const bset = (sup: string, sub: string): string =>
+  `<var>B</var>${sup ? `<sup><var>${sup}</var></sup>` : ''}${sub ? `<sub><var>${sub}</var></sub>` : ''}(<var>M</var>)`
+const bcount = (sup: string, sub: string): string => `|${bset(sup, sub)}|`
 
 // The wide hero: the pitch on the left, the standing record on the right —
 // so the page opens wide-into-wide against the wide chart below it, and
@@ -192,14 +193,16 @@ function definitionSection(): string {
   <section class="prose" id="definition">
     <h2>The correlation constant, at a glance</h2>
     <p>
-      For a matroid <var>M</var> on <span class="math">{0, &hellip;, n&minus;1}</span>, write
-      ${bc(IN, IN)} for the number of bases containing both elements <var>i</var> and
-      <var>j</var>, ${bc(OUT, OUT)} for the number avoiding both, and so on. Then
+      For a matroid <var>M</var> on <span class="math">{0, &hellip;, n&minus;1}</span> and
+      distinct elements <var>i</var>, <var>j</var>, write ${bset('', 'ij')} for the set of
+      bases containing both <var>i</var> and <var>j</var>, ${bset('ij', '')} for the set
+      avoiding both, and ${bset('i', 'j')} for the set avoiding <var>i</var> and containing
+      <var>j</var>. Then
     </p>
     <p class="display-eq">
-      <span class="eq-part"><var>R</var><sub>ij</sub>(<var>M</var>) =
-        <span class="frac"><span class="num">${bc(IN, IN)} &middot; ${bc(OUT, OUT)}</span><span class="den">${bc(IN, OUT)} &middot; ${bc(OUT, IN)}</span></span></span>
-      <span class="eq-part">${alphaVar}(<var>M</var>) = max<sub><var>i</var> &ne; <var>j</var></sub> <var>R</var><sub>ij</sub>(<var>M</var>)</span>
+      <span class="eq-part"><var>R</var><sub><var>ij</var></sub>(<var>M</var>) =
+        <span class="frac"><span class="num">${bcount('ij', '')} &middot; ${bcount('', 'ij')}</span><span class="den">${bcount('i', 'j')} &middot; ${bcount('j', 'i')}</span></span></span>
+      <span class="eq-part">${alphaVar}(<var>M</var>) = max<sub><var>i</var> &ne; <var>j</var></sub> <var>R</var><sub><var>ij</var></sub>(<var>M</var>)</span>
     </p>
     <p>
       with the maximum over pairs of nonloop, noncoloop elements; ${alphaVar}(<var>M</var>) &gt; 1

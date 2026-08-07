@@ -9,10 +9,11 @@ original implementation lives on the `github-flow` branch.)
 ## The problem
 
 Choose a basis of a matroid M uniformly at random. For distinct elements
-i, j, write B[∋i,∋j] for the number of bases containing both, B[∌i,∌j] for
-the number avoiding both, and so on. The correlation constant is
+i, j, write B_ij for the set of bases containing both, B^ij for the set
+avoiding both, and B^i_j for the set avoiding i and containing j
+(subscripts contained, superscripts avoided). The correlation constant is
 
-    α(M) = max over i ≠ j of  B[∋i,∋j]·B[∌i,∌j] / (B[∋i,∌j]·B[∌i,∋j])
+    α(M) = max over i ≠ j of  |B^ij|·|B_ij| / (|B^i_j|·|B^j_i|)
 
 (maximum over nonloop, noncoloop pairs). α(M) ≤ 1 means every pair is
 negatively correlated; this holds for graphic, regular, and many other
