@@ -1401,11 +1401,14 @@ footer .inner {
    The bar is revealed by JS; without it both forms render stacked. --- */
 
 .submit-tabs {
-  max-width: 880px;
-  margin: 2.4rem auto -1.2rem;
   display: flex;
   gap: 0.4rem;
+  /* Overlap the panel's top border by 1px so the active tab can erase it
+     and read as one surface with the panel. */
+  margin: 2rem 0 -1px;
   padding: 0 1rem;
+  position: relative;
+  z-index: 1;
 }
 
 .submit-tab {
@@ -1413,7 +1416,6 @@ footer .inner {
   font-size: 0.95rem;
   padding: 0.45rem 1.1rem;
   border: 1px solid var(--panel-edge);
-  border-bottom: none;
   border-radius: 10px 10px 0 0;
   background: var(--bg-muted);
   color: var(--muted);
@@ -1422,9 +1424,16 @@ footer .inner {
 
 .submit-tab.active {
   background: var(--panel);
+  border-bottom-color: var(--panel);
   color: var(--fg);
   font-weight: 600;
-  box-shadow: var(--shadow-sm);
+}
+
+/* With the tab bar visible (JS), the forms hang directly off it; hidden
+   (no JS), both forms keep their stacked panel margins. */
+.submit-tabs:not([hidden]) ~ #submit,
+.submit-tabs:not([hidden]) ~ #submit-family {
+  margin-top: 0;
 }
 
 .form-subhead {
