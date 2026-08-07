@@ -1047,13 +1047,13 @@ function userMatroidsSection(rows: UserMatroidRow[]): string {
     </section>`
 }
 
-export function profilePage(user: User, matroids: UserMatroidRow[] = []): string {
+export function profilePage(user: User, matroids: UserMatroidRow[] = [], admin = false): string {
   const body = `
     <section class="prose">
       <h2>Profile</h2>
       <p class="muted">Signed in as ${escapeHtml(user.display_name || user.email || 'user')} (via ${escapeHtml(
         user.provider,
-      )}).</p>
+      )}).${admin ? ' <strong class="admin-badge">site admin</strong> &mdash; you can review, edit, accept, and reject family proposals.' : ''}</p>
       <section class="profile-name">
         <h3>Display name</h3>
         <form method="post" action="/profile/name" class="profile-name-form">

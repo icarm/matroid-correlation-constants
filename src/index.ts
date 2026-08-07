@@ -348,7 +348,11 @@ app.get('/recent', async (c) => {
 app.get('/profile', async (c) => {
   const user = c.get('user')
   if (!user) return c.redirect('/auth/github?return_to=/profile', 302)
-  return c.html(profilePage(user, await userMatroids(c.env, user.id)))
+  const [matroids, admin] = await Promise.all([
+    userMatroids(c.env, user.id),
+    isAdmin(c.env, user.id),
+  ])
+  return c.html(profilePage(user, matroids, admin))
 })
 
 app.post('/profile/name', async (c) => {

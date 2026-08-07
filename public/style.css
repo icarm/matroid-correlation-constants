@@ -1156,6 +1156,19 @@ form input:disabled {
   padding-top: 0.8rem;
 }
 
+/* The profile's admin marker. */
+.admin-badge {
+  display: inline-block;
+  padding: 0 0.45rem;
+  border: 1px solid var(--accent-dim);
+  border-radius: 3px;
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 /* The admin edit form on a pending proposal, collapsed under the review
    panel until needed. */
 .review-edit {
