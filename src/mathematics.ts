@@ -171,8 +171,10 @@ const CONTENT = String.raw`
         no floating point touches any verdict. An optional claimed \(\overline{\alpha}\) is
         checked against the computed value, so a recorded entry is a verified claim. Ground
         sets go up to \(n = 30\) elements when the rank keeps the enumeration feasible
-        (everything with \(n \le 24\) is accepted). A record entry also requires a discovery
-        record &mdash; discoverers, a discovery date, and an explicit AI-use declaration.
+        (everything with \(n \le 24\) is accepted). A record entry also requires a positively
+        correlated pair &mdash; \(\overline{\alpha} > 1\), since \(\overline{\alpha} = 1\) is
+        attained at every \(n \ge 4\) by trivial direct sums &mdash; and a discovery record:
+        discoverers, a discovery date, and an explicit AI-use declaration.
         Submitted code is never executed.
       </p>
 

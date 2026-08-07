@@ -523,6 +523,8 @@ function verifierForm(state: FormState, user: User | null, openAttribution = fal
       entries may be integers or fraction strings like <code>"-3/5"</code>; over
       GF(p<sup>d</sup>), integers (subfield constants) or coefficient lists like
       <code>[0,1]</code> in the Conway polynomial basis, as in Sage or GAP.
+      Anything within the limits can be verified; the record book itself only takes
+      positively correlated matroids (${alphaVar} &gt; 1).
       Proposing an <em>infinite family</em> instead? That takes a proof and human review
       &mdash; see <a href="/families#propose">how family proposals work</a>.</p>
     </form>
@@ -751,6 +753,11 @@ export function familyProposeResultPage(
 
 function recordSection(result: { alphaNum: number; alphaDen: number; n: number }, record?: RecordStatus): string {
   if (!record) return ''
+  if (record.notPositive) {
+    return `<p class="muted">Not recorded: only positively correlated matroids
+      (${alphaVar} &gt; 1) enter the record book &mdash; ${alphaVar} = 1 is reached at every
+      n &ge; 4 by trivial direct sums, so entries at or below it record nothing.</p>`
+  }
   const recordLink = (text: string) =>
     record.matroidId ? `<a href="/matroid/${record.matroidId}">${text}</a>` : text
   const recordAlpha = fmtAlphaLong(record.recordAlphaNum, record.recordAlphaDen)

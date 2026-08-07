@@ -182,6 +182,12 @@ export interface RecordStatus {
    * with the attribution fields records it.
    */
   needsDiscovery?: boolean
+  /**
+   * Set when the submission was ineligible for the record book because no
+   * pair is positively correlated (α ≤ 1). recordAlphaNum/Den echo the
+   * submission's own α; matroidId is 0.
+   */
+  notPositive?: boolean
 }
 
 /** Every stored matroid as a plot point — current records and the superseded
@@ -221,6 +227,19 @@ export async function recordMatroid(
   meta: SubmissionMeta,
   userId: number,
 ): Promise<RecordStatus> {
+  // The record book only takes positively correlated matroids: α = 1 is
+  // attainable at every n ≥ 4 by trivial constructions (U(1,2) ⊕ U(1,2),
+  // padded with coloops), so an entry at or below 1 records nothing.
+  // Verification itself stays open to any matroid.
+  if (atLeast(1, 1, result.alphaNum, result.alphaDen)) {
+    return {
+      recorded: false,
+      notPositive: true,
+      recordAlphaNum: result.alphaNum,
+      recordAlphaDen: result.alphaDen,
+      matroidId: 0,
+    }
+  }
   const basesHash = result.basesHash
   const currentFor = (n: number) =>
     env.DB.prepare(
