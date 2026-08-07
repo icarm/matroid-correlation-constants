@@ -10,12 +10,10 @@ import {
 } from './verify'
 import type {
   ActivityItem,
-  CommentView,
   MatroidListRow,
   MatroidView,
   RecordStatus,
 } from './store'
-import { COMMENT_MAX } from './store'
 import { familiesChartData, type Family } from './familyData'
 
 export interface User {
@@ -917,45 +915,6 @@ export function profilePage(user: User, matroids: UserMatroidRow[] = []): string
 }
 
 
-// Linkify `matroid#123` references in commentary text; everything else is escaped.
-function renderCommentary(content: string): string {
-  let out = ''
-  let last = 0
-  for (const m of content.matchAll(/matroid#(\d+)/g)) {
-    out += escapeHtml(content.slice(last, m.index))
-    out += `<a href="/matroid/${m[1]}">matroid#${m[1]}</a>`
-    last = (m.index ?? 0) + m[0].length
-  }
-  return out + escapeHtml(content.slice(last))
-}
-
-function commentarySection(matroidId: number, comment: CommentView | null, user: User | null): string {
-  const hasContent = !!comment && comment.content.length > 0
-  const body = hasContent
-    ? `<div class="comment-body">${renderCommentary(comment!.content)}</div>`
-    : `<p class="muted">No commentary yet.</p>`
-  const meta = comment
-    ? `<p class="comment-meta">last edited ${comment.author ? `by ${escapeHtml(comment.author)} ` : ''}at ${escapeHtml(
-        comment.created_at,
-      )} UTC &middot; <a href="/matroid/${matroidId}/commentary-history">history</a></p>`
-    : ''
-  const editor = user
-    ? `<details class="comment-edit">
-        <summary>edit</summary>
-        <form method="post" action="/matroid/${matroidId}/commentary">
-          <textarea name="content" rows="6" maxlength="${COMMENT_MAX}">${escapeHtml(comment?.content ?? '')}</textarea>
-          <div><button type="submit">save</button> <span class="muted">submit empty to clear</span></div>
-        </form>
-      </details>`
-    : `<p class="muted"><a href="/auth/github">Log in</a> to add commentary.</p>`
-  return `<section class="comment-section">
-      <h3>Commentary</h3>
-      ${body}
-      ${meta}
-      ${editor}
-    </section>`
-}
-
 /** Pretty-print a JSON list of rows/sets, one entry per line. */
 function formatListJson(json: string): string {
   try {
@@ -974,7 +933,6 @@ const fieldBadge = (field: string | null): string =>
 
 export function matroidDetailPage(
   m: MatroidView,
-  comment: CommentView | null = null,
   user: User | null = null,
   justRecorded = false,
 ): string {
@@ -1027,7 +985,7 @@ export function matroidDetailPage(
   const provenanceBlock = m.provenance
     ? `<section class="provenance">
         <h3>Notes</h3>
-        <div class="comment-body">${escapeHtml(m.provenance)}</div>
+        <div class="note-body">${escapeHtml(m.provenance)}</div>
       </section>`
     : ''
   const body = `
@@ -1063,44 +1021,12 @@ export function matroidDetailPage(
       }
       ${pairBlock}
       ${provenanceBlock}
-      ${commentarySection(m.id, comment, user)}
     </section>`
   return layout(
     `matroid #${m.id}${m.name ? ` (${m.name})` : ''} — ${SITE_NAME}`,
     body,
     user,
   )
-}
-
-export function commentaryHistoryPage(
-  m: MatroidView,
-  entries: CommentView[],
-  user: User | null = null,
-): string {
-  const list = entries.length
-    ? entries
-        .map(
-          (e) => `<li>
-        <p class="comment-meta">${e.author ? escapeHtml(e.author) : '<span class="muted">(deleted user)</span>'} &middot; ${escapeHtml(
-            e.created_at,
-          )} UTC</p>
-        ${e.content.length > 0 ? `<div class="comment-body">${renderCommentary(e.content)}</div>` : `<p class="muted">(cleared)</p>`}
-      </li>`,
-        )
-        .join('\n')
-    : `<li class="muted">No commentary yet.</li>`
-  const body = `
-    <section class="prose">
-      <p class="page-nav"><a href="/matroid/${m.id}">&larr; matroid #${m.id}</a></p>
-      <h2>Commentary history</h2>
-      <p class="muted">${entries.length} edit${entries.length === 1 ? '' : 's'}.</p>
-      <ul class="comment-history">${list}</ul>
-    </section>`
-  return layout(`Commentary history — ${SITE_NAME}`, body, user)
-}
-
-function clip(s: string, n: number): string {
-  return s.length > n ? s.slice(0, n) + '…' : s
 }
 
 // A SQLite CURRENT_TIMESTAMP string ('YYYY-MM-DD HH:MM:SS', UTC) as a
@@ -1128,7 +1054,7 @@ function relativeTime(ts: string): string {
   return `<time datetime="${ts.replace(' ', 'T')}Z" title="${escapeHtml(ts)} UTC">${text}</time>`
 }
 
-// Recent-activity feed: record matroids and commentary edits, newest first.
+// Recent-activity feed: record matroids, newest first.
 export function activityPage(
   items: ActivityItem[],
   page: number,
@@ -1138,21 +1064,12 @@ export function activityPage(
   const who = (u: string | null) => (u ? escapeHtml(u) : '<span class="muted">anonymous</span>')
   const entry = (a: ActivityItem): string => {
     const link = `<a href="/matroid/${a.matroid_id}">matroid #${a.matroid_id}</a>`
-    const meta = `<p class="activity-meta">${relativeTime(a.ts)} &middot; ${who(a.user)}</p>`
-    if (a.kind === 'record') {
-      return `<li>
-        ${meta}
+    return `<li>
+        <p class="activity-meta">${relativeTime(a.ts)} &middot; ${who(a.user)}</p>
         <p class="activity-line">set a record for n = ${a.n} with ${link} &mdash; ${alphaVar} = ${fmtAlphaLong(
           a.alpha_num,
           a.alpha_den,
         )}</p>
-      </li>`
-    }
-    const cleared = !a.content || a.content.length === 0
-    return `<li>
-        ${meta}
-        <p class="activity-line">${cleared ? `cleared commentary on ${link}` : `edited commentary on ${link}`}</p>
-        ${cleared ? '' : `<div class="comment-body">${renderCommentary(clip(a.content!, 280))}</div>`}
       </li>`
   }
   const list = items.length
@@ -1169,7 +1086,7 @@ export function activityPage(
     <section class="prose">
       <p class="page-nav"><a href="/">&larr; home</a></p>
       <h2>Recent activity</h2>
-      <p class="muted">Record matroids and commentary edits, newest first.</p>
+      <p class="muted">Record matroids, newest first.</p>
       ${list}
       <nav class="pager">${newer} <span class="muted">page ${page + 1}</span> ${older}</nav>
     </section>`

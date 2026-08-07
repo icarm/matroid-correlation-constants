@@ -37,8 +37,11 @@ case).
   rejects with both values) and discovery-metadata validation. Submission
   is form-only: the JSON API and bearer tokens were removed 2026-08 (the
   site emphasizes humans filling out the forms; restore from git history
-  before commit "Remove the JSON API" if demand appears). The api_tokens
-  table remains in D1, dormant.
+  before commit "Remove the JSON API" if demand appears). Per-matroid
+  commentary was switched off the same way (any-account free-text writes
+  = moderation surface; Zulip is the discussion venue). The api_tokens,
+  commentary_log tables and matroids.current_comment_id remain in D1,
+  dormant.
 - `src/pages.ts` — server-rendered template-literal pages. `src/mathematics.ts`
   — the proofs page (the only page loading MathJax, from CDN).
 - `src/familyData.ts` — the family model (types + chart-data mapper);

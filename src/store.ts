@@ -23,19 +23,10 @@ export interface SubmissionMeta {
   provenance: string | null
 }
 
-export const COMMENT_MAX = 4000
-
 // Canonical bases lists are stored only up to this size; the entry is always
 // recomputable from its stored representation. (Keeps rows well under D1's
 // per-value limits even for matrix submissions with tens of thousands of bases.)
 const BASES_STORE_MAX = 200_000
-
-export interface CommentView {
-  id: number
-  content: string
-  created_at: string
-  author: string | null
-}
 
 /** One matroid row as shown on its page. */
 export interface MatroidView {
@@ -65,23 +56,19 @@ export interface MatroidView {
   provenance: string | null
   created_at: string
   submitter_name: string | null
-  current_comment_id: number | null
   record_id: number // row id of the current record for this n
   record_alpha_num: number
   record_alpha_den: number
 }
 
-export async function loadMatroid(
-  env: Bindings,
-  id: number,
-): Promise<{ matroid: MatroidView; comment: CommentView | null } | null> {
-  const matroid = await env.DB.prepare(
+export async function loadMatroid(env: Bindings, id: number): Promise<MatroidView | null> {
+  return env.DB.prepare(
     `SELECT m.id, m.n, m.rank, m.num_bases, m.alpha_num, m.alpha_den, m.alpha_value,
             m.max_pairs, m.max_counts, m.representation_type, m.representation,
             m.field, m.cert_field, m.cert_matrix, m.bases,
             m.name, m.discoverers, m.discovery_date, m.ai_used, m.ai_model,
             m.ai_role, m.ai_chat_url, m.citation, m.provenance,
-            m.created_at, m.current_comment_id,
+            m.created_at,
             u.display_name AS submitter_name,
             (SELECT id FROM matroids WHERE n = m.n ORDER BY id DESC LIMIT 1) AS record_id,
             (SELECT alpha_num FROM matroids WHERE n = m.n ORDER BY id DESC LIMIT 1) AS record_alpha_num,
@@ -91,89 +78,34 @@ export async function loadMatroid(
   )
     .bind(id)
     .first<MatroidView>()
-  if (!matroid) return null
-  let comment: CommentView | null = null
-  if (matroid.current_comment_id != null) {
-    comment = await env.DB.prepare(
-      `SELECT cl.id, cl.content, cl.created_at, u.display_name AS author
-         FROM commentary_log cl LEFT JOIN users u ON u.id = cl.user_id
-         WHERE cl.id = ?`,
-    )
-      .bind(matroid.current_comment_id)
-      .first<CommentView>()
-  }
-  return { matroid, comment }
 }
 
-// Record an edit to a matroid's commentary and point the matroid at it.
-export async function postCommentary(
-  env: Bindings,
-  matroidId: number,
-  userId: number,
-  content: string,
-): Promise<void> {
-  const ins = await env.DB.prepare(
-    'INSERT INTO commentary_log (matroid_id, user_id, content) VALUES (?, ?, ?)',
-  )
-    .bind(matroidId, userId, content)
-    .run()
-  await env.DB.prepare('UPDATE matroids SET current_comment_id = ? WHERE id = ?')
-    .bind(ins.meta.last_row_id, matroidId)
-    .run()
-}
-
-// Full edit history for a matroid, newest first.
-export function commentaryHistory(env: Bindings, matroidId: number): Promise<CommentView[]> {
-  return env.DB.prepare(
-    `SELECT cl.id, cl.content, cl.created_at, u.display_name AS author
-       FROM commentary_log cl LEFT JOIN users u ON u.id = cl.user_id
-       WHERE cl.matroid_id = ? ORDER BY cl.id DESC`,
-  )
-    .bind(matroidId)
-    .all<CommentView>()
-    .then((r) => r.results)
-}
-
-// One row in the recent-activity feed: a record-setting matroid or a
-// commentary edit. Both carry the entry's n and correlation constant.
+// One row in the recent-activity feed: a record-setting matroid, with its
+// n and correlation constant. (Commentary was switched off in August 2026;
+// its dormant tables remain in D1, and its feed arm went with it.)
 export interface ActivityItem {
-  kind: 'record' | 'commentary'
   ts: string
   matroid_id: number
   n: number
   alpha_num: number
   alpha_den: number
   user: string | null
-  content: string | null
 }
 
 export const ACTIVITY_PAGE_SIZE = 30
 
-// Recent activity, newest first, paginated. Merges record matroids and
-// commentary edits in one timeline. `hasOlder` reports whether a further page
-// exists (we fetch one extra row to find out).
+// Recent activity, newest first, paginated. `hasOlder` reports whether a
+// further page exists (we fetch one extra row to find out).
 export async function recentActivity(
   env: Bindings,
   page = 0,
 ): Promise<{ items: ActivityItem[]; page: number; hasOlder: boolean }> {
   const size = ACTIVITY_PAGE_SIZE
   const { results } = await env.DB.prepare(
-    `SELECT kind, ts, matroid_id, n, alpha_num, alpha_den, user, content FROM (
-         SELECT 'record' AS kind, m.created_at AS ts, m.id AS matroid_id,
-                m.n, m.alpha_num, m.alpha_den, u.display_name AS user, NULL AS content
-           FROM matroids m LEFT JOIN users u ON u.id = m.submitter_user_id
-         UNION ALL
-         SELECT 'commentary' AS kind, cl.created_at AS ts, cl.matroid_id AS matroid_id,
-                m.n, m.alpha_num, m.alpha_den, cu.display_name AS user, cl.content AS content
-           FROM commentary_log cl
-           LEFT JOIN users cu ON cu.id = cl.user_id
-           JOIN matroids m ON m.id = cl.matroid_id
-       )
-       -- kind ASC tiebreak: at the same second-precision timestamp a
-       -- commentary edit sorts above its matroid in this newest-first feed,
-       -- since the commentary logically follows the record.
-       ORDER BY ts DESC, kind ASC
-       LIMIT ? OFFSET ?`,
+    `SELECT m.created_at AS ts, m.id AS matroid_id, m.n, m.alpha_num, m.alpha_den,
+            u.display_name AS user
+       FROM matroids m LEFT JOIN users u ON u.id = m.submitter_user_id
+       ORDER BY ts DESC LIMIT ? OFFSET ?`,
   )
     .bind(size + 1, page * size)
     .all<ActivityItem>()

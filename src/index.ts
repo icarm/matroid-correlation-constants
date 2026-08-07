@@ -2,7 +2,6 @@ import { Hono } from 'hono'
 import {
   acknowledgePage,
   activityPage,
-  commentaryHistoryPage,
   familyProposeResultPage,
   landingPage,
   type FamilyFormState,
@@ -23,11 +22,8 @@ import {
 } from './auth'
 import {
   allMatroids,
-  COMMENT_MAX,
-  commentaryHistory,
   recordPoints,
   loadMatroid,
-  postCommentary,
   recentActivity,
   recordMatroid,
   userMatroids,
@@ -301,39 +297,9 @@ app.get('/matroids', async (c) =>
 app.get('/matroid/:id', async (c) => {
   const id = Number(c.req.param('id'))
   if (!Number.isInteger(id)) return c.html(notFoundPage(c.get('user')), 404)
-  const loaded = await loadMatroid(c.env, id)
-  if (!loaded) return c.html(notFoundPage(c.get('user')), 404)
-  return c.html(
-    matroidDetailPage(loaded.matroid, loaded.comment, c.get('user'), c.req.query('new') === '1'),
-  )
-})
-
-app.post('/matroid/:id/commentary', async (c) => {
-  const user = c.get('user')
-  if (!user) return c.redirect('/auth/github', 302)
-  const id = Number(c.req.param('id'))
-  if (!Number.isInteger(id)) return c.html(notFoundPage(user), 404)
-  const exists = await c.env.DB.prepare('SELECT id FROM matroids WHERE id = ?').bind(id).first()
-  if (!exists) return c.html(notFoundPage(user), 404)
-  const form = await c.req.parseBody()
-  // An explicit empty string is a deliberate "clear"; a missing field is a
-  // malformed request and must not clear anything.
-  if (typeof form.content !== 'string') {
-    return c.text('missing or invalid form field: content', 400)
-  }
-  const content = form.content.slice(0, COMMENT_MAX)
-  await postCommentary(c.env, id, user.id, content)
-  return c.redirect(`/matroid/${id}`, 302)
-})
-
-app.get('/matroid/:id/commentary-history', async (c) => {
-  const id = Number(c.req.param('id'))
-  if (!Number.isInteger(id)) return c.html(notFoundPage(c.get('user')), 404)
-  const loaded = await loadMatroid(c.env, id)
-  if (!loaded) return c.html(notFoundPage(c.get('user')), 404)
-  return c.html(
-    commentaryHistoryPage(loaded.matroid, await commentaryHistory(c.env, id), c.get('user')),
-  )
+  const matroid = await loadMatroid(c.env, id)
+  if (!matroid) return c.html(notFoundPage(c.get('user')), 404)
+  return c.html(matroidDetailPage(matroid, c.get('user'), c.req.query('new') === '1'))
 })
 
 app.get('/recent', async (c) => {

@@ -873,7 +873,7 @@ var {
   margin-top: 2rem;
 }
 
-/* Matroid pages, commentary, recent activity */
+/* Matroid pages, recent activity */
 
 .detail-meta {
   margin: 1rem 0;
@@ -954,50 +954,13 @@ var {
   margin-top: 1.6rem;
 }
 
-.comment-section {
-  margin-top: 2rem;
-}
-
-.comment-body {
+.note-body {
   background: var(--bg-bright);
   border: 1px solid var(--panel-edge);
   border-radius: 6px;
   padding: 0.75rem 1rem;
   white-space: pre-wrap;
   word-break: break-word;
-}
-
-.comment-meta {
-  color: var(--muted);
-  font-size: 0.85rem;
-  margin: 0.4rem 0;
-}
-
-.comment-edit {
-  margin-top: 0.5rem;
-}
-
-.comment-edit summary {
-  color: var(--accent);
-  cursor: pointer;
-}
-
-.comment-edit textarea {
-  margin-top: 0.5rem;
-}
-
-.comment-edit button {
-  margin-top: 0.6rem;
-}
-
-.comment-history {
-  list-style: none;
-  padding: 0;
-}
-
-.comment-history li {
-  border-bottom: 1px solid var(--panel-edge);
-  padding: 0.9rem 0;
 }
 
 .activity {
@@ -1018,11 +981,6 @@ var {
 
 .activity-line {
   margin: 0;
-}
-
-.activity .comment-body {
-  margin-top: 0.5rem;
-  font-size: 0.92rem;
 }
 
 .pager {
