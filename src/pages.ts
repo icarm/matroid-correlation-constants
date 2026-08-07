@@ -80,6 +80,9 @@ export function layout(
   bodyInner: string,
   user: User | null = null,
   headExtra = '',
+  // Wide pages share the header's full-width container (the landing page);
+  // everything else keeps the narrow reading column.
+  wide = false,
 ): string {
   return `<!doctype html>
 <html lang="en">
@@ -125,7 +128,7 @@ export function layout(
         <span class="auth-nav">${authNav(user)}</span>
       </div>
     </header>
-    <main>${bodyInner}</main>
+    <main${wide ? ' class="wide"' : ''}>${bodyInner}</main>
     <footer>
       <div class="inner">
         <nav class="footer-links">
@@ -152,9 +155,8 @@ const bset = (sup: string, sub: string): string =>
   `<var>B</var>${sup ? `<sup><var>${sup}</var></sup>` : ''}${sub ? `<sub><var>${sub}</var></sub>` : ''}(<var>M</var>)`
 const bcount = (sup: string, sub: string): string => `|${bset(sup, sub)}|`
 
-// The wide hero: the pitch on the left, the standing record on the right —
-// so the page opens wide-into-wide against the wide chart below it, and
-// narrow prose only appears further down where it reads as article body.
+// The hero: the pitch on the left, the standing record on the right — the
+// text-beside-card geometry every landing section repeats at full width.
 function heroSection(records: RecordPoint[], families: Family[]): string {
   let best: RecordPoint | null = null
   for (const r of records) {
@@ -198,27 +200,31 @@ function heroSection(records: RecordPoint[], families: Family[]): string {
 }
 
 // A minimal definition beside the submission form; the mathematics page
-// carries the full background, discovery record, and proofs.
+// carries the full background, discovery record, and proofs. Prose on the
+// left, the defining equation as a card on the right (the hero's geometry).
 function definitionSection(): string {
   return `
-  <section class="prose" id="definition">
-    <h2>The correlation constant, at a glance</h2>
-    <p>
-      For a matroid <var>M</var> on <span class="math">{0, &hellip;, n&minus;1}</span> and
-      distinct elements <var>i</var>, <var>j</var>, write ${bset('', 'ij')} for the set of
-      bases containing both <var>i</var> and <var>j</var>, ${bset('ij', '')} for the set
-      avoiding both, and ${bset('i', 'j')} for the set avoiding <var>i</var> and containing
-      <var>j</var>. Then
-    </p>
+  <section class="prose glance" id="definition">
+    <div class="glance-copy">
+      <h2>The correlation constant, at a glance</h2>
+      <p>
+        For a matroid <var>M</var> on <span class="math">{0, &hellip;, n&minus;1}</span> and
+        distinct elements <var>i</var>, <var>j</var>, write ${bset('', 'ij')} for the set of
+        bases containing both <var>i</var> and <var>j</var>, ${bset('ij', '')} for the set
+        avoiding both, and ${bset('i', 'j')} for the set avoiding <var>i</var> and containing
+        <var>j</var>.
+      </p>
+      <p>
+        The correlation constant is the largest ratio <var>R</var><sub><var>ij</var></sub>,
+        over pairs of nonloop, noncoloop elements; ${alphaVar}(<var>M</var>) &gt; 1
+        means some pair is positively correlated in a uniformly random basis.
+        <a href="/mathematics">Why this is interesting, what is known, and full proofs &rarr;</a>
+      </p>
+    </div>
     <p class="display-eq">
       <span class="eq-part"><var>R</var><sub><var>ij</var></sub>(<var>M</var>) =
         <span class="frac"><span class="num">${bcount('ij', '')} &middot; ${bcount('', 'ij')}</span><span class="den">${bcount('i', 'j')} &middot; ${bcount('j', 'i')}</span></span></span>
       <span class="eq-part">${alphaVar}(<var>M</var>) = max<sub><var>i</var> &ne; <var>j</var></sub> <var>R</var><sub><var>ij</var></sub>(<var>M</var>)</span>
-    </p>
-    <p>
-      with the maximum over pairs of nonloop, noncoloop elements; ${alphaVar}(<var>M</var>) &gt; 1
-      means some pair is positively correlated in a uniformly random basis.
-      <a href="/mathematics">Why this is interesting, what is known, and full proofs &rarr;</a>
     </p>
   </section>`
 }
@@ -427,6 +433,7 @@ function verifierForm(state: FormState, user: User | null, openAttribution = fal
   <section class="panel" id="submit">
     <h2>Submit a matroid</h2>
     <form method="post" action="/verify">
+      <div class="form-main">
       <div class="form-row">
         <label for="n">Elements <var>n</var> <span class="hint">(ground set 0, &hellip;, n&minus;1)</span>
         <input id="n" name="n" type="text" inputmode="numeric" required placeholder="e.g. 4"
@@ -450,6 +457,7 @@ function verifierForm(state: FormState, user: User | null, openAttribution = fal
           a mismatch with the computed value fails the submission, catching paste mistakes)</span>
         <input id="claimed_alpha" name="claimed_alpha" type="text" maxlength="40"
                placeholder="e.g. 100/81" value="${escapeHtml(state.claimedAlphaValue ?? '')}" /></label>
+      </div>
       </div>
       <details class="attribution"${
         openAttribution ||
@@ -569,6 +577,7 @@ function familyFormSection(state: FamilyFormState, user: User | null): string {
     it. An accepted family gets its curve on the chart, a card, and a page. TeX is welcome in
     the formula and prose fields (<code>\\( &hellip; \\)</code> inline).</p>
     <form method="post" action="/families/propose">
+      <div class="form-main">
       <div class="form-row">
         <label for="fam-name">Family name
         <input id="fam-name" name="name" type="text" required maxlength="120"
@@ -625,6 +634,8 @@ function familyFormSection(state: FamilyFormState, user: User | null): string {
         "field" optional; at most 400 points)</span></label>
       <textarea id="fam-series" name="series" rows="7" required
                 placeholder='${escapeHtml(SERIES_PLACEHOLDER)}'>${v('series')}</textarea>
+      </div>
+      <div class="form-side">
       <h3 class="form-subhead">Discovery record <span class="hint">(required &mdash; as for matroid record entries)</span></h3>
       <div class="form-row">
         <label for="fam-contributors">Discovered by
@@ -651,6 +662,7 @@ function familyFormSection(state: FamilyFormState, user: User | null): string {
       <label for="fam-ai-role">AI role <span class="hint">(one or two sentences)</span></label>
       <textarea id="fam-ai-role" name="ai_role" rows="2" maxlength="1000"
                 placeholder="what the AI did in the discovery">${v('ai_role')}</textarea>
+      </div>
       ${submit}
       <p class="muted form-note">Strengthen the proposal before it reaches review:
       <a href="/#submit">verify the family&rsquo;s small members</a> with the concrete form
@@ -853,7 +865,7 @@ export function landingPage(
     ${verifierForm({}, user)}
     ${familyFormSection({}, user)}
     ${SUBMIT_TABS_SCRIPT}`
-  return layout(SITE_NAME, body, user)
+  return layout(SITE_NAME, body, user, '', true)
 }
 
 // Post/Redirect/Get target for non-record submissions: the verdict plus the
