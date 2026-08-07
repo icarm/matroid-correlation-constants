@@ -185,7 +185,6 @@ function heroSection(records: RecordPoint[]): string {
   return `
   <section class="hero">
     <div class="hero-copy">
-      <p class="eyebrow">An open, exactly verified record book</p>
       <h2 class="hero-title">How correlated can the bases of a&nbsp;matroid&nbsp;be?</h2>
       <p class="lede">Pick a basis uniformly at random. Elements usually repel &mdash; seeing one
       in the basis makes another <em>less</em> likely. But in some matroids a pair of elements
