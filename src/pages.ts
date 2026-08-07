@@ -164,11 +164,14 @@ function heroSection(records: RecordPoint[], families: Family[]): string {
   // families come to 4/3. If a family attaining it is ever accepted, the
   // card points at the remaining step instead of going stale.
   const reaching = families.filter((f) => 3 * f.supremum.num >= 4 * f.supremum.den)
-  const familiesLine = reaching.some((f) => f.supremumKind === 'attained')
-    ? 'attained by members of a known family &mdash; verify one concretely to claim it'
+  const attainer = reaching.find((f) => f.supremumKind === 'attained')
+  const familiesLine = attainer
+    ? `attained by members of <a href="/family/${escapeHtml(attainer.slug)}">${escapeHtml(
+        attainer.short,
+      )}</a> &mdash; verify one concretely to claim it`
     : reaching.length > 0
-      ? 'reached by known families only in the limit'
-      : 'beyond every known family, even in the limit' 
+      ? 'reached by <a href="/families">known families</a> only in the limit'
+      : 'beyond every <a href="/families">known family</a>, even in the limit'
 
   const bestLine = best
     ? `Best single matroid: <a href="/matroid/${best.id}">${alphaVar} = ${fmtAlpha(best.alpha_num, best.alpha_den)}
