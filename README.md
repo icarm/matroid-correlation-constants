@@ -3,9 +3,8 @@
 A record-keeping site for the correlation constants of matroids: live at
 [matroid-correlation-constants.icarm.cloud](https://matroid-correlation-constants.icarm.cloud).
 
-A first version of this website was created by Chris Eur using
-ChatGPT-5.6 Sol Max; this implementation follows his design and feature
-set (his original lives on the `github-flow` branch).
+This website was created by Chris Eur using ChatGPT-5.6 Sol Max. (His
+original implementation lives on the `github-flow` branch.)
 
 ## The problem
 
