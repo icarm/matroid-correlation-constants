@@ -22,13 +22,6 @@ const CONTENT = String.raw`
     <section class="prose math-page">
       <p class="eyebrow">Definitions, proofs, and provenance</p>
       <h2>The mathematics behind the records</h2>
-      <p>
-        On the <a href="/">Explore</a> chart, a solid curve is a proved value of the full
-        invariant; a dashed curve is an exact value for a specified pair and therefore a
-        certified lower bound. This page fixes the notation, explains what a verification on
-        this site proves, proves every displayed family formula, and records who found each
-        construction.
-      </p>
 
       <nav class="math-toc" aria-label="Contents">
         <a href="#definition">Definition</a>
