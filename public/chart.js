@@ -320,11 +320,12 @@
         tabindex: 0, role: 'link',
         'aria-label': `matroid #${r.id}, value ${r.label}`,
       })
+      // No separate field line: the titles say it ("GF(3) record"), and a
+      // club member's representation details live on its matroid page.
       hoverable(dot, 'matroid #' + r.id, [
         (r.titles || []).join(' · '),
         'α = ' + r.label + ' ≈ ' + fmt(r.value, 5),
         '|E| = ' + r.n + ' · rank ' + r.rank + ' · ' + Number(r.bases).toLocaleString() + ' bases',
-        r.field ? 'verified over GF(' + r.field + ')' : r.certField ? 'certified over GF(' + r.certField + ')' : 'field not specified',
       ], '/matroid/' + r.id)
       marks.append(dot)
     }
