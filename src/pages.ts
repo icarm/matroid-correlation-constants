@@ -1078,7 +1078,7 @@ export function matroidDetailPage(
       ${justRecorded ? `<p class="record-new">New record entry &mdash; saved. &#127941;</p>` : ''}
       <h2>matroid #${m.id}${m.name ? ` <span class="matroid-name">&mdash; ${escapeHtml(m.name)}</span>` : ''}</h2>
       <dl class="stats">
-        <div><dt>n</dt><dd><a href="/matroids?n=${m.n}" title="all record matroids for this ground-set size">${m.n}</a></dd></div>
+        <div><dt>n</dt><dd>${m.n}</dd></div>
         <div><dt>rank</dt><dd>${m.rank}</dd></div>
         <div><dt>bases</dt><dd>${m.num_bases.toLocaleString('en-US')}</dd></div>
         <div><dt>${alphaVar}(M)</dt><dd class="score">${fmtAlphaLong(m.alpha_num, m.alpha_den)}</dd></div>
@@ -1198,7 +1198,7 @@ const MATROID_SORT_DEFAULT_DIR: Record<MatroidSortKey, 'asc' | 'desc'> = {
 
 export function matroidsPage(
   rows: MatroidListRow[],
-  query: { sort?: string; dir?: string; current?: string; n?: string },
+  query: { sort?: string; dir?: string; current?: string; field?: string },
   user: User | null = null,
 ): string {
   const sort: MatroidSortKey = (MATROID_SORT_KEYS as readonly string[]).includes(query.sort ?? '')
@@ -1207,7 +1207,10 @@ export function matroidsPage(
   const dir: 'asc' | 'desc' =
     query.dir === 'asc' || query.dir === 'desc' ? query.dir : MATROID_SORT_DEFAULT_DIR[sort]
   const currentOnly = query.current === '1'
-  const nFilter = /^\d+$/.test(query.n ?? '') ? Number(query.n) : null
+  // Field values are the verifier's strings: 'Q' or the field order.
+  const fieldFilter = /^(Q|\d{1,9})$/.test(query.field ?? '') ? (query.field as string) : null
+  const matchesField = (m: MatroidListRow): boolean =>
+    fieldFilter === null || m.field === fieldFilter || m.cert_field === fieldFilter
 
   const keyValue: Record<MatroidSortKey, (m: MatroidListRow) => number | string> = {
     id: (m) => m.id,
@@ -1218,9 +1221,7 @@ export function matroidsPage(
     date: (m) => m.created_at,
   }
 
-  const shown = rows.filter(
-    (r) => (!currentOnly || r.titles !== null) && (nFilter === null || r.n === nFilter),
-  )
+  const shown = rows.filter((r) => (!currentOnly || r.titles !== null) && matchesField(r))
   const val = keyValue[sort]
   const flip = dir === 'desc' ? -1 : 1
   shown.sort((a, b) => {
@@ -1233,7 +1234,7 @@ export function matroidsPage(
     s: MatroidSortKey,
     d: 'asc' | 'desc',
     current: boolean,
-    n: number | null = nFilter,
+    field: string | null = fieldFilter,
   ): string => {
     const q = new URLSearchParams()
     if (!(s === 'alpha' && d === 'desc')) {
@@ -1241,7 +1242,7 @@ export function matroidsPage(
       q.set('dir', d)
     }
     if (current) q.set('current', '1')
-    if (n !== null) q.set('n', String(n))
+    if (field !== null) q.set('field', field)
     const qs = q.toString()
     return '/matroids' + (qs ? '?' + qs : '')
   }
@@ -1259,12 +1260,17 @@ export function matroidsPage(
     .map(
       (m) => `<tr>
         <td><a href="/matroid/${m.id}">#${m.id}</a></td>
-        <td class="num"><a href="${href(sort, dir, currentOnly, m.n)}" title="show only n = ${m.n}">${m.n}</a></td>
+        <td class="num">${m.n}</td>
         <td class="num">${m.rank}</td>
         <td class="num">${m.num_bases.toLocaleString('en-US')}</td>
         <td class="num">${fmtAlpha(m.alpha_num, m.alpha_den)}</td>
         <td class="num">${m.alpha_value.toFixed(4)}</td>
-        <td>${escapeHtml(m.representation_type)}${m.field ? ` ${fieldBadge(m.field)}` : m.cert_field ? ` ${fieldBadge(m.cert_field)}` : ''}</td>
+        <td>${escapeHtml(m.representation_type)}${(() => {
+          const f = m.field ?? m.cert_field
+          return f
+            ? ` <a href="${href(sort, dir, currentOnly, f)}" title="show only matroids verified or certified over this field">${fieldBadge(f)}</a>`
+            : ''
+        })()}</td>
         <td>${m.submitter ? escapeHtml(m.submitter) : '<span class="muted">anonymous</span>'}</td>
         <td>${escapeHtml(m.created_at)}</td>
         <td>${m.titles ? titleNames(m.titles).join(', ') : '<span class="muted">history</span>'}</td>
@@ -1275,23 +1281,35 @@ export function matroidsPage(
   const filterToggle = currentOnly
     ? `<a href="${href(sort, dir, false)}">all</a> &middot; <strong>current record holders only</strong>`
     : `<strong>all</strong> &middot; <a href="${href(sort, dir, true)}">current record holders only</a>`
-  // The size filter is a plain GET form (the page has no JS); hidden inputs
+  // The field filter is a plain GET form (the page has no JS); hidden inputs
   // mirror href() so submitting preserves the sort and current-only state.
+  // Options come from the data: every field a stored row is verified or
+  // certified over, ℚ first, then by field order.
   const hiddenState =
     (sort === 'alpha' && dir === 'desc'
       ? ''
       : `<input type="hidden" name="sort" value="${sort}"><input type="hidden" name="dir" value="${dir}">`) +
     (currentOnly ? '<input type="hidden" name="current" value="1">' : '')
-  const sizeFilter =
-    `<form class="inline-form size-filter" method="get" action="/matroids">${hiddenState}` +
-    `<label>n&nbsp;=&nbsp;<input name="n" type="number" min="1" max="${MAX_ELEMENTS}" step="1" ` +
-    `value="${nFilter ?? ''}" placeholder="any"></label> ` +
+  const fieldsPresent = [
+    ...new Set(rows.flatMap((r) => [r.field, r.cert_field]).filter((f): f is string => f !== null)),
+  ].sort((a, b) => (a === 'Q' ? -1 : b === 'Q' ? 1 : Number(a) - Number(b)))
+  // Literal ℚ, not the entity: the label also lands in the escaped <title>.
+  const fieldName = (f: string): string => (f === 'Q' ? 'ℚ' : `GF(${escapeHtml(f)})`)
+  const fieldOptions = fieldsPresent
+    .map(
+      (f) =>
+        `<option value="${escapeHtml(f)}"${f === fieldFilter ? ' selected' : ''}>${fieldName(f)}</option>`,
+    )
+    .join('')
+  const fieldFilterForm =
+    `<form class="inline-form field-filter" method="get" action="/matroids">${hiddenState}` +
+    `<label>field&nbsp;<select name="field"><option value="">any</option>${fieldOptions}</select></label> ` +
     `<button class="link-button" type="submit">filter</button></form>` +
-    (nFilter === null
+    (fieldFilter === null
       ? ''
       : ` &middot; <a href="${href(sort, dir, currentOnly, null)}">clear</a>`)
-  const nLabel = nFilter === null ? '' : ` for n = ${nFilter}`
-  const heading = (currentOnly ? 'Current record holders' : 'All matroids') + nLabel
+  const fieldLabel = fieldFilter === null ? '' : ` over ${fieldName(fieldFilter)}`
+  const heading = (currentOnly ? 'Current record holders' : 'All matroids') + fieldLabel
 
   const body = `
     <section class="prose">
@@ -1302,7 +1320,7 @@ export function matroidsPage(
       reverse.</p>
       <div class="table-controls muted">showing ${shown.length} of ${rows.length} matroids
         &nbsp;&middot;&nbsp; ${filterToggle}
-        &nbsp;&middot;&nbsp; ${sizeFilter}
+        &nbsp;&middot;&nbsp; ${fieldFilterForm}
         &nbsp;&middot;&nbsp; <a href="/database.json" download>Download (JSON) &darr;</a></div>
       <div class="table-scroll">
       <table class="tokens-table matroids-table">

@@ -294,7 +294,7 @@ app.get('/matroids', async (c) =>
         sort: c.req.query('sort'),
         dir: c.req.query('dir'),
         current: c.req.query('current'),
-        n: c.req.query('n'),
+        field: c.req.query('field'),
       },
       c.get('user'),
     ),

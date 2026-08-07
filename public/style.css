@@ -851,9 +851,11 @@ var {
   margin: 0.7rem 0;
 }
 
-.size-filter input {
-  width: 5rem;
-  padding: 0.15rem 0.45rem;
+.field-filter select {
+  width: auto;
+  display: inline-block;
+  margin: 0;
+  padding: 0.15rem 1.6rem 0.15rem 0.45rem;
   font-size: 0.9rem;
 }
 
