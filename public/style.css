@@ -476,6 +476,11 @@ var {
   .explorer-shell {
     grid-template-columns: 1fr;
   }
+
+  /* Stacked, the chart is the point — put it first and the filters after. */
+  .explorer-shell .chart-panel {
+    order: -1;
+  }
 }
 
 .filter-panel {
