@@ -356,9 +356,9 @@ function recordsSection(records: RecordPoint[], families: Family[]): string {
           <select id="rank-filter"><option value="all">All ranks</option></select>
           <div class="range-label">
             <label class="field-label" for="max-n">Ground-set size</label>
-            <output id="max-n-output" for="max-n">&le; 300</output>
+            <output id="max-n-output" for="max-n">&le; 100</output>
           </div>
-          <input id="max-n" type="range" min="20" max="1000" value="300" step="10" />
+          <input id="max-n" type="range" min="20" max="1000" value="100" step="10" />
           <fieldset><legend>Show</legend>
             ${check('show-points', 'Record submissions', true)}
             ${check('show-exact', 'Exact family curves', true)}

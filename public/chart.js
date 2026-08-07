@@ -28,7 +28,7 @@
   // State, synced with the URL so views are shareable.
 
   const defaults = {
-    search: '', field: 'all', rank: 'all', maxN: 300, xAxis: 'size',
+    search: '', field: 'all', rank: 'all', maxN: 100, xAxis: 'size',
     showPoints: true, showExact: true, showLower: true, showBelowOne: false, fullYScale: false,
   }
   const state = { ...defaults, hiddenSeries: new Set() }
@@ -69,7 +69,7 @@
     if (q.has('q')) state.search = q.get('q')
     if (q.has('field')) state.field = q.get('field')
     if (q.has('rank')) state.rank = q.get('rank')
-    if (q.has('maxn')) state.maxN = Math.max(20, Math.min(1000, Number(q.get('maxn')) || 300))
+    if (q.has('maxn')) state.maxN = Math.max(20, Math.min(1000, Number(q.get('maxn')) || 100))
     if (q.get('x') === 'rank') state.xAxis = 'rank'
     for (const [param, key] of [['points', 'showPoints'], ['exact', 'showExact'], ['lower', 'showLower']]) {
       if (q.get(param) === '0') state[key] = false
