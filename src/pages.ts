@@ -469,8 +469,8 @@ function verifierForm(state: FormState, user: User | null, openAttribution = fal
           ? ' open'
           : ''
       }>
-        <summary>Attribution &amp; discovery <span class="hint">(optional, encouraged &mdash; discovery is
-        distinct from submission, and AI use is recorded as data)</span></summary>
+        <summary>Attribution &amp; discovery <span class="hint">(required for a matroid to be
+        recorded; you can verify without it)</span></summary>
         <div class="form-row">
           <label for="name">Name <span class="hint">(for display)</span>
           <input id="name" name="name" type="text" maxlength="200" placeholder="e.g. Ternary rank-6 benchmark"
