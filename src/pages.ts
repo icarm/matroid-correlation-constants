@@ -338,10 +338,6 @@ function recordsSection(records: RecordPoint[], families: Family[]): string {
   <section class="panel records">
     <div id="records-fallback">${fallbackInner}</div>
     <div id="records-explorer" hidden>
-      <p class="muted explorer-note">Solid curves are proved exact family values; dashed curves are
-      certified lower bounds from a distinguished pair (from the
-      <a class="external" href="https://arxiv.org/abs/1806.02675">HSW</a> and August 2026 discovery
-      records). Dots are this site&rsquo;s verified record submissions &mdash; click one for its page.</p>
       <div class="explorer-shell">
         <aside class="filter-panel" aria-label="Chart filters">
           <div class="filter-heading"><h3>Filter</h3>

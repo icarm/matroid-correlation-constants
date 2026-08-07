@@ -465,11 +465,6 @@ var {
 
 /* The interactive explorer: filter sidebar + chart, stacking on narrow
    screens. Rendered by /chart.js; hidden without JS. */
-.explorer-note {
-  font-size: 0.9rem;
-  margin: 0 0 0.8rem;
-}
-
 .explorer-shell {
   display: grid;
   grid-template-columns: 15rem 1fr;
