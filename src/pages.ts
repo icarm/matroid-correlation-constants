@@ -462,7 +462,7 @@ function verifierForm(state: FormState, user: User | null, openAttribution = fal
     <form method="post" action="/verify">
       <div class="form-main">
       <div class="form-row">
-        <label for="n">Elements <var>n</var> <span class="hint">(ground set 0, &hellip;, n&minus;1)</span>
+        <label for="n">Elements <var>n</var> <span class="hint">({0,&nbsp;&hellip;,&nbsp;n&minus;1})</span>
         <input id="n" name="n" type="text" inputmode="numeric" required placeholder="e.g. 4"
                value="${escapeHtml(state.nValue ?? '')}" /></label>
         <label for="type">Description
