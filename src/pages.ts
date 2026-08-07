@@ -179,8 +179,6 @@ function heroSection(records: RecordPoint[]): string {
       in the basis makes another <em>less</em> likely. But in some matroids a pair of elements
       attracts, and nobody knows how strong the attraction can get. The challenge:
       <strong>find a concrete matroid whose correlation constant reaches 4/3.</strong></p>
-      <p class="hero-actions"><a class="hero-cta" href="#submit">Submit a matroid</a>
-      <a class="hero-link" href="#definition">the definition &darr;</a></p>
     </div>
     ${card}
   </section>`
