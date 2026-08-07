@@ -149,7 +149,7 @@ export function layout(
         <nav class="footer-links">
           <a href="/recent">recent activity</a> &nbsp;&middot;&nbsp;
           <a href="/database.json" download>download the records (JSON)</a> &nbsp;&middot;&nbsp;
-          <a class="external" href="https://icarm.zulipchat.com/#narrow/channel/589006-Matroid-Database">discuss on Zulip</a> &nbsp;&middot;&nbsp;
+          <a class="external" href="https://icarm.zulipchat.com/#narrow/channel/519875-general/topic/Matroid.20Correlation.20Constants/near/615280760">discuss on Zulip</a> &nbsp;&middot;&nbsp;
           <a class="external" href="https://github.com/icarm/matroid-correlation-constants">source</a> &nbsp;&middot;&nbsp;
           <a class="external" href="https://icarm.io">icarm.io</a>
         </nav>
