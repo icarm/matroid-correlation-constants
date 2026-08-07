@@ -378,6 +378,78 @@ export function parseFamilyProposal(
   }
 }
 
+/** A stored family as the raw strings of the proposal form — the inverse of
+ * parseFamilyProposal, prefilling the admin edit form. The series JSON is
+ * printed one point per line, flat when the family has its one unlabeled
+ * curve (the shorthand the form accepts). */
+export function familyToFormState(f: {
+  name: string
+  short: string
+  claim: string
+  parameter: string
+  formulaTex: string
+  sizeRankTex: string
+  supremum: { num: number; den: number }
+  supremumKind: string
+  summary: string
+  construction: string
+  curveExplanation: string
+  proofStatus: string
+  proofUrl: string | null
+  contributors: string
+  discoveryDate: string
+  aiUsed: boolean | null
+  aiModel: string | null
+  aiRole: string | null
+  aiChatUrl: string | null
+  series: FamilySeries[]
+}): Record<string, string> {
+  const frac = (num: number, den: number): string => (den === 1 ? String(num) : `${num}/${den}`)
+  const pointJson = (p: FamilyPoint): string =>
+    JSON.stringify({
+      parameter: p.parameter,
+      n: p.n,
+      rank: p.rank,
+      alpha: frac(p.num, p.den),
+      ...(p.field !== undefined ? { field: p.field } : {}),
+    })
+  const seriesText =
+    f.series.length === 1 && f.series[0].label === ''
+      ? '[' + f.series[0].points.map(pointJson).join(',\n ') + ']'
+      : '[' +
+        f.series
+          .map(
+            (s) =>
+              `{"label": ${JSON.stringify(s.label)}, "points": [\n   ` +
+              s.points.map(pointJson).join(',\n   ') +
+              ']}',
+          )
+          .join(',\n ') +
+        ']'
+  return {
+    name: f.name,
+    short: f.short,
+    claim: f.claim,
+    parameter: f.parameter,
+    formula_tex: f.formulaTex,
+    size_rank_tex: f.sizeRankTex,
+    supremum: frac(f.supremum.num, f.supremum.den),
+    supremum_kind: f.supremumKind,
+    summary: f.summary,
+    construction: f.construction,
+    curve_explanation: f.curveExplanation,
+    proof_status: f.proofStatus,
+    proof_url: f.proofUrl ?? '',
+    series: seriesText,
+    contributors: f.contributors,
+    discovery_date: f.discoveryDate,
+    ai_used: f.aiUsed === null ? '' : f.aiUsed ? 'yes' : 'no',
+    ai_model: f.aiModel ?? '',
+    ai_role: f.aiRole ?? '',
+    ai_chat_url: f.aiChatUrl ?? '',
+  }
+}
+
 export function slugify(name: string): string {
   const s = name
     .toLowerCase()
@@ -460,6 +532,55 @@ const FAMILY_PALETTE = [
   '#8a6d1f',
   '#7a4a2b',
 ]
+
+/** Overwrite every proposal field of a pending or accepted family (admin
+ * edit). The slug — the page's identity — never changes, nor do status,
+ * color, math_anchor, or fields_json (curator data outside the form). The
+ * structured AI declaration becomes authoritative: any handwritten
+ * ai_disclosure prose (curated rows) is cleared so the saved fields render.
+ * Rejected proposals are dead ends and stay frozen. */
+export async function updateFamilyFields(
+  env: Bindings,
+  familyId: number,
+  p: FamilyProposal,
+): Promise<boolean> {
+  const res = await env.DB.prepare(
+    `UPDATE families
+       SET name = ?, short = ?, claim = ?, parameter = ?, formula_tex = ?,
+           size_rank_tex = ?, supremum_num = ?, supremum_den = ?, supremum_kind = ?,
+           contributors = ?, discovery_date = ?, ai_used = ?, ai_model = ?,
+           ai_role = ?, ai_chat_url = ?, ai_disclosure = NULL, summary = ?,
+           construction = ?, curve_explanation = ?, proof_status = ?,
+           proof_url = ?, series_json = ?
+       WHERE id = ? AND status IN ('pending', 'accepted')`,
+  )
+    .bind(
+      p.name,
+      p.short,
+      p.claim,
+      p.parameter,
+      p.formulaTex,
+      p.sizeRankTex,
+      p.supremum.num,
+      p.supremum.den,
+      p.supremumKind,
+      p.contributors,
+      p.discoveryDate,
+      p.aiUsed ? 1 : 0,
+      p.aiModel,
+      p.aiRole,
+      p.aiChatUrl,
+      p.summary,
+      p.construction,
+      p.curveExplanation,
+      p.proofStatus,
+      p.proofUrl,
+      JSON.stringify(p.series),
+      familyId,
+    )
+    .run()
+  return (res.meta.changes ?? 0) > 0
+}
 
 export async function reviewFamily(
   env: Bindings,

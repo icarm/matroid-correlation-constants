@@ -5,7 +5,7 @@
 // including the TeX — is rendered HTML-escaped; MathJax reads the DOM text,
 // so escaping costs the math nothing and makes proposals safe to render.
 
-import { escapeHtml, layout, type User } from './pages'
+import { escapeHtml, familyEditSection, layout, type User } from './pages'
 import { fmtFrac, type Family } from './familyData'
 
 const MATHJAX_HEAD = `
@@ -219,6 +219,7 @@ export function familyPage(f: Family, user: User | null = null, viewerIsAdmin = 
       <h3>Plotted members</h3>
       ${seriesTables}
       ${viewerIsAdmin && f.status === 'pending' ? reviewPanel(f) : ''}
+      ${viewerIsAdmin && f.status !== 'rejected' ? familyEditSection(f, user) : ''}
     </section>`
   return layout(`${f.name} — Matroid Correlation Constants`, body, user, MATHJAX_HEAD)
 }

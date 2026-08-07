@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import {
   acknowledgePage,
   activityPage,
+  familyEditResultPage,
   familyProposeResultPage,
   landingPage,
   type FamilyFormState,
@@ -51,6 +52,7 @@ import {
   pendingFamilies,
   reviewFamily,
   submitFamily,
+  updateFamilyFields,
 } from './familyStore'
 
 const rateLimitMessage = `submission rate limit exceeded: ${SUBMISSION_RATE_LIMIT} per ${SUBMISSION_RATE_PERIOD_SEC} seconds`
@@ -151,6 +153,34 @@ app.post('/families/propose', async (c) => {
   const { slug } = await submitFamily(c.env, proposal, user.id)
   // The proposal's own page: pending, visible to the submitter and admins.
   return c.redirect(`/family/${slug}`, 303)
+})
+
+// Admin edit of a pending proposal or a live family. Same field whitelist
+// and validation as the propose flow; the slug never changes.
+app.post('/family/:slug/edit', async (c) => {
+  const user = c.get('user')
+  if (!user) return c.redirect('/auth/github', 302)
+  if (!(await isAdmin(c.env, user.id))) return c.text('editing families requires an admin', 403)
+  const family = await familyBySlug(c.env, c.req.param('slug'))
+  if (!family) return c.html(notFoundPage(user), 404)
+  if (family.status === 'rejected') {
+    return c.text('rejected proposals are frozen; they cannot be edited', 400)
+  }
+  const body = await c.req.parseBody()
+  const form: FamilyFormState = {}
+  for (const key of FAMILY_FORM_FIELDS) {
+    const v = body[key]
+    if (typeof v === 'string') form[key] = v
+  }
+  const proposal = parseFamilyProposal(form)
+  if ('error' in proposal) {
+    return c.html(
+      familyEditResultPage(user, proposal.error, form, family.slug, family.status === 'accepted'),
+      400,
+    )
+  }
+  await updateFamilyFields(c.env, family.id, proposal)
+  return c.redirect(`/family/${family.slug}`, 303)
 })
 
 app.post('/family/:slug/review', async (c) => {

@@ -1156,6 +1156,22 @@ form input:disabled {
   padding-top: 0.8rem;
 }
 
+/* The admin edit form on a pending proposal, collapsed under the review
+   panel until needed. */
+.review-edit {
+  margin: 1.4rem 0;
+}
+
+.review-edit > summary {
+  color: var(--accent);
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.review-edit .panel {
+  margin-top: 0.7rem;
+}
+
 .attribution summary {
   color: var(--accent);
   cursor: pointer;

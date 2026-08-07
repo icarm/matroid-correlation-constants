@@ -1,6 +1,12 @@
 // Exercises the pure validation layer of src/familyStore.ts (proposal
 // parsing, series JSON, fractions, slugs). Run via `npm test`.
-import { parseFamilyProposal, parseFraction, parseSeries, slugify } from './src/familyStore.ts'
+import {
+  familyToFormState,
+  parseFamilyProposal,
+  parseFraction,
+  parseSeries,
+  slugify,
+} from './src/familyStore.ts'
 
 let failures = 0
 const check = (name, cond, detail = '') => {
@@ -146,6 +152,41 @@ check(
   'proposal: non-http proof link refused',
   errorOf(parseFamilyProposal({ ...goodProposal, proof_url: 'ftp://example.org' })) !== null,
 )
+
+// --- familyToFormState (the admin edit form's prefill) ----------------------
+// Round trip: a parsed proposal rendered back to form strings must re-parse
+// to the same proposal.
+{
+  const p = parseFamilyProposal(goodProposal)
+  if (errorOf(p) === null) {
+    const p2 = parseFamilyProposal(familyToFormState(p))
+    check('edit prefill: round-trips', errorOf(p2) === null, errorOf(p2) ?? '')
+    if (errorOf(p2) === null) {
+      check('edit prefill: fields survive', JSON.stringify(p2) === JSON.stringify(p))
+    }
+  } else {
+    check('edit prefill: round-trips', false, errorOf(p))
+  }
+}
+// The single-curve shorthand round-trips through the flat-list form.
+{
+  const flat = parseFamilyProposal({
+    ...goodProposal,
+    series: JSON.stringify([{ parameter: 'r = 2', n: 10, rank: 5, alpha: '16/17' }]),
+  })
+  if (errorOf(flat) === null) {
+    const state = familyToFormState(flat)
+    check('edit prefill: unlabeled series prints flat', !state.series.includes('"label"'))
+    const flat2 = parseFamilyProposal(state)
+    check(
+      'edit prefill: flat round-trips',
+      errorOf(flat2) === null && JSON.stringify(flat2) === JSON.stringify(flat),
+      errorOf(flat2) ?? '',
+    )
+  } else {
+    check('edit prefill: unlabeled series prints flat', false, errorOf(flat))
+  }
+}
 
 // --- slugify ---------------------------------------------------------------
 

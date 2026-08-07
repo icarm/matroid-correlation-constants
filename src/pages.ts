@@ -15,6 +15,7 @@ import type {
   RecordStatus,
 } from './store'
 import { familiesChartData, type Family } from './familyData'
+import { familyToFormState } from './familyStore'
 
 export interface User {
   id: number
@@ -587,25 +588,70 @@ const SERIES_PLACEHOLDER =
   ' {"parameter": "r = 3", "n": 14, "rank": 7, "alpha": "18/17"},\n' +
   ' {"parameter": "r = 4", "n": 18, "rank": 9, "alpha": "64/57"}]'
 
+/** Where the family form posts and how it announces itself: the landing
+ * page's propose flow by default, a pending proposal's admin edit when
+ * overridden. */
+interface FamilyFormOptions {
+  id: string
+  title: string // '' omits the heading (e.g. inside a <details> summary)
+  intro: string
+  action: string
+  submitLabel: string
+  note: string // '' omits the closing form-note
+}
+
+const PROPOSE_FORM_OPTIONS: FamilyFormOptions = {
+  id: 'submit-family',
+  title: 'Propose an infinite family',
+  intro: `A family is a reviewed claim, not a computation: no enumeration can check a
+    formula for every parameter. What you submit here waits as <em>pending</em> &mdash; visible
+    only to you and the site admins &mdash; until an admin reviews the mathematics and accepts
+    it. An accepted family gets its curve on the chart, a card, and a page. TeX is welcome in
+    the formula and prose fields (<code>\\( &hellip; \\)</code> inline).`,
+  action: '/families/propose',
+  submitLabel: 'Propose this family',
+  note: `Strengthen the proposal before it reaches review:
+      <a href="/#submit">verify the family&rsquo;s small members</a> with the concrete form
+      first &mdash; each becomes a machine-checked entry a reviewer can lean on. An automatic
+      screen compares the claimed values against the Huh&ndash;Schr&ouml;ter&ndash;Wang bound
+      and flags a supremum &ge; 4/3 for extra scrutiny; it verifies no mathematics.`,
+}
+
+const editFormOptions = (slug: string, live: boolean): FamilyFormOptions => ({
+  id: 'edit-family',
+  title: '',
+  intro: live
+    ? `This family is live: saving publishes the changes immediately, validated exactly as a
+      proposal would be. The URL keeps its slug; the curve color and any mathematics-page
+      proof link are kept. The AI declaration below becomes the authoritative disclosure,
+      replacing any handwritten prose.`
+    : `Every field is validated exactly as at proposal time and saved onto the pending
+    proposal; the URL keeps its slug. Editing does not decide anything &mdash; accepting or
+    rejecting still happens in the review panel.`,
+  action: `/family/${escapeHtml(slug)}/edit`,
+  submitLabel: 'Save changes',
+  note: '',
+})
+
 /** The infinite-family proposal form. Unlike the concrete form nothing here
  * is machine-verified: a proposal lands as a pending row that a site admin
  * must review and accept before it appears anywhere public. */
-function familyFormSection(state: FamilyFormState, user: User | null): string {
+function familyFormSection(
+  state: FamilyFormState,
+  user: User | null,
+  opts: FamilyFormOptions = PROPOSE_FORM_OPTIONS,
+): string {
   const v = (name: string): string => escapeHtml(state[name] ?? '')
   const sel = (name: string, value: string, dflt = false): string =>
     (state[name] ?? '') === value || (dflt && (state[name] ?? '') === '') ? ' selected' : ''
   const submit = user
-    ? '<button type="submit">Propose this family</button>'
+    ? `<button type="submit">${opts.submitLabel}</button>`
     : '<a class="login-to-submit" href="/auth/github">Log in to propose</a>'
   return `
-  <section class="panel" id="submit-family">
-    <h2>Propose an infinite family</h2>
-    <p class="muted">A family is a reviewed claim, not a computation: no enumeration can check a
-    formula for every parameter. What you submit here waits as <em>pending</em> &mdash; visible
-    only to you and the site admins &mdash; until an admin reviews the mathematics and accepts
-    it. An accepted family gets its curve on the chart, a card, and a page. TeX is welcome in
-    the formula and prose fields (<code>\\( &hellip; \\)</code> inline).</p>
-    <form method="post" action="/families/propose">
+  <section class="panel" id="${opts.id}">
+    ${opts.title ? `<h2>${opts.title}</h2>` : ''}
+    <p class="muted">${opts.intro}</p>
+    <form method="post" action="${opts.action}">
       <div class="form-main">
       <div class="form-row">
         <label for="fam-name">Family name
@@ -698,13 +744,42 @@ function familyFormSection(state: FamilyFormState, user: User | null): string {
                 placeholder="what the AI did in the discovery">${v('ai_role')}</textarea>
       </div>
       ${submit}
-      <p class="muted form-note">Strengthen the proposal before it reaches review:
-      <a href="/#submit">verify the family&rsquo;s small members</a> with the concrete form
-      first &mdash; each becomes a machine-checked entry a reviewer can lean on. An automatic
-      screen compares the claimed values against the Huh&ndash;Schr&ouml;ter&ndash;Wang bound
-      and flags a supremum &ge; 4/3 for extra scrutiny; it verifies no mathematics.</p>
+      ${opts.note ? `<p class="muted form-note">${opts.note}</p>` : ''}
     </form>
   </section>`
+}
+
+/** The admin edit form on a family's page — pending proposals and accepted
+ * families alike: the full proposal form, prefilled from the stored row,
+ * posting to the family's edit route. */
+export function familyEditSection(f: Family, user: User | null): string {
+  const live = f.status === 'accepted'
+  return `
+      <details class="review-edit">
+        <summary>Edit this ${live ? 'family' : 'proposal'} <span class="hint">(admin)</span></summary>
+        ${familyFormSection(familyToFormState(f), user, editFormOptions(f.slug, live))}
+      </details>`
+}
+
+/** Post target for a failed admin edit: the error plus the edit form,
+ * pre-filled with what was submitted. */
+export function familyEditResultPage(
+  user: User | null,
+  error: string,
+  form: FamilyFormState,
+  slug: string,
+  live: boolean,
+): string {
+  const body = `
+    <section class="prose">
+      <p class="page-nav"><a href="/family/${escapeHtml(slug)}">&larr; back to the ${live ? 'family' : 'proposal'}</a></p>
+    </section>
+    <section class="result result-error">
+      <h2>Error</h2>
+      <p>${escapeHtml(error)}</p>
+    </section>
+    ${familyFormSection(form, user, editFormOptions(slug, live))}`
+  return layout(`Edit — ${SITE_NAME}`, body, user)
 }
 
 /** The tab bar toggling the two submission forms. Progressive enhancement:
