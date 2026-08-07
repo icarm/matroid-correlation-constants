@@ -168,7 +168,11 @@ export function familyPage(f: Family, user: User | null = null, viewerIsAdmin = 
         )
         .join('\n')
       return `
-      <h4>${escapeHtml(s.label)} <span class="muted">(${s.points.length} plotted members)</span></h4>
+      <h4>${
+        s.label
+          ? `${escapeHtml(s.label)} <span class="muted">(${s.points.length} plotted members)</span>`
+          : `<span class="muted">${s.points.length} plotted members</span>`
+      }</h4>
       <div class="family-table-scroll">
         <table class="tokens-table family-table">
           <thead><tr><th>parameter</th><th class="num">|E|</th><th class="num">rank</th>

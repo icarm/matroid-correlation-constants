@@ -555,10 +555,9 @@ function verifierForm(state: FormState, user: User | null, openAttribution = fal
 export type FamilyFormState = Record<string, string>
 
 const SERIES_PLACEHOLDER =
-  '[{"label": "q = 2", "points": [\n' +
-  '  {"parameter": "d = 3", "n": 10, "rank": 7, "alpha": "6/7"},\n' +
-  '  {"parameter": "d = 4", "n": 18, "rank": 9, "alpha": "8/7"}\n' +
-  ']}]'
+  '[{"parameter": "r = 2", "n": 10, "rank": 5, "alpha": "16/17"},\n' +
+  ' {"parameter": "r = 3", "n": 14, "rank": 7, "alpha": "18/17"},\n' +
+  ' {"parameter": "r = 4", "n": 18, "rank": 9, "alpha": "64/57"}]'
 
 /** The infinite-family proposal form. Unlike the concrete form nothing here
  * is machine-verified: a proposal lands as a pending row that a site admin
@@ -632,8 +631,13 @@ function familyFormSection(state: FamilyFormState, user: User | null): string {
         <input id="fam-proof-url" name="proof_url" type="text" maxlength="500"
                placeholder="https://arxiv.org/abs/&hellip;" value="${v('proof_url')}" /></label>
       </div>
-      <label for="fam-series">Plotted members <span class="hint">(JSON: series with exact values;
-        "field" optional; at most 400 points)</span></label>
+      <label for="fam-series">Plotted members <span class="hint">(JSON: one point per member you
+        want on the chart. <code>"parameter"</code> names the member for the tooltip, like
+        <code>"r = 3"</code>; <code>"n"</code> and <code>"rank"</code> place the dot;
+        <code>"alpha"</code> is the exact value your formula gives it; add
+        <code>"field": q</code> for members verified over GF(q). Plotting several curves,
+        e.g. one per q? Group the points into <code>{"label", "points"}</code> objects, one
+        per curve; at most 400 points)</span></label>
       <textarea id="fam-series" name="series" rows="7" required
                 placeholder='${escapeHtml(SERIES_PLACEHOLDER)}'>${v('series')}</textarea>
       </div>

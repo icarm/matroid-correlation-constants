@@ -41,6 +41,32 @@ const goodSeries = JSON.stringify([
     check('series: field carried', s[0].points[1].field === 2)
   }
 }
+// The single-curve shorthand: a flat list of points wraps into one
+// unlabeled series.
+{
+  const s = parseSeries(
+    JSON.stringify([
+      { parameter: 'r = 2', n: 10, rank: 5, alpha: '16/17' },
+      { parameter: 'r = 3', n: 14, rank: 7, alpha: '18/17', field: 2 },
+    ]),
+  )
+  check('series: flat point list parses', Array.isArray(s), errorOf(s) ?? '')
+  if (Array.isArray(s)) {
+    check(
+      'series: flat list becomes one unlabeled series',
+      s.length === 1 && s[0].label === '' && s[0].points.length === 2,
+    )
+    check('series: flat list keeps point data', s[0].points[1].field === 2 && s[0].points[0].num === 16)
+  }
+}
+check(
+  'series: flat list validates points',
+  errorOf(parseSeries(JSON.stringify([{ parameter: 'p', n: 4, rank: 2, alpha: '9/4' }]))) !== null,
+)
+check(
+  'series: grouped form still requires a label',
+  errorOf(parseSeries(JSON.stringify([{ points: [{ parameter: 'p', n: 4, rank: 2, alpha: '1' }] }]))) !== null,
+)
 check('series: bad JSON refused', errorOf(parseSeries('[{')) !== null)
 check('series: empty list refused', errorOf(parseSeries('[]')) !== null)
 check(

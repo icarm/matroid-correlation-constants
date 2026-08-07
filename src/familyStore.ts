@@ -181,10 +181,16 @@ export function parseFraction(text: string): { num: number; den: number } | { er
   return { num, den }
 }
 
-/** Parse and validate the plotted-members JSON from the proposal form:
+/** Parse and validate the plotted-members JSON from the proposal form. The
+ * common single-curve family submits a flat list of points, one per member:
+ *   [{"parameter": "r = 2", "n": 10, "rank": 5, "alpha": "16/17"}, ...]
+ * A family plotting several curves (say one per field order) groups its
+ * points under legend labels instead:
  *   [{"label": "q = 2", "points": [{"parameter": "d = 3", "n": 10,
  *     "rank": 7, "alpha": "6/7", "field": 2}, ...]}, ...]
- * Values are exact fractions; every point must respect the HSW bound. */
+ * A flat list becomes one series with an empty label; the chart and the
+ * family page then show the family's short name alone. Values are exact
+ * fractions; every point must respect the HSW bound. */
 export function parseSeries(text: string): FamilySeries[] | { error: string } {
   let raw: unknown
   try {
@@ -193,34 +199,42 @@ export function parseSeries(text: string): FamilySeries[] | { error: string } {
     return { error: `plotted members must be valid JSON (${(e as Error).message})` }
   }
   if (!Array.isArray(raw) || raw.length === 0) {
-    return { error: 'plotted members must be a nonempty JSON list of series' }
+    return { error: 'plotted members must be a nonempty JSON list' }
   }
-  if (raw.length > MAX_SERIES) return { error: `at most ${MAX_SERIES} series` }
+  const flat = raw.every(
+    (e) => typeof e === 'object' && e !== null && !Array.isArray(e) && !('points' in e),
+  )
+  const groups: unknown[] = flat ? [{ points: raw }] : raw
+  if (groups.length > MAX_SERIES) return { error: `at most ${MAX_SERIES} curves` }
   const series: FamilySeries[] = []
   let totalPoints = 0
-  for (let si = 0; si < raw.length; si++) {
-    const s = raw[si] as { label?: unknown; points?: unknown }
-    const where = `series ${si + 1}`
+  for (let si = 0; si < groups.length; si++) {
+    const s = groups[si] as { label?: unknown; points?: unknown }
+    const where = `curve ${si + 1}`
     if (typeof s !== 'object' || s === null || Array.isArray(s)) {
       return { error: `${where}: expected {"label": ..., "points": [...]}` }
     }
-    const label = typeof s.label === 'string' ? s.label.trim() : ''
-    if (label === '' || label.length > 80) {
-      return { error: `${where}: "label" must be a string of at most 80 characters` }
+    let label = ''
+    if (!flat) {
+      label = typeof s.label === 'string' ? s.label.trim() : ''
+      if (label === '' || label.length > 80) {
+        return { error: `${where}: "label" must be a string of at most 80 characters` }
+      }
+      if (!Array.isArray(s.points) || s.points.length === 0) {
+        return { error: `${where} ("${label}"): "points" must be a nonempty list` }
+      }
     }
-    if (!Array.isArray(s.points) || s.points.length === 0) {
-      return { error: `${where} ("${label}"): "points" must be a nonempty list` }
-    }
+    const rawPoints = s.points as unknown[]
     const points: FamilyPoint[] = []
-    for (let pi = 0; pi < s.points.length; pi++) {
-      const p = s.points[pi] as {
+    for (let pi = 0; pi < rawPoints.length; pi++) {
+      const p = rawPoints[pi] as {
         parameter?: unknown
         n?: unknown
         rank?: unknown
         alpha?: unknown
         field?: unknown
       }
-      const pwhere = `${where} ("${label}"), point ${pi + 1}`
+      const pwhere = flat ? `point ${pi + 1}` : `${where} ("${label}"), point ${pi + 1}`
       if (typeof p !== 'object' || p === null || Array.isArray(p)) {
         return { error: `${pwhere}: expected {"parameter", "n", "rank", "alpha"}` }
       }

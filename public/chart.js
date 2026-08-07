@@ -210,7 +210,10 @@
       const swatch = document.createElement('span')
       swatch.className = 'legend-swatch' + (family.claim === 'lower' ? ' dashed' : '')
       swatch.style.setProperty('--swatch', family.color)
-      chip.append(swatch, document.createTextNode(family.short + ' · ' + series.label))
+      // A single-curve family has one unlabeled series: its chip is just
+      // the family's short name.
+      chip.append(swatch, document.createTextNode(
+        family.short + (series.label ? ' · ' + series.label : '')))
       chip.addEventListener('click', () => {
         if (state.hiddenSeries.has(key)) state.hiddenSeries.delete(key)
         else state.hiddenSeries.add(key)
@@ -301,7 +304,7 @@
           'aria-label': `${family.short}, ${p.parameter}, value ${p.exact.label}`,
         })
         hoverable(dot, family.short, [
-          series.label + ' · ' + p.parameter,
+          (series.label ? series.label + ' · ' : '') + p.parameter,
           'value ' + p.exact.label + ' ≈ ' + fmt(p.exact.value, 5),
           '|E| = ' + p.n + ' · rank ' + p.rank,
           family.claim === 'exact' ? 'proved exact' : 'certified lower bound',
