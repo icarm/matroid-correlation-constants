@@ -199,16 +199,16 @@ function heroSection(records: RecordPoint[]): string {
   </section>`
 }
 
+// A minimal definition beside the submission form; the mathematics page
+// carries the full background, discovery record, and proofs.
 function definitionSection(): string {
   return `
   <section class="prose" id="definition">
-    <h2>The correlation constant</h2>
+    <h2>The correlation constant, at a glance</h2>
     <p>
-      For a matroid <var>M</var> on <span class="math">{0, &hellip;, n&minus;1}</span> and
-      distinct elements <var>i</var>, <var>j</var>, write ${bc(IN, IN)} for the number of bases
-      containing both <var>i</var> and <var>j</var>, ${bc(OUT, OUT)} for the number avoiding
-      both, and so on. The <em>correlation ratio</em> of the pair and the
-      <em>correlation constant</em> of <var>M</var> are
+      For a matroid <var>M</var> on <span class="math">{0, &hellip;, n&minus;1}</span>, write
+      ${bc(IN, IN)} for the number of bases containing both elements <var>i</var> and
+      <var>j</var>, ${bc(OUT, OUT)} for the number avoiding both, and so on. Then
     </p>
     <p class="display-eq">
       <span class="eq-part"><var>R</var><sub>ij</sub>(<var>M</var>) =
@@ -216,21 +216,11 @@ function definitionSection(): string {
       <span class="eq-part">${alphaVar}(<var>M</var>) = max<sub><var>i</var> &ne; <var>j</var></sub> <var>R</var><sub>ij</sub>(<var>M</var>)</span>
     </p>
     <p>
-      taking the maximum over pairs of nonloop, noncoloop elements (for which both denominator
-      factors are positive). <var>R</var><sub>ij</sub>(<var>M</var>) &le; 1 says <var>i</var>
-      and <var>j</var> are negatively correlated in a uniformly random basis; this holds for
-      all pairs in graphic, regular, and rank &le; 3 matroids, in every matroid with at most 7
-      elements, and in every matroid representable over both GF(3) and GF(4). It does
-      <em>not</em> hold in general.
-      <a class="external" href="https://arxiv.org/abs/1806.02675">Huh, Schr&ouml;ter, and Wang</a>
-      proved that ${alphaVar}(<var>M</var>) &le; 2 for <em>every</em> matroid, and gave
-      matroids with ${alphaVar} = 8/7. The largest value verified for a concrete matroid is
-      <strong>100/81</strong>, on 12 elements over GF(3) (Eur&ndash;Renshaw and Huh,
-      independently, August 2026). Known infinite families approach 4/3 without reaching it
-      &mdash; whether any single matroid attains ${alphaVar}(<var>M</var>) &ge; 4/3 is open.
+      with the maximum over pairs of nonloop, noncoloop elements; ${alphaVar}(<var>M</var>) &gt; 1
+      means some pair is positively correlated in a uniformly random basis.
+      <a href="/mathematics">Why this is interesting, what is known, and proofs of every family
+      formula &rarr;</a>
     </p>
-    <p><a href="/mathematics">Full definitions, the discovery record, and proofs of every family
-    formula &rarr;</a></p>
   </section>`
 }
 
