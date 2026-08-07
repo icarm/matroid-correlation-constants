@@ -7,7 +7,7 @@
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
     "start": "wrangler dev",
-    "test": "node test-verify.mjs && node test-families.mjs",
+    "test": "node test-verify.mjs && node test-families.mjs && node test-records.mjs",
     "typecheck": "tsc --noEmit",
     "cf-typegen": "wrangler types"
   },

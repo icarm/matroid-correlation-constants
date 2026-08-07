@@ -32,7 +32,21 @@ export interface UserMatroidRow {
   alpha_den: number
   alpha_value: number
   created_at: string
-  is_current: number // SQLite boolean: 1 when still the record for n
+  titles: string | null // current titles ('club' and/or field orders), CSV
+}
+
+/** The store's GROUP_CONCAT of current titles ('club,5') as display names
+ * ('GF(5) record', '4/3 club'), field records first. */
+function titleNames(titles: string | null): string[] {
+  if (!titles) return []
+  const parts = titles.split(',')
+  const names = parts
+    .filter((p) => p !== 'club')
+    .map(Number)
+    .sort((a, b) => a - b)
+    .map((f) => `GF(${f}) record`)
+  if (parts.includes('club')) names.push('4/3 club')
+  return names
 }
 
 export function escapeHtml(s: unknown): string {
@@ -160,7 +174,7 @@ const bcount = (sup: string, sub: string): string => `|${bset(sup, sub)}|`
 function heroSection(records: RecordPoint[], families: Family[]): string {
   let best: RecordPoint | null = null
   for (const r of records) {
-    if (r.is_current && (best === null || r.alpha_value > best.alpha_value)) best = r
+    if (best === null || r.alpha_value > best.alpha_value) best = r
   }
   // Derived from the live catalog, not asserted: how close the accepted
   // families come to 4/3. If a family attaining it is ever accepted, the
@@ -246,8 +260,9 @@ export interface FormState {
   claimedAlphaValue?: string
 }
 
-/** A stored matroid as a plot point: the row id, ground-set size, its
- * constant, and whether it is still the record for its n. */
+/** A record-book entry as a plot point: the row id, ground-set size, its
+ * constant, and the titles it holds — the field records (2/3/4/5/7) and/or
+ * 4/3-club membership. Only current title-holders are plotted. */
 export interface RecordPoint {
   id: number
   name: string | null
@@ -259,8 +274,15 @@ export interface RecordPoint {
   alpha_value: number
   field: string | null
   cert_field: string | null
-  is_current: number // SQLite boolean
+  recordFields: number[]
+  club: boolean
 }
+
+/** A record point's titles as display names, field records first. */
+const pointTitles = (p: RecordPoint): string[] => [
+  ...p.recordFields.map((f) => `GF(${f}) record`),
+  ...(p.club ? ['4/3 club'] : []),
+]
 
 // Server-rendered SVG scatter of the record constants against the ground-set
 // size n, in a fixed 720x440 frame. No JS; tooltips via <title>.
@@ -303,10 +325,10 @@ function recordsPlot(pts: RecordPoint[]): string {
     .filter((p) => p.alpha_value >= PLOT_YMIN)
     .map((p) => {
       const beats = beatsGoal(p.alpha_num, p.alpha_den)
-      const title = `n = ${p.n}: ${p.is_current ? 'record' : 'superseded record'} α = ${fmtAlpha(
+      const title = `${pointTitles(p).join(', ')}: α = ${fmtAlpha(
         p.alpha_num,
         p.alpha_den,
-      )} ≈ ${p.alpha_value.toFixed(4)} (rank ${p.rank}, ${p.num_bases.toLocaleString('en-US')} bases)`
+      )} ≈ ${p.alpha_value.toFixed(4)} (n = ${p.n}, rank ${p.rank}, ${p.num_bases.toLocaleString('en-US')} bases)`
       return `<a href="/matroid/${p.id}"><circle class="dot${beats ? ' beats-goal' : ''}" cx="${plotX(p.n).toFixed(
         1,
       )}" cy="${Y(p.alpha_value).toFixed(1)}" r="${beats ? 4.5 : 3.5}"><title>${escapeHtml(title)}</title></circle></a>`
@@ -329,9 +351,10 @@ function recordsSection(records: RecordPoint[], families: Family[]): string {
     records.length === 0
       ? '<p class="muted">No verified records yet &mdash; submit a matroid to put the first dot on the board.</p>'
       : `<div class="plot-panel">${recordsPlot(records)}</div>
-    <p class="muted plot-caption">Each dot is a record-setting matroid &mdash; the current record
-    for its n, or a superseded one kept as history. Dots with ${alphaVar} &le; 1 fall below the
-    frame. Huh&ndash;Schr&ouml;ter&ndash;Wang: ${alphaVar}(<var>M</var>) &le; 2 for every matroid.
+    <p class="muted plot-caption">Each dot is a standing record: the best verified ${alphaVar}
+    over each of GF(2), GF(3), GF(4), GF(5), and GF(7) &mdash; plus any concrete matroid
+    reaching 4/3, over any field or none.
+    Huh&ndash;Schr&ouml;ter&ndash;Wang: ${alphaVar}(<var>M</var>) &le; 2 for every matroid.
     Matroids on at most 7 elements never exceed 1.</p>`
   // Data for the interactive explorer (progressive enhancement in /chart.js);
   // <-escaping keeps the JSON safe inside a script element.
@@ -346,7 +369,7 @@ function recordsSection(records: RecordPoint[], families: Family[]): string {
       value: r.alpha_value,
       field: r.field,
       certField: r.cert_field,
-      current: !!r.is_current,
+      titles: pointTitles(r),
     })),
   }).replace(/</g, '\\u003c')
   const check = (id: string, label: string, checked: boolean): string =>
@@ -366,6 +389,7 @@ function recordsSection(records: RecordPoint[], families: Family[]): string {
             <option value="all">All fields</option>
             <option value="2">GF(2)</option>
             <option value="3">GF(3)</option>
+            <option value="4">GF(4)</option>
             <option value="5">GF(5)</option>
             <option value="7">GF(7)</option>
           </select>
@@ -523,8 +547,10 @@ function verifierForm(state: FormState, user: User | null, openAttribution = fal
       entries may be integers or fraction strings like <code>"-3/5"</code>; over
       GF(p<sup>d</sup>), integers (subfield constants) or coefficient lists like
       <code>[0,1]</code> in the Conway polynomial basis, as in Sage or GAP.
-      Anything within the limits can be verified; the record book itself only takes
-      positively correlated matroids (${alphaVar} &gt; 1).
+      Anything within the limits can be verified; the record book itself takes a matroid that
+      strictly beats a standing field record &mdash; the best ${alphaVar} over GF(2), GF(3),
+      GF(4), GF(5), or GF(7), claimed with a matrix over that field &mdash; or that reaches
+      ${alphaVar} &ge; 4/3 by any description.
       Proposing an <em>infinite family</em> instead? That takes a proof and human review
       &mdash; see <a href="/families#propose">how family proposals work</a>.</p>
     </form>
@@ -755,37 +781,57 @@ export function familyProposeResultPage(
   return layout(`Result — ${SITE_NAME}`, body, user)
 }
 
-function recordSection(result: { alphaNum: number; alphaDen: number; n: number }, record?: RecordStatus): string {
+/** English list: 'a', 'a and b', 'a, b, and c'. */
+const andList = (items: string[]): string =>
+  items.length <= 1
+    ? (items[0] ?? '')
+    : items.length === 2
+      ? `${items[0]} and ${items[1]}`
+      : `${items.slice(0, -1).join(', ')}, and ${items[items.length - 1]}`
+
+function recordSection(record?: RecordStatus): string {
   if (!record) return ''
-  if (record.notPositive) {
-    return `<p class="muted">Not recorded: only positively correlated matroids
-      (${alphaVar} &gt; 1) enter the record book &mdash; ${alphaVar} = 1 is reached at every
-      n &ge; 4 by trivial direct sums, so entries at or below it record nothing.</p>`
+  if (record.noCandidateField) {
+    return `<p class="muted">Verified, but outside the record book&rsquo;s scope: it keeps the
+      best ${alphaVar} over each of GF(2), GF(3), GF(4), GF(5), and GF(7) &mdash; claimed with
+      a matrix over that field &mdash; plus any matroid reaching ${alphaVar} &ge; 4/3 by any
+      description.</p>`
   }
-  const recordLink = (text: string) =>
-    record.matroidId ? `<a href="/matroid/${record.matroidId}">${text}</a>` : text
-  const recordAlpha = fmtAlphaLong(record.recordAlphaNum, record.recordAlphaDen)
+  // What the submission took (or would take), as prose.
+  const stakes = [
+    ...record.fieldsTaken.map((f) => `the GF(${f}) record`),
+    ...(record.club ? ['a place in the 4/3 club'] : []),
+  ]
   if (record.needsDiscovery) {
-    return `<p class="record-new">This matroid would set the record for n = ${result.n} &mdash; but
+    return `<p class="record-new">This matroid would take ${andList(stakes)} &mdash; but
       record entries need a discovery record. Fill in <em>discovered by</em>, the
       <em>discovery date</em>, and the <em>AI-use declaration</em> under
       &ldquo;Attribution &amp; discovery&rdquo; below, then resubmit to record it.</p>`
   }
   if (record.recorded) {
-    return `<p class="record-new">New record: the largest verified ${alphaVar} for n = ${result.n}. Saved as ${recordLink(
-      `matroid #${record.matroidId}`,
-    )}.</p>`
+    return `<p class="record-new">New record: this matroid takes ${andList(stakes)}. Saved as
+      <a href="/matroid/${record.matroidId}">matroid #${record.matroidId}</a>.</p>`
   }
-  if (record.recordAlphaNum === result.alphaNum && record.recordAlphaDen === result.alphaDen) {
-    if (record.tiedExact) {
-      const cert = record.certificateAttached
-        ? ' Your matrix was attached to it as a representability certificate — the record now carries the field badge.'
-        : ''
-      return `<p class="muted">This is exactly the ${recordLink('current record matroid')} for n = ${result.n} (${alphaVar} = ${recordAlpha}), basis for basis.${cert}</p>`
-    }
-    return `<p class="muted">Ties the ${recordLink('current record')} for n = ${result.n} (${alphaVar} = ${recordAlpha}) with a <em>different</em> matroid of the same constant &mdash; the standing record keeps its place.</p>`
+  if (record.tiedExact) {
+    const cert = record.certificateAttached
+      ? ' Your matrix was attached to it as a representability certificate &mdash; new information about a known matroid.'
+      : ''
+    return `<p class="muted">Already in the record book: this is exactly
+      <a href="/matroid/${record.matroidId}">matroid #${record.matroidId}</a>, basis for
+      basis.${cert}</p>`
   }
-  return `<p class="muted">The ${recordLink('record matroid')} for n = ${result.n} has ${alphaVar} = ${recordAlpha}, so this one was not saved.</p>`
+  const bars = (record.standing ?? []).map(
+    (s) =>
+      `the GF(${s.field}) record is <a href="/matroid/${s.matroidId}">${alphaVar} = ${fmtAlphaLong(
+        s.alphaNum,
+        s.alphaDen,
+      )}</a>`,
+  )
+  const barText = bars.length
+    ? `${andList(bars)}, and a record entry must strictly beat it${bars.length > 1 ? 's' : ''}; `
+    : ''
+  return `<p class="muted">Not a record: ${barText}the 4/3 club takes any matroid with
+    ${alphaVar} &ge; 4/3. This submission was not saved.</p>`
 }
 
 /** Maximizing pairs, clipped for display. Accepts the current shape
@@ -853,7 +899,7 @@ function resultSection(result: VerifyResult, record?: RecordStatus): string {
       ${stats}
       ${loopsNote(result.loops, result.coloops)}
       ${detail}
-      ${recordSection(result, record)}
+      ${recordSection(record)}
       ${verdict}
     </section>`
 }
@@ -899,8 +945,8 @@ function userMatroidsSection(rows: UserMatroidRow[]): string {
   if (rows.length === 0) {
     return `<section class="my-matroids">
       ${heading}
-      <p class="muted">None yet &mdash; a matroid is saved here when it sets the record for its
-      ground-set size. <a href="/">Submit one &rarr;</a></p>
+      <p class="muted">None yet &mdash; a matroid is saved here when it enters the record book:
+      beating a field record, or reaching ${alphaVar} &ge; 4/3. <a href="/">Submit one &rarr;</a></p>
     </section>`
   }
   const trs = rows
@@ -910,13 +956,13 @@ function userMatroidsSection(rows: UserMatroidRow[]): string {
         <td class="num">${m.rank}</td>
         <td class="num">${fmtAlpha(m.alpha_num, m.alpha_den)}</td>
         <td>${escapeHtml(m.created_at)}</td>
-        <td>${m.is_current ? 'current record' : '<span class="muted">superseded</span>'}</td>
+        <td>${m.titles ? titleNames(m.titles).join(', ') : '<span class="muted">history</span>'}</td>
       </tr>`,
     )
     .join('\n')
   return `<section class="my-matroids">
       ${heading}
-      <p class="muted">Matroids that set the record for their ground-set size when you submitted them, largest constant first.</p>
+      <p class="muted">Matroids that entered the record book when you submitted them, largest constant first.</p>
       <table class="tokens-table">
         <thead><tr><th class="num">n</th><th class="num">rank</th><th class="num">${alphaVar}</th><th>Submitted</th><th>Status</th></tr></thead>
         <tbody>${trs}</tbody>
@@ -968,10 +1014,17 @@ export function matroidDetailPage(
   const submitter = m.submitter_name
     ? escapeHtml(m.submitter_name)
     : '<span class="muted">anonymous</span>'
-  const isCurrent = m.id === m.record_id
-  const status = isCurrent
-    ? 'current record for this ground-set size'
-    : `superseded &mdash; the record is now <a href="/matroid/${m.record_id}">${alphaVar} = ${fmtAlpha(m.record_alpha_num, m.record_alpha_den)}</a>`
+  const currentTitles = titleNames(m.titles)
+  const pastFields = (m.past_fields ?? '')
+    .split(',')
+    .filter(Boolean)
+    .map(Number)
+    .sort((a, b) => a - b)
+  const status = currentTitles.length
+    ? `current ${andList(currentTitles.map((t) => (t === '4/3 club' ? '4/3 club member' : t)))}`
+    : pastFields.length
+      ? `superseded &mdash; held the ${andList(pastFields.map((f) => `GF(${f})`))} record${pastFields.length > 1 ? 's' : ''} until beaten`
+      : 'kept as history &mdash; not a current record holder'
   let maxPairs: PairLike[] = []
   try {
     maxPairs = JSON.parse(m.max_pairs)
@@ -1020,7 +1073,7 @@ export function matroidDetailPage(
   const body = `
     <section class="prose">
       <p class="page-nav"><a href="/matroids">&larr; all matroids</a></p>
-      ${justRecorded ? `<p class="record-new">New record: the largest verified ${alphaVar} for n = ${m.n}. Saved. &#127941;</p>` : ''}
+      ${justRecorded ? `<p class="record-new">New record entry &mdash; saved. &#127941;</p>` : ''}
       <h2>matroid #${m.id}${m.name ? ` <span class="matroid-name">&mdash; ${escapeHtml(m.name)}</span>` : ''}</h2>
       <dl class="stats">
         <div><dt>n</dt><dd><a href="/matroids?n=${m.n}" title="all record matroids for this ground-set size">${m.n}</a></dd></div>
@@ -1093,9 +1146,13 @@ export function activityPage(
   const who = (u: string | null) => (u ? escapeHtml(u) : '<span class="muted">anonymous</span>')
   const entry = (a: ActivityItem): string => {
     const link = `<a href="/matroid/${a.matroid_id}">matroid #${a.matroid_id}</a>`
+    // The titles this matroid ever took; older rows entered the book under
+    // its pre-2026-08 per-ground-set-size rules and hold none.
+    const took = titleNames(a.titles).map((t) => (t === '4/3 club' ? 'a place in the 4/3 club' : `the ${t}`))
+    const deed = took.length ? `took ${andList(took)} with` : 'entered the record book with'
     return `<li>
         <p class="activity-meta">${relativeTime(a.ts)} &middot; ${who(a.user)}</p>
-        <p class="activity-line">set a record for n = ${a.n} with ${link} &mdash; ${alphaVar} = ${fmtAlphaLong(
+        <p class="activity-line">${deed} ${link} &mdash; ${alphaVar} = ${fmtAlphaLong(
           a.alpha_num,
           a.alpha_den,
         )}</p>
@@ -1160,7 +1217,7 @@ export function matroidsPage(
   }
 
   const shown = rows.filter(
-    (r) => (!currentOnly || r.is_current) && (nFilter === null || r.n === nFilter),
+    (r) => (!currentOnly || r.titles !== null) && (nFilter === null || r.n === nFilter),
   )
   const val = keyValue[sort]
   const flip = dir === 'desc' ? -1 : 1
@@ -1208,14 +1265,14 @@ export function matroidsPage(
         <td>${escapeHtml(m.representation_type)}${m.field ? ` ${fieldBadge(m.field)}` : m.cert_field ? ` ${fieldBadge(m.cert_field)}` : ''}</td>
         <td>${m.submitter ? escapeHtml(m.submitter) : '<span class="muted">anonymous</span>'}</td>
         <td>${escapeHtml(m.created_at)}</td>
-        <td>${m.is_current ? 'current' : '<span class="muted">superseded</span>'}</td>
+        <td>${m.titles ? titleNames(m.titles).join(', ') : '<span class="muted">history</span>'}</td>
       </tr>`,
     )
     .join('\n')
 
   const filterToggle = currentOnly
-    ? `<a href="${href(sort, dir, false)}">all</a> &middot; <strong>current records only</strong>`
-    : `<strong>all</strong> &middot; <a href="${href(sort, dir, true)}">current records only</a>`
+    ? `<a href="${href(sort, dir, false)}">all</a> &middot; <strong>current record holders only</strong>`
+    : `<strong>all</strong> &middot; <a href="${href(sort, dir, true)}">current record holders only</a>`
   // The size filter is a plain GET form (the page has no JS); hidden inputs
   // mirror href() so submitting preserves the sort and current-only state.
   const hiddenState =
@@ -1232,14 +1289,15 @@ export function matroidsPage(
       ? ''
       : ` &middot; <a href="${href(sort, dir, currentOnly, null)}">clear</a>`)
   const nLabel = nFilter === null ? '' : ` for n = ${nFilter}`
-  const heading = (currentOnly ? 'Current record matroids' : 'All matroids') + nLabel
+  const heading = (currentOnly ? 'Current record holders' : 'All matroids') + nLabel
 
   const body = `
     <section class="prose">
       <h2>${heading}</h2>
-      <p class="muted">Every record-setting matroid ever submitted; a superseded row was the
-      record for its ground-set size until a larger constant beat it. Click a column header to
-      sort; click again to reverse.</p>
+      <p class="muted">Every matroid ever to enter the record book. A current holder has the
+      best verified ${alphaVar} over one of GF(2), GF(3), GF(4), GF(5), GF(7), or reached 4/3;
+      every other row is kept as history. Click a column header to sort; click again to
+      reverse.</p>
       <div class="table-controls muted">showing ${shown.length} of ${rows.length} matroids
         &nbsp;&middot;&nbsp; ${filterToggle}
         &nbsp;&middot;&nbsp; ${sizeFilter}

@@ -25,14 +25,22 @@ case).
   chunked sync-SHA-256 canonical hash. Limits: n ≤ 30 gated by the
   independent-set budget (2^25; everything n ≤ 24 passes), circuits/
   hyperplanes ≤ 24 (2^n DP), 5000 sets/cells, op budgets.
-- `src/store.ts` — D1 persistence. Records are per ground-set size n,
-  append-only, strictly increasing within an n (so current record =
-  max id per n). Record comparison happens in JS BigInt (SQL cross-mult
-  overflows past n = 18) with an optimistic-concurrency guarded INSERT.
-  Exact ties are detected by canonical hash; a tying matrix over a new
-  field attaches as a representability certificate (cert_field/
-  cert_matrix). Entering the record book requires a discovery record
-  (discoverers, date, AI-use declaration) — verification alone does not.
+- `src/store.ts` — D1 persistence. Records are field-keyed (decided with
+  Chris Eur, 2026-08): the book holds the best ᾱ over each of GF(2),
+  GF(3), GF(4), GF(5), GF(7) — a field record needs a matrix over that
+  field (a GF(2) matrix also contends for GF(4), the one subfield pair)
+  and falls only to a strictly larger ᾱ — plus the permanent "4/3 club"
+  (ᾱ ≥ 4/3, any description). Rank and ground-set size confer nothing.
+  `record_titles` is append-only (current field record = max title id per
+  field; club rows have field NULL); matroids rows superseded as records
+  stay as history. The pure policy lives in `src/recordPolicy.ts`
+  (node-importable, tested by test-records.mjs). Comparison happens in JS
+  BigInt (SQL cross-mult overflows) with optimistic-concurrency guarded
+  title INSERTs. Matroid identity is canonical-hash equality; a matrix
+  over a field the stored row lacks attaches as a representability
+  certificate (cert_field/cert_matrix, one slot). Entering the record
+  book requires a discovery record (discoverers, date, AI-use
+  declaration) — verification alone does not.
 - `src/index.ts` — routes; also claimed-α parsing/cross-check (mismatch
   rejects with both values) and discovery-metadata validation. Submission
   is form-only: the JSON API and bearer tokens were removed 2026-08 (the
@@ -98,11 +106,9 @@ the JSON API was removed 2026-08.)
 
 ## Known follow-ups (agreed with the user)
 
-- Tier 2 schema: multi-certificate table; store field-record-beaters that
-  lose to their n-record (breaks the max-id-per-n invariant — rework
-  is_current when doing this). Prerequisite for field leaderboards.
-- Challenges section with per-field leaderboards (thresholds in the
-  draft's `submission-eligibility-policy.json`).
+- Multi-certificate table: a field-record holder over several fields can
+  today store only one extra representation (the single cert_field/
+  cert_matrix slot).
 - Records table beside the plot; structure flags (simple/connected/
   paving) for explorer filters. (The old GitHub-issue family intake was
   removed when the on-site proposal form + admin review landed.)

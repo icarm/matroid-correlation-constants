@@ -171,9 +171,14 @@ const CONTENT = String.raw`
         no floating point touches any verdict. An optional claimed \(\overline{\alpha}\) is
         checked against the computed value, so a recorded entry is a verified claim. Ground
         sets go up to \(n = 30\) elements when the rank keeps the enumeration feasible
-        (everything with \(n \le 24\) is accepted). A record entry also requires a positively
-        correlated pair &mdash; \(\overline{\alpha} > 1\), since \(\overline{\alpha} = 1\) is
-        attained at every \(n \ge 4\) by trivial direct sums &mdash; and a discovery record:
+        (everything with \(n \le 24\) is accepted). Anything within those limits can be
+        verified, but the record book keeps exactly two kinds of entry: the best verified
+        \(\overline{\alpha}\) over each of \(\mathrm{GF}(2)\), \(\mathrm{GF}(3)\),
+        \(\mathrm{GF}(4)\), \(\mathrm{GF}(5)\), and \(\mathrm{GF}(7)\) &mdash; a field record,
+        claimed with a matrix over that field (a matrix over \(\mathrm{GF}(2)\) also contends
+        for \(\mathrm{GF}(4)\), its one extension on the list) and held until strictly beaten
+        &mdash; and any concrete matroid reaching \(\overline{\alpha} \ge 4/3\), by any
+        description. Every entry also requires a discovery record:
         discoverers, a discovery date, and an explicit AI-use declaration.
         Submitted code is never executed.
       </p>

@@ -202,7 +202,11 @@ app.get('/database.json', async (c) => {
             m.name, m.discoverers, m.discovery_date, m.ai_used, m.ai_model,
             m.ai_role, m.ai_chat_url, m.citation, m.verifier_version,
             u.display_name AS submitter,
-            (m.id = (SELECT MAX(id) FROM matroids WHERE n = m.n)) AS is_current
+            (SELECT GROUP_CONCAT(CASE WHEN t.field IS NULL THEN 'club' ELSE CAST(t.field AS TEXT) END)
+               FROM record_titles t
+              WHERE t.matroid_id = m.id
+                AND (t.field IS NULL
+                     OR t.id = (SELECT MAX(id) FROM record_titles t2 WHERE t2.field = t.field))) AS titles
        FROM matroids m LEFT JOIN users u ON u.id = m.submitter_user_id
        ORDER BY m.n, m.id`,
   ).all<{
@@ -233,7 +237,7 @@ app.get('/database.json', async (c) => {
     citation: string | null
     verifier_version: string | null
     submitter: string | null
-    is_current: number
+    titles: string | null
   }>()
   const parse = (s: string | null): unknown => {
     if (s === null) return null
@@ -271,7 +275,10 @@ app.get('/database.json', async (c) => {
     verifier_version: r.verifier_version,
     submitter: r.submitter,
     created_at: r.created_at,
-    current: !!r.is_current,
+    // The titles this row currently holds: field records as their order
+    // (2/3/4/5/7), 4/3-club membership as "club". Empty = history row.
+    titles: r.titles === null ? [] : r.titles.split(','),
+    current: r.titles !== null,
   }))
   const payload = JSON.stringify({ count: matroids.length, matroids }, null, 2)
   return jsonDownload(c.req.raw, payload, 'matroid-correlation-records.json')

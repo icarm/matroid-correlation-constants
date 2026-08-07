@@ -122,7 +122,7 @@
     if (!state.showBelowOne && r.value < 1) return false
     if (state.rank !== 'all' && r.rank !== Number(state.rank)) return false
     if (state.field !== 'all' && String(r.field) !== state.field && String(r.certField) !== state.field) return false
-    return searchIncludes(['matroid #' + r.id, 'GF(' + r.field + ')', 'n = ' + r.n, r.label, r.submitter || ''])
+    return searchIncludes(['matroid #' + r.id, 'GF(' + r.field + ')', 'n = ' + r.n, r.label, ...(r.titles || [])])
   }
   const pointMatches = (family, series, point, broadMatch) => {
     if (point.n > state.maxN) return false
@@ -320,11 +320,11 @@
         tabindex: 0, role: 'link',
         'aria-label': `matroid #${r.id}, value ${r.label}`,
       })
-      hoverable(dot, 'matroid #' + r.id + (r.current ? '' : ' (superseded)'), [
+      hoverable(dot, 'matroid #' + r.id, [
+        (r.titles || []).join(' · '),
         'α = ' + r.label + ' ≈ ' + fmt(r.value, 5),
         '|E| = ' + r.n + ' · rank ' + r.rank + ' · ' + Number(r.bases).toLocaleString() + ' bases',
         r.field ? 'verified over GF(' + r.field + ')' : r.certField ? 'certified over GF(' + r.certField + ')' : 'field not specified',
-        r.current ? 'current record for n = ' + r.n : 'superseded record',
       ], '/matroid/' + r.id)
       marks.append(dot)
     }
