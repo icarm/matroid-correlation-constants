@@ -52,9 +52,12 @@ families approach 4/3. The challenge: a concrete matroid with α(M) ≥ 4/3.
   explorer (`public/chart.js`, progressive enhancement over a
   server-rendered SVG): every stored matroid plotted against the twelve
   known family curves, with the draft site's filters and the 4/3 target
-  line. Families are curated content (`src/familyData.ts`, the single
-  source for the curves, the `/families` cards, and the `/family/:id`
-  pages; new families arrive by pull request), and a `/mathematics` page
+  line. Families live in the database too: a family is a reviewed claim
+  (a formula for every parameter cannot be verified by enumeration), so
+  the submission form's "infinite family" tab files a proposal — formula,
+  construction, exact curve values, proof link, discovery record — that
+  stays pending until a site admin accepts it, at which point it gains
+  its curve, card, and `/family/:slug` page together. A `/mathematics` page
   carries the definitions, background, and full proofs of the family
   formulas (the one page that loads MathJax).
 - **Matroid pages** with the description, the maximizing pair's 2×2 basis

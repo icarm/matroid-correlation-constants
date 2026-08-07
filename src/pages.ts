@@ -16,7 +16,7 @@ import type {
   RecordStatus,
 } from './store'
 import { COMMENT_MAX } from './store'
-import { familiesChartData } from './familyData'
+import { familiesChartData, type Family } from './familyData'
 
 export interface User {
   id: number
@@ -318,7 +318,7 @@ function recordsPlot(pts: RecordPoint[]): string {
     </svg>`
 }
 
-function recordsSection(records: RecordPoint[]): string {
+function recordsSection(records: RecordPoint[], families: Family[]): string {
   const fallbackInner =
     records.length === 0
       ? '<p class="muted">No verified records yet &mdash; submit a matroid to put the first dot on the board.</p>'
@@ -330,7 +330,7 @@ function recordsSection(records: RecordPoint[]): string {
   // Data for the interactive explorer (progressive enhancement in /chart.js);
   // <-escaping keeps the JSON safe inside a script element.
   const chartData = JSON.stringify({
-    families: familiesChartData(),
+    families: familiesChartData(families),
     records: records.map((r) => ({
       id: r.id,
       n: r.n,
@@ -545,6 +545,193 @@ function verifierForm(state: FormState, user: User | null, openAttribution = fal
   </section>`
 }
 
+/** Raw form echoes for the family proposal form, keyed by field name. */
+export type FamilyFormState = Record<string, string>
+
+const SERIES_PLACEHOLDER =
+  '[{"label": "q = 2", "points": [\n' +
+  '  {"parameter": "d = 3", "n": 10, "rank": 7, "alpha": "6/7"},\n' +
+  '  {"parameter": "d = 4", "n": 18, "rank": 9, "alpha": "8/7"}\n' +
+  ']}]'
+
+/** The infinite-family proposal form. Unlike the concrete form nothing here
+ * is machine-verified: a proposal lands as a pending row that a site admin
+ * must review and accept before it appears anywhere public. */
+function familyFormSection(state: FamilyFormState, user: User | null): string {
+  const v = (name: string): string => escapeHtml(state[name] ?? '')
+  const sel = (name: string, value: string, dflt = false): string =>
+    (state[name] ?? '') === value || (dflt && (state[name] ?? '') === '') ? ' selected' : ''
+  const submit = user
+    ? '<button type="submit">Propose this family</button>'
+    : '<a class="login-to-submit" href="/auth/github">Log in to propose</a>'
+  return `
+  <section class="panel" id="submit-family">
+    <h2>Propose an infinite family</h2>
+    <p class="muted">A family is a reviewed claim, not a computation: no enumeration can check a
+    formula for every parameter. What you submit here waits as <em>pending</em> &mdash; visible
+    only to you and the site admins &mdash; until an admin reviews the mathematics and accepts
+    it. An accepted family gets its curve on the chart, a card, and a page. TeX is welcome in
+    the formula and prose fields (<code>\\( &hellip; \\)</code> inline).</p>
+    <form method="post" action="/families/propose">
+      <div class="form-row">
+        <label for="fam-name">Family name
+        <input id="fam-name" name="name" type="text" required maxlength="120"
+               placeholder="e.g. Steiner-system sparse-paving extensions" value="${v('name')}" /></label>
+        <label for="fam-short">Short name <span class="hint">(chart legend)</span>
+        <input id="fam-short" name="short" type="text" required maxlength="40"
+               placeholder="e.g. Steiner extensions" value="${v('short')}" /></label>
+        <label for="fam-parameter">Parameter
+        <input id="fam-parameter" name="parameter" type="text" required maxlength="200"
+               placeholder="e.g. integer \\(r \\ge 2\\)" value="${v('parameter')}" /></label>
+      </div>
+      <div class="form-row">
+        <label for="fam-claim">Claim type
+        <select id="fam-claim" name="claim">
+          <option value="lower"${sel('claim', 'lower', true)}>certified lower bound (dashed curve)</option>
+          <option value="exact"${sel('claim', 'exact')}>proved exact value (solid curve)</option>
+        </select></label>
+        <label for="fam-supremum">Supremum <span class="hint">(exact fraction)</span>
+        <input id="fam-supremum" name="supremum" type="text" required maxlength="40"
+               placeholder="e.g. 4/3" value="${v('supremum')}" /></label>
+        <label for="fam-supremum-kind">Supremum is
+        <select id="fam-supremum-kind" name="supremum_kind">
+          <option value="approached"${sel('supremum_kind', 'approached', true)}>approached, never attained</option>
+          <option value="attained"${sel('supremum_kind', 'attained')}>attained by members</option>
+          <option value="iterated limit"${sel('supremum_kind', 'iterated limit')}>an iterated limit</option>
+        </select></label>
+      </div>
+      <div class="form-row">
+        <label for="fam-formula">Formula <span class="hint">(TeX, without delimiters)</span>
+        <input id="fam-formula" name="formula_tex" type="text" required maxlength="500"
+               placeholder="e.g. R_{ef}(P_r) = \\frac{4r^2}{3r^2+2r+1}" value="${v('formula_tex')}" /></label>
+        <label for="fam-size-rank">Size and rank <span class="hint">(TeX, without delimiters)</span>
+        <input id="fam-size-rank" name="size_rank_tex" type="text" required maxlength="500"
+               placeholder="e.g. |E(P_r)| = 4r+2, \\qquad \\operatorname{rk}(P_r) = 2r+1" value="${v('size_rank_tex')}" /></label>
+      </div>
+      <label for="fam-summary">Summary <span class="hint">(one or two sentences, for the card)</span></label>
+      <textarea id="fam-summary" name="summary" rows="2" required maxlength="1000"
+                placeholder="what the family is and what its curve certifies">${v('summary')}</textarea>
+      <label for="fam-construction">Construction</label>
+      <textarea id="fam-construction" name="construction" rows="4" required maxlength="4000"
+                placeholder="how a member is built for each parameter value">${v('construction')}</textarea>
+      <label for="fam-curve">What the curve shows</label>
+      <textarea id="fam-curve" name="curve_explanation" rows="3" required maxlength="4000"
+                placeholder="what is exact, what is a bound, and how the limit behaves">${v('curve_explanation')}</textarea>
+      <div class="form-row">
+        <label for="fam-proof-status">Proof status
+        <input id="fam-proof-status" name="proof_status" type="text" required maxlength="2000"
+               placeholder="what is proved, and what remains open" value="${v('proof_status')}" /></label>
+        <label for="fam-proof-url">Proof / reference link <span class="hint">(arXiv, paper, or writeup)</span>
+        <input id="fam-proof-url" name="proof_url" type="text" maxlength="500"
+               placeholder="https://arxiv.org/abs/&hellip;" value="${v('proof_url')}" /></label>
+      </div>
+      <label for="fam-series">Plotted members <span class="hint">(JSON: series with exact values;
+        "field" optional; at most 400 points)</span></label>
+      <textarea id="fam-series" name="series" rows="7" required
+                placeholder='${escapeHtml(SERIES_PLACEHOLDER)}'>${v('series')}</textarea>
+      <h3 class="form-subhead">Discovery record <span class="hint">(required &mdash; as for matroid record entries)</span></h3>
+      <div class="form-row">
+        <label for="fam-contributors">Discovered by
+        <input id="fam-contributors" name="contributors" type="text" required maxlength="500"
+               placeholder="names, as they should be credited" value="${v('contributors')}" /></label>
+        <label for="fam-discovery-date">Discovery date <span class="hint">(YYYY-MM or YYYY-MM-DD)</span>
+        <input id="fam-discovery-date" name="discovery_date" type="text" required maxlength="10"
+               placeholder="e.g. 2026-08" value="${v('discovery_date')}" /></label>
+      </div>
+      <div class="form-row">
+        <label for="fam-ai-used">AI used in the discovery?
+        <select id="fam-ai-used" name="ai_used" required>
+          <option value=""${sel('ai_used', '', true)}>&mdash;</option>
+          <option value="no"${sel('ai_used', 'no')}>no</option>
+          <option value="yes"${sel('ai_used', 'yes')}>yes</option>
+        </select></label>
+        <label for="fam-ai-model">AI model &amp; version
+        <input id="fam-ai-model" name="ai_model" type="text" maxlength="200"
+               placeholder="e.g. ChatGPT 5.6 Sol Ultra" value="${v('ai_model')}" /></label>
+        <label for="fam-ai-chat">Public chat/run link <span class="hint">(if one exists)</span>
+        <input id="fam-ai-chat" name="ai_chat_url" type="text" maxlength="500"
+               placeholder="https://&hellip;" value="${v('ai_chat_url')}" /></label>
+      </div>
+      <label for="fam-ai-role">AI role <span class="hint">(one or two sentences)</span></label>
+      <textarea id="fam-ai-role" name="ai_role" rows="2" maxlength="1000"
+                placeholder="what the AI did in the discovery">${v('ai_role')}</textarea>
+      ${submit}
+      <p class="muted form-note">Strengthen the proposal before it reaches review:
+      <a href="/#submit">verify the family&rsquo;s small members</a> with the concrete form
+      first &mdash; each becomes a machine-checked entry a reviewer can lean on. An automatic
+      screen compares the claimed values against the Huh&ndash;Schr&ouml;ter&ndash;Wang bound
+      and flags a supremum &ge; 4/3 for extra scrutiny; it verifies no mathematics.</p>
+    </form>
+  </section>`
+}
+
+/** The tab bar toggling the two submission forms. Progressive enhancement:
+ * without JS the bar stays hidden and both forms render stacked. */
+function submitTabs(): string {
+  return `
+  <div class="submit-tabs" id="submit-tabs" hidden>
+    <button type="button" class="submit-tab active" data-target="submit">Concrete matroid</button>
+    <button type="button" class="submit-tab" data-target="submit-family">Infinite family</button>
+  </div>`
+}
+
+const SUBMIT_TABS_SCRIPT = `
+    <script>
+      // Progressive enhancement: collapse the two submission forms into
+      // tabs. #submit-family in the URL (the /families propose links) opens
+      // the family tab; without JS both forms simply render stacked.
+      (function () {
+        var bar = document.getElementById('submit-tabs');
+        var tabs = bar ? bar.querySelectorAll('.submit-tab') : [];
+        if (!bar || tabs.length === 0) return;
+        function show(target) {
+          for (var i = 0; i < tabs.length; i++) {
+            var id = tabs[i].getAttribute('data-target');
+            var panel = document.getElementById(id);
+            if (panel) panel.hidden = id !== target;
+            tabs[i].classList.toggle('active', id === target);
+          }
+        }
+        for (var i = 0; i < tabs.length; i++) {
+          tabs[i].addEventListener('click', function () {
+            show(this.getAttribute('data-target'));
+          });
+        }
+        function fromHash() {
+          if (location.hash === '#submit-family') {
+            show('submit-family');
+            var panel = document.getElementById('submit-family');
+            if (panel) panel.scrollIntoView();
+          } else if (location.hash === '#submit') {
+            show('submit');
+          }
+        }
+        bar.hidden = false;
+        show('submit');
+        fromHash();
+        window.addEventListener('hashchange', fromHash);
+      })();
+    </script>`
+
+/** Post target for a failed family proposal: the error plus the form,
+ * pre-filled. (A successful proposal redirects to its pending page.) */
+export function familyProposeResultPage(
+  user: User | null,
+  error: string,
+  form: FamilyFormState,
+): string {
+  const body = `
+    <section class="prose">
+      <p class="page-nav"><a href="/">&larr; home</a></p>
+    </section>
+    <section class="result result-error">
+      <h2>Error</h2>
+      <p>${escapeHtml(error)}</p>
+    </section>
+    ${familyFormSection(form, user)}`
+  return layout(`Result — ${SITE_NAME}`, body, user)
+}
+
 function recordSection(result: { alphaNum: number; alphaDen: number; n: number }, record?: RecordStatus): string {
   if (!record) return ''
   const recordLink = (text: string) =>
@@ -646,6 +833,7 @@ function resultSection(result: VerifyResult, record?: RecordStatus): string {
 export function landingPage(
   user: User | null = null,
   records: RecordPoint[] = [],
+  families: Family[] = [],
   resultExpired = false,
 ): string {
   const expiredNote = resultExpired
@@ -654,9 +842,12 @@ export function landingPage(
   const body = `
     ${heroSection(records)}
     ${expiredNote}
-    ${recordsSection(records)}
+    ${recordsSection(records, families)}
     ${definitionSection()}
+    ${submitTabs()}
     ${verifierForm({}, user)}
+    ${familyFormSection({}, user)}
+    ${SUBMIT_TABS_SCRIPT}
     <section class="prose api-note">
       <h2>API</h2>
       <p>

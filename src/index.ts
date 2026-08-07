@@ -4,7 +4,9 @@ import {
   activityPage,
   apiDocsPage,
   commentaryHistoryPage,
+  familyProposeResultPage,
   landingPage,
+  type FamilyFormState,
   matroidDetailPage,
   matroidsPage,
   notFoundPage,
@@ -50,6 +52,15 @@ import {
 } from './rateLimit'
 import { mathematicsPage } from './mathematics'
 import { familiesPage, familyPage } from './families'
+import {
+  acceptedFamilies,
+  familyBySlug,
+  isAdmin,
+  parseFamilyProposal,
+  pendingFamilies,
+  reviewFamily,
+  submitFamily,
+} from './familyStore'
 
 const rateLimitMessage = `submission rate limit exceeded: ${SUBMISSION_RATE_LIMIT} per ${SUBMISSION_RATE_PERIOD_SEC} seconds`
 
@@ -63,11 +74,10 @@ app.use('*', async (c, next) => {
   await next()
 })
 
-app.get('/', async (c) =>
-  c.html(
-    landingPage(c.get('user'), await recordPoints(c.env), c.req.query('expired') === '1'),
-  ),
-)
+app.get('/', async (c) => {
+  const [records, families] = await Promise.all([recordPoints(c.env), acceptedFamilies(c.env)])
+  return c.html(landingPage(c.get('user'), records, families, c.req.query('expired') === '1'))
+})
 
 app.get('/auth/:provider', startOAuth)
 app.get('/auth/:provider/callback', handleCallback)
@@ -77,12 +87,99 @@ app.get('/api', (c) => c.html(apiDocsPage(c.get('user'))))
 
 app.get('/mathematics', (c) => c.html(mathematicsPage(c.get('user'))))
 
-app.get('/families', (c) => c.html(familiesPage(c.get('user'))))
+app.get('/families', async (c) => {
+  const user = c.get('user')
+  const [families, admin] = await Promise.all([
+    acceptedFamilies(c.env),
+    isAdmin(c.env, user?.id ?? null),
+  ])
+  const pending = admin ? await pendingFamilies(c.env) : []
+  return c.html(familiesPage(families, pending, user))
+})
 
-app.get('/family/:id', (c) => {
-  const page = familyPage(c.req.param('id'), c.get('user'))
-  if (page === null) return c.html(notFoundPage(c.get('user')), 404)
-  return c.html(page)
+app.get('/family/:slug', async (c) => {
+  const user = c.get('user')
+  const family = await familyBySlug(c.env, c.req.param('slug'))
+  if (!family) return c.html(notFoundPage(user), 404)
+  const admin = await isAdmin(c.env, user?.id ?? null)
+  // Accepted families are public; a pending or rejected proposal exists
+  // only for its submitter and the admins.
+  if (family.status !== 'accepted' && !admin && family.submitterUserId !== (user?.id ?? -1)) {
+    return c.html(notFoundPage(user), 404)
+  }
+  return c.html(familyPage(family, user, admin))
+})
+
+// The field whitelist doubles as the form echo: whatever the user typed
+// comes back verbatim on a validation error.
+const FAMILY_FORM_FIELDS = [
+  'name',
+  'short',
+  'claim',
+  'parameter',
+  'formula_tex',
+  'size_rank_tex',
+  'supremum',
+  'supremum_kind',
+  'summary',
+  'construction',
+  'curve_explanation',
+  'proof_status',
+  'proof_url',
+  'series',
+  'contributors',
+  'discovery_date',
+  'ai_used',
+  'ai_model',
+  'ai_role',
+  'ai_chat_url',
+] as const
+
+app.post('/families/propose', async (c) => {
+  const user = c.get('user')
+  if (!user) {
+    return c.redirect('/auth/github?return_to=' + encodeURIComponent('/#submit-family'), 302)
+  }
+  const rate = await checkSubmissionRateLimit(c.env, user.id)
+  if (!rate.allowed) {
+    c.header('Retry-After', String(rate.retryAfter))
+    return c.html(
+      familyProposeResultPage(
+        user,
+        `${rateLimitMessage}; retry in about ${rate.retryAfter} seconds`,
+        {},
+      ),
+      429,
+    )
+  }
+  const body = await c.req.parseBody()
+  const form: FamilyFormState = {}
+  for (const key of FAMILY_FORM_FIELDS) {
+    const v = body[key]
+    if (typeof v === 'string') form[key] = v
+  }
+  const proposal = parseFamilyProposal(form)
+  if ('error' in proposal) return c.html(familyProposeResultPage(user, proposal.error, form), 400)
+  const { slug } = await submitFamily(c.env, proposal, user.id)
+  // The proposal's own page: pending, visible to the submitter and admins.
+  return c.redirect(`/family/${slug}`, 303)
+})
+
+app.post('/family/:slug/review', async (c) => {
+  const user = c.get('user')
+  if (!user) return c.redirect('/auth/github', 302)
+  if (!(await isAdmin(c.env, user.id))) return c.text('reviewing proposals requires an admin', 403)
+  const family = await familyBySlug(c.env, c.req.param('slug'))
+  if (!family) return c.html(notFoundPage(user), 404)
+  const body = await c.req.parseBody()
+  const action = body.action === 'accept' ? 'accept' : body.action === 'reject' ? 'reject' : null
+  if (action === null) return c.text('action must be accept or reject', 400)
+  const note =
+    typeof body.note === 'string' && body.note.trim() !== ''
+      ? body.note.trim().slice(0, 2000)
+      : null
+  await reviewFamily(c.env, family.id, action, user.id, note)
+  return c.redirect(`/family/${family.slug}`, 303)
 })
 
 // A JSON attachment response with a strong ETag over the exact body, so

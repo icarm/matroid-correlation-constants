@@ -1411,3 +1411,91 @@ footer .inner {
   top: 0;
   background: var(--bg-bright);
 }
+
+/* --- Submission tabs (landing page): concrete matroid / infinite family.
+   The bar is revealed by JS; without it both forms render stacked. --- */
+
+.submit-tabs {
+  max-width: 880px;
+  margin: 2.4rem auto -1.2rem;
+  display: flex;
+  gap: 0.4rem;
+  padding: 0 1rem;
+}
+
+.submit-tab {
+  font: inherit;
+  font-size: 0.95rem;
+  padding: 0.45rem 1.1rem;
+  border: 1px solid var(--panel-edge);
+  border-bottom: none;
+  border-radius: 10px 10px 0 0;
+  background: var(--bg-muted);
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.submit-tab.active {
+  background: var(--panel);
+  color: var(--fg);
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
+}
+
+.form-subhead {
+  margin: 1.4rem 0 0.2rem;
+  font-size: 1.05rem;
+}
+
+.form-subhead .hint {
+  font-family: Inter, ui-sans-serif, sans-serif;
+  font-weight: 400;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+/* --- Family proposal review (status banners, admin panel) --- */
+
+.status-banner {
+  border: 1px solid var(--panel-edge);
+  border-left: 4px solid var(--accent-dim);
+  border-radius: 8px;
+  background: var(--error-bg);
+  padding: 0.7rem 1rem;
+  margin: 1rem 0;
+}
+
+.status-banner.rejected {
+  border-left-color: var(--invalid);
+  background: var(--invalid-bg);
+}
+
+.review-panel {
+  border-left: 4px solid var(--accent);
+}
+
+.review-panel textarea {
+  width: 100%;
+}
+
+.review-flag {
+  color: var(--rust-dark);
+  font-weight: 600;
+}
+
+.review-actions {
+  display: flex;
+  gap: 0.8rem;
+}
+
+.review-actions button.danger {
+  background: var(--rust);
+}
+
+.review-actions button.danger:hover {
+  background: var(--rust-dark);
+}
+
+.pending-list li {
+  margin: 0.3rem 0;
+}

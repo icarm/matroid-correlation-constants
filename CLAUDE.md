@@ -37,10 +37,18 @@ case).
   rejects with both values) and discovery-metadata validation.
 - `src/pages.ts` — server-rendered template-literal pages. `src/mathematics.ts`
   — the proofs page (the only page loading MathJax, from CDN).
-- `src/familyData.ts` — the family catalog, single source of truth:
-  family pages render from it and the landing page injects it (with the
-  record points) as `#chart-data` JSON for the explorer. Accepted family
-  proposals are added here by PR.
+- `src/familyData.ts` — the family model (types + chart-data mapper);
+  the data lives in the D1 `families` table (seeded from the old catalog
+  by migration 0008). `src/familyStore.ts` — family persistence and the
+  pure proposal validation (exercised by test-families.mjs): proposals
+  from the landing form's "infinite family" tab land status='pending',
+  visible only to submitter + admins (users.is_admin, read fresh from D1
+  on admin paths, never from the session), until an admin accepts
+  (assigns a palette color, publishes curve/card/page) or rejects. All
+  family-sourced text incl. TeX renders HTML-escaped; MathJax reads DOM
+  text, so escaping is free and makes proposals safe. The landing page
+  injects accepted families (with the record points) as `#chart-data`
+  JSON for the explorer.
 - `public/chart.js` — the interactive explorer; all data arrives via the
   injected JSON. Progressive enhancement: server-rendered SVG stays
   without JS. Same pattern as the form's placeholder script.
@@ -88,9 +96,8 @@ API token may be present at `~/.matroid-correlation-token.txt`.
 - Challenges section with per-field leaderboards (thresholds in the
   draft's `submission-eligibility-policy.json`).
 - Records table beside the plot; structure flags (simple/connected/
-  paving) for explorer filters. Family-proposal intake is BUILT
-  (.github/ISSUE_TEMPLATE/propose-family.yml + screening workflow +
-  /families CTA) — it activates when issues open on the GitHub repo.
+  paving) for explorer filters. (The old GitHub-issue family intake was
+  removed when the on-site proposal form + admin review landed.)
 - If weighted-alpha support ever lands: the matroids table needs an
   invariant column (everything today is the unweighted constant), with
   separate records per invariant — mirror the catalog convention on main.
