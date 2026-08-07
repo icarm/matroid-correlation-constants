@@ -360,10 +360,12 @@ var {
 }
 
 /* "At a glance" repeats the hero's geometry: prose on the left, the
-   defining equation as a card on the right, same column widths. */
+   defining equation as a card on the right. The card's column is wide
+   enough (26rem) that, with the prose capped at its reading measure,
+   the two nearly meet instead of leaving a gulf between them. */
 .glance {
   display: grid;
-  grid-template-columns: 1fr minmax(15rem, 19rem);
+  grid-template-columns: minmax(0, 1fr) minmax(15rem, 26rem);
   gap: 2.5rem;
   align-items: center;
   margin: 2.4rem 0;
