@@ -26,15 +26,6 @@ export interface User {
   avatar_url?: string | null
 }
 
-export interface TokenRow {
-  id: number
-  name: string | null
-  prefix: string
-  created_at: string
-  last_used_at: string | null
-  revoked_at: string | null
-}
-
 export interface UserMatroidRow {
   id: number
   n: number
@@ -143,7 +134,6 @@ export function layout(
           <a href="/recent">recent activity</a> &nbsp;&middot;&nbsp;
           <a href="/database.json" download>download the records (JSON)</a> &nbsp;&middot;&nbsp;
           <a class="external" href="https://icarm.zulipchat.com/#narrow/channel/589006-Matroid-Database">discuss on Zulip</a> &nbsp;&middot;&nbsp;
-          <a href="/api">API</a> &nbsp;&middot;&nbsp;
           <a class="external" href="https://github.com/icarm/matroid-correlation-constants">source</a> &nbsp;&middot;&nbsp;
           <a class="external" href="https://icarm.io">icarm.io</a>
         </nav>
@@ -191,8 +181,7 @@ function heroSection(records: RecordPoint[]): string {
       attracts, and nobody knows how strong the attraction can get. The challenge:
       <strong>find a concrete matroid whose correlation constant reaches 4/3.</strong></p>
       <p class="hero-actions"><a class="hero-cta" href="#submit">Submit a matroid</a>
-      <a class="hero-link" href="#definition">the definition &darr;</a>
-      <a class="hero-link" href="/api">API</a></p>
+      <a class="hero-link" href="#definition">the definition &darr;</a></p>
     </div>
     ${card}
   </section>`
@@ -847,15 +836,7 @@ export function landingPage(
     ${submitTabs()}
     ${verifierForm({}, user)}
     ${familyFormSection({}, user)}
-    ${SUBMIT_TABS_SCRIPT}
-    <section class="prose api-note">
-      <h2>API</h2>
-      <p>
-        <code>POST /api/verify</code> with JSON body
-        <code>{"n": 4, "type": "matrix", "field": "3", "data": [[1,0,1,1],[0,1,1,2]]}</code>
-        returns the same verdict as JSON. See the <a href="/api">API docs</a>.
-      </p>
-    </section>`
+    ${SUBMIT_TABS_SCRIPT}`
   return layout(SITE_NAME, body, user)
 }
 
@@ -907,39 +888,7 @@ function userMatroidsSection(rows: UserMatroidRow[]): string {
     </section>`
 }
 
-export function profilePage(
-  user: User,
-  tokens: TokenRow[],
-  newToken: { token: string; prefix: string } | null,
-  matroids: UserMatroidRow[] = [],
-): string {
-  const newTokenBlock = newToken
-    ? `<div class="new-token">
-        <p><strong>New token created.</strong> Copy it now &mdash; this is the only time it will be shown.</p>
-        <pre class="token-secret">${escapeHtml(newToken.token)}</pre>
-        <p class="muted">Send it as <code>Authorization: Bearer ${escapeHtml(newToken.token)}</code> when calling the API.</p>
-      </div>`
-    : ''
-  const tokenRows = tokens.length
-    ? tokens
-        .map((t) => {
-          const label = t.name ? escapeHtml(t.name) : '<span class="muted">(unnamed)</span>'
-          const status = t.revoked_at
-            ? `<span class="muted">revoked ${escapeHtml(t.revoked_at)}</span>`
-            : `<form method="post" action="/profile/tokens/${t.id}/revoke" class="inline-form"><button type="submit" class="link-button">revoke</button></form>`
-          const lastUsed = t.last_used_at
-            ? escapeHtml(t.last_used_at)
-            : '<span class="muted">never</span>'
-          return `<tr>
-            <td><code>${escapeHtml(t.prefix)}&hellip;</code></td>
-            <td>${label}</td>
-            <td>${escapeHtml(t.created_at)}</td>
-            <td>${lastUsed}</td>
-            <td>${status}</td>
-          </tr>`
-        })
-        .join('\n')
-    : `<tr><td colspan="5" class="muted">No tokens yet.</td></tr>`
+export function profilePage(user: User, matroids: UserMatroidRow[] = []): string {
   const body = `
     <section class="prose">
       <p class="page-nav"><a href="/">&larr; home</a></p>
@@ -947,7 +896,6 @@ export function profilePage(
       <p class="muted">Signed in as ${escapeHtml(user.display_name || user.email || 'user')} (via ${escapeHtml(
         user.provider,
       )}).</p>
-      ${newTokenBlock}
       <section class="profile-name">
         <h3>Display name</h3>
         <form method="post" action="/profile/name" class="profile-name-form">
@@ -955,128 +903,11 @@ export function profilePage(
           <button type="submit">save</button>
         </form>
       </section>
-      <section class="tokens">
-        <h3>API tokens</h3>
-        <p>Send a token in the <code>Authorization: Bearer &hellip;</code> header to call the <a href="/api">API</a> as yourself, so record matroids are attributed to you.</p>
-        <table class="tokens-table">
-          <thead><tr><th>Prefix</th><th>Name</th><th>Created</th><th>Last used</th><th></th></tr></thead>
-          <tbody>${tokenRows}</tbody>
-        </table>
-        <form method="post" action="/profile/tokens" class="new-token-form">
-          <label>Name (optional) <input type="text" name="name" maxlength="100" placeholder="e.g. laptop CLI" /></label>
-          <button type="submit">Generate new token</button>
-        </form>
-      </section>
       ${userMatroidsSection(matroids)}
     </section>`
   return layout(`Profile — ${SITE_NAME}`, body, user)
 }
 
-export function apiDocsPage(user: User | null = null): string {
-  const verifyReq = `curl -X POST https://matroid-correlation-constants.icarm.cloud/api/verify \\
-  -H 'content-type: application/json' \\
-  -H 'authorization: Bearer matroid_...' \\
-  -d '{ "n": 4, "type": "matrix", "field": "3",
-        "data": [[1,0,1,1],[0,1,1,2]],
-        "claimed_alpha": "1/4",
-        "name": "Uniform matroid U(2,4)",
-        "discovery": { "date": "1935-01", "discoverers": "classical",
-                       "ai_used": false },
-        "provenance": "worked example" }'`
-  const verifyResp = `{
-  "ok": true,
-  "n": 4,
-  "rank": 2,
-  "numBases": 6,
-  "loops": [],
-  "coloops": [],
-  "alphaNum": 1,                    // α(M) as a reduced fraction ...
-  "alphaDen": 4,
-  "alphaValue": 0.25,               // ... and as a decimal
-  "maximizingPairs": [              // every tied pair, each with its 2x2 table
-    { "i": 0, "j": 1, "counts": { "containBoth": 1, "avoidBoth": 1, "onlyI": 2, "onlyJ": 2 } },
-    ...
-  ],
-  "maxCounts": { "containBoth": 1, "avoidBoth": 1, "onlyI": 2, "onlyJ": 2 },
-  "field": "3",
-  "record": { "recorded": true, "recordAlphaNum": 1, "recordAlphaDen": 4, "matroidId": 7 }
-}`
-  const basesReq = `{ "n": 4, "type": "bases",
-  "data": [[0,1],[0,2],[0,3],[1,2],[1,3],[2,3]] }`
-  const body = `
-    <section class="prose">
-      <p class="page-nav"><a href="/">&larr; home</a></p>
-      <h2>API</h2>
-
-      <h3>POST <code>/api/verify</code></h3>
-      <p>Verifies a matroid on ground set <span class="math">{0, &hellip;, n&minus;1}</span> and
-      computes its correlation constant ${alphaVar}(<var>M</var>) exactly. The body is JSON with
-      fields <code>n</code> (integer), <code>type</code> (one of <code>"matrix"</code>,
-      <code>"bases"</code>, <code>"circuits"</code>, <code>"hyperplanes"</code>),
-      <code>data</code>, optional attribution &mdash; <code>name</code>, <code>citation</code>,
-      free-text <code>provenance</code> notes, and a structured <code>discovery</code> object
-      <code>{"date": "YYYY-MM[-DD]", "discoverers", "ai_used": &lt;bool&gt;, "ai_model",
-      "ai_role", "ai_chat_url"}</code> (when <code>ai_used</code> is true, the model and role are
-      required; discovery is distinct from the submission timestamp) &mdash; and, for matrices,
-      <code>field</code>: <code>"Q"</code>; a
-      prime <code>"p"</code> for GF(p), any prime below 10<sup>6</sup>; or a proper prime power
-      (<code>"4"</code> or <code>"2^2"</code>) for GF(p<sup>d</sup>), supported up to order
-      ${MAX_EXT_FIELD_ORDER} (extension-field arithmetic is table-driven, so its cost scales
-      with the field order; prime-field arithmetic does not). For a matrix,
-      <code>data</code> is a list of rows (columns are the elements). Over &#8474; entries may be
-      integers or fraction strings like <code>"-3/5"</code>. Over GF(p<sup>d</sup>) with d &gt; 1,
-      an entry is an integer (a prime-subfield constant, reduced mod p) or a coefficient list
-      <code>[c0, c1, ...]</code> meaning c<sub>0</sub> + c<sub>1</sub>a + &hellip; where
-      <var>a</var> is a root of the Conway polynomial C<sub>p,d</sub> &mdash; the same convention
-      as Sage, GAP, and Macaulay2, so matrices copy across unchanged. For the other types,
-      <code>data</code> is the complete list of bases, circuits, or hyperplanes as lists of
-      element labels. Limits: n &le; ${MAX_ELEMENTS} for matrices and bases (on more than 24
-      elements only ranks with a feasible enumeration are accepted &mdash; roughly rank &le; 10
-      at n = 26 down to rank &le; 9 at n = 30; circuit and hyperplane descriptions stop at ${MAX_DP_ELEMENTS}),
-      at most
-      ${MAX_LISTED_SETS.toLocaleString('en-US')} listed sets or
-      ${MAX_MATRIX_CELLS.toLocaleString('en-US')} matrix entries.</p>
-      <p>Requires an <code>Authorization: Bearer &lt;token&gt;</code> header &mdash; create a token
-      on your <a href="/profile">profile</a> page. Requests without a valid token receive
-      <code>401</code>. A submission whose constant strictly beats the record for its ground-set
-      size is saved and attributed to your account.</p>
-      <pre><code>${escapeHtml(verifyReq)}</code></pre>
-      <p>Returns <code>200</code> with the verdict, <code>401</code> without a valid token, or
-      <code>400</code> when the body is malformed, the description violates the matroid axioms
-      (the error pinpoints a failing exchange or circuit elimination), or a limit is exceeded.
-      An optional <code>claimed_alpha</code> (<code>"a/b"</code>, an integer, or
-      <code>{"numerator", "denominator"}</code>) is compared exactly against the computed
-      constant, and a mismatch fails the submission with both values &mdash; so a record entry is
-      a verified <em>claim</em>, and pasting the wrong matroid is caught rather than recorded.
-      Verification itself never requires attribution, but a submission that would <em>enter the
-      record book</em> does: without a complete discovery record (<code>discovery.discoverers</code>,
-      <code>discovery.date</code>, and <code>discovery.ai_used</code>, plus the model and role when
-      AI was used), a record-setting result is returned with
-      <code>record.needsDiscovery: true</code> and is not saved &mdash; resubmit with the
-      discovery object to record it.
-      On success, <code>record.recorded</code> reports whether the record book changed; on a tie,
-      <code>record.tiedExact</code> reports whether the submission is the record matroid itself
-      (<code>true</code>) or a different matroid with the same constant (<code>false</code>).
-      An exact tie can still add information: a matrix over a field, resubmitting a record that
-      has no verified field, is attached to the record as a representability certificate
-      (reported as <code>record.certificateAttached</code>) — so proving a field for an existing
-      combinatorial record is a useful submission, not a rejected duplicate.</p>
-      <pre><code>${escapeHtml(verifyResp)}</code></pre>
-      <p>The same matroid described by its bases instead:</p>
-      <pre><code>${escapeHtml(basesReq)}</code></pre>
-
-      <h3>GET <code>/database.json</code></h3>
-      <p>All record matroids as one JSON download: <code>{ count, matroids }</code>, each with its
-      <code>n</code>, <code>rank</code>, <code>num_bases</code>, exact <code>alpha</code> fraction,
-      <code>representation_type</code> and full <code>representation</code>, <code>field</code>,
-      canonical <code>bases</code> (omitted when very large), <code>max_pairs</code>,
-      <code>max_counts</code>, <code>provenance</code>, <code>submitter</code>,
-      <code>created_at</code>, and <code>current</code> (false for superseded records, which are
-      kept as history). No auth required. Responses carry a strong <code>ETag</code>; conditional
-      requests return <code>304</code> when nothing has changed.</p>
-    </section>`
-  return layout(`API — ${SITE_NAME}`, body, user)
-}
 
 // Linkify `matroid#123` references in commentary text; everything else is escaped.
 function renderCommentary(content: string): string {

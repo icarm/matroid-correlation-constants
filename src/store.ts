@@ -4,7 +4,7 @@
 // strictly increase, so the row with the largest id is the current record.
 
 import type { Bindings } from './auth'
-import type { RecordPoint, TokenRow, UserMatroidRow } from './pages'
+import type { RecordPoint, UserMatroidRow } from './pages'
 import { VERIFIER_VERSION, type VerifiedMatroid } from './verify'
 
 /** Structured discovery metadata accompanying a submission (all optional;
@@ -178,16 +178,6 @@ export async function recentActivity(
     .bind(size + 1, page * size)
     .all<ActivityItem>()
   return { items: results.slice(0, size), page, hasOlder: results.length > size }
-}
-
-export function listTokens(env: Bindings, userId: number): Promise<TokenRow[]> {
-  return env.DB.prepare(
-    `SELECT id, name, prefix, created_at, last_used_at, revoked_at
-       FROM api_tokens WHERE user_id = ? ORDER BY id DESC`,
-  )
-    .bind(userId)
-    .all<TokenRow>()
-    .then((r) => r.results)
 }
 
 /** The user's record matroids, largest constant first, flagged when still the record. */

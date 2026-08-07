@@ -2,7 +2,6 @@ import { Hono } from 'hono'
 import {
   acknowledgePage,
   activityPage,
-  apiDocsPage,
   commentaryHistoryPage,
   familyProposeResultPage,
   landingPage,
@@ -16,9 +15,7 @@ import {
 } from './pages'
 import {
   type AppEnv,
-  generateApiToken,
   loadCurrentUser,
-  loadUserFromToken,
   startOAuth,
   handleCallback,
   logout,
@@ -29,7 +26,6 @@ import {
   COMMENT_MAX,
   commentaryHistory,
   recordPoints,
-  listTokens,
   loadMatroid,
   postCommentary,
   recentActivity,
@@ -41,7 +37,6 @@ import {
 import {
   MAX_DATA_TEXT_BYTES,
   PROVENANCE_MAX,
-  REPRESENTATION_TYPES,
   verify,
   type VerifyResult,
 } from './verify'
@@ -66,11 +61,10 @@ const rateLimitMessage = `submission rate limit exceeded: ${SUBMISSION_RATE_LIMI
 
 const app = new Hono<AppEnv>()
 
-// Resolve the current user (session cookie, else API bearer token) for every
-// request. Both lookups short-circuit cheaply when their credential is absent.
+// Resolve the current user (session cookie) for every request; the lookup
+// short-circuits cheaply when the cookie is absent.
 app.use('*', async (c, next) => {
-  const user = (await loadCurrentUser(c)) ?? (await loadUserFromToken(c))
-  c.set('user', user)
+  c.set('user', await loadCurrentUser(c))
   await next()
 })
 
@@ -82,8 +76,6 @@ app.get('/', async (c) => {
 app.get('/auth/:provider', startOAuth)
 app.get('/auth/:provider/callback', handleCallback)
 app.post('/auth/logout', logout)
-
-app.get('/api', (c) => c.html(apiDocsPage(c.get('user'))))
 
 app.get('/mathematics', (c) => c.html(mathematicsPage(c.get('user'))))
 
@@ -353,38 +345,7 @@ app.get('/recent', async (c) => {
 app.get('/profile', async (c) => {
   const user = c.get('user')
   if (!user) return c.redirect('/auth/github?return_to=/profile', 302)
-  const [tokens, matroids] = await Promise.all([
-    listTokens(c.env, user.id),
-    userMatroids(c.env, user.id),
-  ])
-  return c.html(profilePage(user, tokens, null, matroids))
-})
-
-app.post('/profile/tokens', async (c) => {
-  const user = c.get('user')
-  if (!user) return c.redirect('/auth/github', 302)
-  const form = await c.req.parseBody()
-  const name = String(form.name ?? '').trim().slice(0, 100) || null
-  const newToken = await generateApiToken(c.env, user.id, name)
-  const [tokens, matroids] = await Promise.all([
-    listTokens(c.env, user.id),
-    userMatroids(c.env, user.id),
-  ])
-  return c.html(profilePage(user, tokens, newToken, matroids))
-})
-
-app.post('/profile/tokens/:id/revoke', async (c) => {
-  const user = c.get('user')
-  if (!user) return c.redirect('/auth/github', 302)
-  const id = Number(c.req.param('id'))
-  if (Number.isInteger(id)) {
-    await c.env.DB.prepare(
-      'UPDATE api_tokens SET revoked_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ? AND revoked_at IS NULL',
-    )
-      .bind(id, user.id)
-      .run()
-  }
-  return c.redirect('/profile', 302)
+  return c.html(profilePage(user, await userMatroids(c.env, user.id)))
 })
 
 app.post('/profile/name', async (c) => {
@@ -629,81 +590,6 @@ app.get('/result/:key', async (c) => {
   const flash = (await c.env.SESSIONS.get(`result:${key}`, 'json')) as ResultFlash | null
   if (!flash) return c.redirect('/?expired=1', 302)
   return c.html(resultPage(c.get('user'), flash.result, flash.record, flash.form))
-})
-
-app.post('/api/verify', async (c) => {
-  const user = c.get('user')
-  if (!user) return c.json({ ok: false, error: 'authentication required' }, 401)
-  const rate = await checkSubmissionRateLimit(c.env, user.id)
-  if (!rate.allowed) {
-    c.header('Retry-After', String(rate.retryAfter))
-    return c.json(
-      {
-        ok: false,
-        error: `${rateLimitMessage}; retry in about ${rate.retryAfter} seconds`,
-        rateLimit: {
-          limit: SUBMISSION_RATE_LIMIT,
-          period: SUBMISSION_RATE_PERIOD_SEC,
-          retryAfter: rate.retryAfter,
-        },
-      },
-      429,
-    )
-  }
-  let body: unknown
-  try {
-    body = await c.req.json()
-  } catch {
-    return c.json({ ok: false, error: 'request body must be JSON' }, 400)
-  }
-  const { n, type, field, data, provenance, name, citation, discovery, claimed_alpha } =
-    (body ?? {}) as {
-      n?: unknown
-      type?: unknown
-      field?: unknown
-      data?: unknown
-      provenance?: unknown
-      name?: unknown
-      citation?: unknown
-      discovery?: unknown
-      claimed_alpha?: unknown
-    }
-  if (typeof n !== 'number' || typeof type !== 'string' || data === undefined) {
-    return c.json(
-      {
-        ok: false,
-        error: `expected {"n": <integer>, "type": <one of ${REPRESENTATION_TYPES.join('|')}>, "data": [...], "field"?: "Q"|"<prime power>", "name"?, "citation"?, "provenance"?, "discovery"?: {"date", "discoverers", "ai_used", "ai_model", "ai_role", "ai_chat_url"}}`,
-      },
-      400,
-    )
-  }
-  const fieldText = typeof field === 'number' ? String(field) : typeof field === 'string' ? field : ''
-  const disc = (discovery ?? {}) as Record<string, unknown>
-  const meta = parseMeta({
-    name,
-    citation,
-    provenance,
-    discoverers: disc.discoverers,
-    discoveryDate: disc.date,
-    aiUsed: disc.ai_used,
-    aiModel: disc.ai_model,
-    aiRole: disc.ai_role,
-    aiChatUrl: disc.ai_chat_url,
-  })
-  if ('error' in meta) return c.json({ ok: false, error: meta.error }, 400)
-  const claim = parseClaimedAlpha(claimed_alpha)
-  if (claim !== null && 'error' in claim) return c.json({ ok: false, error: claim.error }, 400)
-  const result = verify(n, type, fieldText, data)
-  if (!result.ok) return c.json(result, 400)
-  if (claim !== null) {
-    const mismatch = claimMismatch(claim, result)
-    if (mismatch) return c.json({ ok: false, error: mismatch }, 400)
-  }
-  const record = await recordMatroid(c.env, result, meta, user.id)
-  // Echoing the (possibly large) bases and description back is redundant for
-  // API users.
-  const { basesJson: _bases, representation: _rep, ...rest } = result
-  return c.json({ ...rest, record })
 })
 
 app.notFound((c) => c.html(notFoundPage(c.get('user')), 404))

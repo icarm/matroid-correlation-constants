@@ -64,9 +64,11 @@ families approach 4/3. The challenge: a concrete matroid with α(M) ≥ 4/3.
   counts, optional attribution (discoverers, date, AI disclosure), and a
   single editable commentary each (full edit history kept), plus a
   paginated recent-activity feed.
-- **JSON API** (`POST /api/verify`, bearer tokens managed on the profile
-  page) and a full database download (`GET /database.json`). Docs at
-  [/api](https://matroid-correlation-constants.icarm.cloud/api).
+- **Open data**: the full record book as one JSON download
+  (`GET /database.json`, ETag-revalidated). Submissions themselves are
+  form-only — the site emphasizes humans filling out the forms, and the
+  earlier JSON API (bearer tokens, `POST /api/verify`) was removed; it
+  can be restored from git history if programmatic demand appears.
 
 Infinite families are out of scope for direct submission — they need human
 proof review and are handled via pull requests instead.
@@ -74,9 +76,9 @@ proof review and are handled via pull requests instead.
 ## Architecture
 
 [Cloudflare Workers](https://developers.cloudflare.com/workers/) with
-[Hono](https://hono.dev). Users, matroids, commentary, and API tokens live
+[Hono](https://hono.dev). Users, matroids, families, and commentary live
 in D1 (`migrations/`); login sessions and post-submit result flashes live in
-KV. Session cookies and API tokens are stored only as SHA-256 hashes.
+KV. Session cookies are stored only as SHA-256 hashes.
 
 ## Development
 

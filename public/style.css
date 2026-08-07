@@ -857,7 +857,6 @@ var {
   color: var(--accent);
 }
 
-.new-token-form,
 .profile-name-form {
   margin-top: 1rem;
   display: flex;
@@ -866,20 +865,11 @@ var {
   flex-wrap: wrap;
 }
 
-.new-token-form label {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  margin: 0;
-}
-
-.new-token-form input,
 .profile-name-form input {
   width: auto;
   flex: 0 1 16rem;
 }
 
-.new-token-form button,
 .profile-name-form button {
   margin-top: 0;
 }

@@ -34,7 +34,11 @@ case).
   cert_matrix). Entering the record book requires a discovery record
   (discoverers, date, AI-use declaration) — verification alone does not.
 - `src/index.ts` — routes; also claimed-α parsing/cross-check (mismatch
-  rejects with both values) and discovery-metadata validation.
+  rejects with both values) and discovery-metadata validation. Submission
+  is form-only: the JSON API and bearer tokens were removed 2026-08 (the
+  site emphasizes humans filling out the forms; restore from git history
+  before commit "Remove the JSON API" if demand appears). The api_tokens
+  table remains in D1, dormant.
 - `src/pages.ts` — server-rendered template-literal pages. `src/mathematics.ts`
   — the proofs page (the only page loading MathJax, from CDN).
 - `src/familyData.ts` — the family model (types + chart-data mapper);
@@ -85,8 +89,9 @@ has no wrangler auth — the user runs it):
     npx wrangler d1 migrations apply matroid-correlation-constants --remote
     npm run deploy
 
-Live at https://matroid-correlation-constants.icarm.cloud. A production
-API token may be present at `~/.matroid-correlation-token.txt`.
+Live at https://matroid-correlation-constants.icarm.cloud. (A now-inert
+production API token may linger at `~/.matroid-correlation-token.txt` —
+the JSON API was removed 2026-08.)
 
 ## Known follow-ups (agreed with the user)
 

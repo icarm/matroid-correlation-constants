@@ -1,7 +1,8 @@
-// GitHub OAuth login with sessions in KV, and API tokens — ported from
-// elliptic-rank. The session token is sha256-hashed before use as the KV key,
-// so a dump of the KV store does not reveal usable session cookies. (API
-// tokens are likewise stored only as sha256 hashes in D1.)
+// GitHub OAuth login with sessions in KV — ported from elliptic-rank. The
+// session token is sha256-hashed before use as the KV key, so a dump of the
+// KV store does not reveal usable session cookies. (The JSON API and its
+// bearer tokens were removed in August 2026 — the site emphasizes humans
+// filling out the forms; the dormant api_tokens table remains in D1.)
 
 import type { Context } from 'hono'
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie'
@@ -16,9 +17,6 @@ export interface Bindings {
 }
 export type AppEnv = { Bindings: Bindings; Variables: { user: User | null } }
 type Ctx = Context<AppEnv>
-
-export const TOKEN_PREFIX = 'matroid_'
-const TOKEN_RANDOM_BYTES = 20 // 40 hex chars → 160 bits
 
 const SESSION_COOKIE = 'session'
 const STATE_COOKIE = 'oauth_state'
@@ -287,48 +285,6 @@ export async function updateSessionUser(c: Ctx, partial: Partial<User>): Promise
   await c.env.SESSIONS.put(key, JSON.stringify({ ...existing, ...partial }), {
     expirationTtl: SESSION_TTL_SEC,
   })
-}
-
-// Resolve a user from an `Authorization: Bearer <token>` header (API access).
-export async function loadUserFromToken(c: Ctx): Promise<User | null> {
-  const auth = c.req.header('authorization') || ''
-  const m = auth.match(/^Bearer\s+(\S+)$/i)
-  if (!m) return null
-  const token = m[1]
-  if (!token.startsWith(TOKEN_PREFIX)) return null
-  const tokenHash = await sha256Hex(token)
-  const row = await c.env.DB.prepare(
-    `SELECT u.id, u.provider, u.email, u.display_name, u.avatar_url, t.id AS token_id
-       FROM api_tokens t JOIN users u ON u.id = t.user_id
-       WHERE t.token_hash = ? AND t.revoked_at IS NULL`,
-  )
-    .bind(tokenHash)
-    .first<User & { token_id: number }>()
-  if (!row) return null
-  const tokenId = row.token_id
-  delete (row as Partial<typeof row>).token_id
-  c.executionCtx?.waitUntil(
-    c.env.DB.prepare('UPDATE api_tokens SET last_used_at = CURRENT_TIMESTAMP WHERE id = ?')
-      .bind(tokenId)
-      .run(),
-  )
-  return row
-}
-
-export async function generateApiToken(
-  env: Bindings,
-  userId: number,
-  name: string | null,
-): Promise<{ id: number; token: string; prefix: string }> {
-  const token = `${TOKEN_PREFIX}${randomHex(TOKEN_RANDOM_BYTES)}`
-  const tokenHash = await sha256Hex(token)
-  const prefix = token.slice(0, TOKEN_PREFIX.length + 8) // e.g. 'matroid_abcdef12'
-  const ins = await env.DB.prepare(
-    'INSERT INTO api_tokens (user_id, name, token_hash, prefix) VALUES (?, ?, ?, ?)',
-  )
-    .bind(userId, name, tokenHash, prefix)
-    .run()
-  return { id: ins.meta.last_row_id as number, token, prefix }
 }
 
 export async function logout(c: Ctx): Promise<Response> {
