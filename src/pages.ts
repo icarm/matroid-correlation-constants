@@ -78,6 +78,11 @@ const fmtAlphaLong = (num: number, den: number): string =>
 const beatsGoal = (num: number, den: number): boolean => 3 * num >= 4 * den
 
 const alphaVar = '<var>&alpha;</var>'
+// The landing page uses the unweighted invariant's full notation without
+// loading MathJax: U+0305 supplies the overline in ordinary HTML, SVG, and
+// plain-text chart tooltips.
+const alphaBarText = 'α\u0305'
+const alphaBarVar = `<var>${alphaBarText}</var>`
 
 function authNav(user: User | null): string {
   if (user) {
@@ -193,7 +198,7 @@ function heroSection(records: RecordPoint[], families: Family[]): string {
   const clubLine =
     club.length > 0
       ? `Reached by ${club.length === 1 ? 'one concrete matroid' : `${club.length} concrete matroids`}:
-         <a href="/matroid/${club[0].id}">${alphaVar} = ${fmtAlpha(club[0].alpha_num, club[0].alpha_den)}</a>${
+         <a href="/matroid/${club[0].id}">${alphaBarVar} = ${fmtAlpha(club[0].alpha_num, club[0].alpha_den)}</a>${
            club[0].name ? ` &mdash; ${escapeHtml(club[0].name)}` : ''
          }${club.length > 1 ? ' leads the 4/3 club' : ''}`
       : 'No concrete matroid has reached it.'
@@ -210,7 +215,7 @@ function heroSection(records: RecordPoint[], families: Family[]): string {
       <p class="lede">Pick a basis uniformly at random. Elements usually repel &mdash; seeing one
       in the basis makes another <em>less</em> likely. But in some matroids a pair of elements
       attracts, and nobody knows how strong the attraction can get. The challenge:
-      <strong>find a concrete matroid whose correlation constant reaches 4/3.</strong></p>
+      <strong>find matroids with large correlation constants.</strong></p>
     </div>
     ${card}
   </section>`
@@ -233,7 +238,7 @@ function definitionSection(): string {
       </p>
       <p>
         The correlation constant is the largest ratio <var>R</var><sub><var>ij</var></sub>,
-        over pairs of nonloop, noncoloop elements; ${alphaVar}(<var>M</var>) &gt; 1
+        over pairs of nonloop, noncoloop elements; ${alphaBarVar}(<var>M</var>) &gt; 1
         means some pair is positively correlated in a uniformly random basis.
         <a href="/mathematics">Why this is interesting, what is known, and full proofs &rarr;</a>
       </p>
@@ -241,7 +246,7 @@ function definitionSection(): string {
     <p class="display-eq">
       <span class="eq-part"><var>R</var><sub><var>ij</var></sub>(<var>M</var>) =
         <span class="frac"><span class="num">${bcount('ij', '')} &middot; ${bcount('', 'ij')}</span><span class="den">${bcount('i', 'j')} &middot; ${bcount('j', 'i')}</span></span></span>
-      <span class="eq-part">${alphaVar}(<var>M</var>) = max<sub><var>i</var> &ne; <var>j</var></sub> <var>R</var><sub><var>ij</var></sub>(<var>M</var>)</span>
+      <span class="eq-part">${alphaBarVar}(<var>M</var>) = max<sub><var>i</var> &ne; <var>j</var></sub> <var>R</var><sub><var>ij</var></sub>(<var>M</var>)</span>
     </p>
   </section>`
 }
@@ -328,7 +333,7 @@ function recordsPlot(pts: RecordPoint[]): string {
     .filter((p) => p.alpha_value >= PLOT_YMIN)
     .map((p) => {
       const beats = beatsGoal(p.alpha_num, p.alpha_den)
-      const title = `${pointTitles(p).join(', ')}: α = ${fmtAlpha(
+      const title = `${pointTitles(p).join(', ')}: ${alphaBarText} = ${fmtAlpha(
         p.alpha_num,
         p.alpha_den,
       )} ≈ ${p.alpha_value.toFixed(4)} (n = ${p.n}, rank ${p.rank}, ${p.num_bases.toLocaleString('en-US')} bases)`
@@ -345,7 +350,7 @@ function recordsPlot(pts: RecordPoint[]): string {
       <line class="axis" x1="${PLOT.L}" y1="${PLOT.T}" x2="${PLOT.L}" y2="${PLOT.T + INNER_H}"/>
       <line class="axis" x1="${PLOT.L}" y1="${PLOT.T + INNER_H}" x2="${PLOT.W - PLOT.R}" y2="${PLOT.T + INNER_H}"/>
       <text class="axis-title" x="${PLOT.L + INNER_W / 2}" y="${PLOT.H - 6}" text-anchor="middle">ground-set size n &#8594;</text>
-      <text class="axis-title" transform="rotate(-90)" x="${-(PLOT.T + INNER_H / 2)}" y="15" text-anchor="middle">correlation constant &#945; &#8594;</text>
+      <text class="axis-title" transform="rotate(-90)" x="${-(PLOT.T + INNER_H / 2)}" y="15" text-anchor="middle">correlation constant ${alphaBarText} &#8594;</text>
     </svg>`
 }
 
@@ -354,10 +359,10 @@ function recordsSection(records: RecordPoint[], families: Family[]): string {
     records.length === 0
       ? '<p class="muted">No verified records yet &mdash; submit a matroid to put the first dot on the board.</p>'
       : `<div class="plot-panel">${recordsPlot(records)}</div>
-    <p class="muted plot-caption">Each dot is a standing record: the best verified ${alphaVar}
+    <p class="muted plot-caption">Each dot is a standing record: the best verified ${alphaBarVar}
     over each of GF(2), GF(3), GF(4), GF(5), and GF(7) &mdash; plus any concrete matroid
     reaching 4/3, over any field or none.
-    Huh&ndash;Schr&ouml;ter&ndash;Wang: ${alphaVar}(<var>M</var>) &le; 2 for every matroid.
+    Huh&ndash;Schr&ouml;ter&ndash;Wang: ${alphaBarVar}(<var>M</var>) &le; 2 for every matroid.
     Matroids on at most 7 elements never exceed 1.</p>`
   // Data for the interactive explorer (progressive enhancement in /chart.js);
   // <-escaping keeps the JSON safe inside a script element.
@@ -448,10 +453,25 @@ const DATA_HINTS: Record<string, string> = {
   hyperplanes: '(JSON: the complete list of hyperplanes, as lists of element labels)',
 }
 
-function verifierForm(state: FormState, user: User | null, openAttribution = false): string {
+interface VerifierFormOptions {
+  openAttribution?: boolean
+  homepage?: boolean
+}
+
+function verifierForm(
+  state: FormState,
+  user: User | null,
+  { openAttribution = false, homepage = false }: VerifierFormOptions = {},
+): string {
   const submit = user
     ? '<button type="submit">Verify</button>'
     : '<a class="login-to-submit" href="/auth/github">Log in to submit</a>'
+  const displayedAlpha = homepage ? alphaBarVar : alphaVar
+  const recordBookRule = `the record book itself takes a matroid that
+      strictly beats a standing field record &mdash; the best ${displayedAlpha} over GF(2), GF(3),
+      GF(4), GF(5), or GF(7), claimed with a matrix over that field &mdash; or that reaches
+      ${displayedAlpha} &ge; 4/3 by any description.`
+  const displayedRecordBookRule = homepage ? `<strong>${recordBookRule}</strong>` : recordBookRule
   const selectedType =
     state.typeValue && state.typeValue in DATA_PLACEHOLDERS ? state.typeValue : 'matrix'
   const typeOption = (value: string, label: string): string =>
@@ -480,7 +500,7 @@ function verifierForm(state: FormState, user: User | null, openAttribution = fal
       <textarea id="data" name="data" rows="8" required
                 placeholder="${escapeHtml(DATA_PLACEHOLDERS[selectedType])}">${escapeHtml(state.dataValue ?? '')}</textarea>
       <div class="form-row">
-        <label for="claimed_alpha">Claimed ${alphaVar} <span class="hint">(optional; exact fraction &mdash;
+        <label for="claimed_alpha">Claimed ${displayedAlpha} <span class="hint">(optional; exact fraction &mdash;
           a mismatch with the computed value fails the submission, catching paste mistakes)</span>
         <input id="claimed_alpha" name="claimed_alpha" type="text" maxlength="40"
                placeholder="e.g. 100/81" value="${escapeHtml(state.claimedAlphaValue ?? '')}" /></label>
@@ -550,10 +570,7 @@ function verifierForm(state: FormState, user: User | null, openAttribution = fal
       entries may be integers or fraction strings like <code>"-3/5"</code>; over
       GF(p<sup>d</sup>), integers (subfield constants) or coefficient lists like
       <code>[0,1]</code> in the Conway polynomial basis, as in Sage or GAP.
-      Anything within the limits can be verified; the record book itself takes a matroid that
-      strictly beats a standing field record &mdash; the best ${alphaVar} over GF(2), GF(3),
-      GF(4), GF(5), or GF(7), claimed with a matrix over that field &mdash; or that reaches
-      ${alphaVar} &ge; 4/3 by any description.
+      Anything within the limits can be verified; ${displayedRecordBookRule}
       Proposing an <em>infinite family</em> instead? That takes a proof and human review
       &mdash; see <a href="/families#propose">how family proposals work</a>.</p>
     </form>
@@ -996,7 +1013,7 @@ export function landingPage(
     ${recordsSection(records, families)}
     ${definitionSection()}
     ${submitTabs()}
-    ${verifierForm({}, user)}
+    ${verifierForm({}, user, { homepage: true })}
     ${familyFormSection({}, user)}
     ${SUBMIT_TABS_SCRIPT}`
   return layout(SITE_NAME, body, user, '', true)
@@ -1013,7 +1030,7 @@ export function resultPage(
 ): string {
   const body = `
     ${resultSection(result, record)}
-    ${verifierForm(form, user, record?.needsDiscovery === true)}`
+    ${verifierForm(form, user, { openAttribution: record?.needsDiscovery === true })}`
   return layout(`Result — ${SITE_NAME}`, body, user)
 }
 
@@ -1156,7 +1173,7 @@ export function matroidDetailPage(
         <div><dt>n</dt><dd>${m.n}</dd></div>
         <div><dt>rank</dt><dd>${m.rank}</dd></div>
         <div><dt>bases</dt><dd>${m.num_bases.toLocaleString('en-US')}</dd></div>
-        <div><dt>${alphaVar}(M)</dt><dd class="score">${fmtAlphaLong(m.alpha_num, m.alpha_den)}</dd></div>
+        <div><dt>${alphaBarVar}(M)</dt><dd class="score">${fmtAlphaLong(m.alpha_num, m.alpha_den)}</dd></div>
       </dl>
       <dl class="detail-meta">
         <dt>status</dt><dd>${status}</dd>
@@ -1346,9 +1363,10 @@ export function matroidsPage(
             ? ` <a href="${href(sort, dir, currentOnly, f)}" title="show only matroids verified or certified over this field">${fieldBadge(f)}</a>`
             : ''
         })()}</td>
+        <td>${m.titles ? titleNames(m.titles).join(', ') : '<span class="muted">history</span>'}</td>
+        <td>${m.discoverers ? escapeHtml(m.discoverers) : '<span class="muted">&mdash;</span>'}</td>
         <td>${m.submitter ? escapeHtml(m.submitter) : '<span class="muted">anonymous</span>'}</td>
         <td>${escapeHtml(m.created_at)}</td>
-        <td>${m.titles ? titleNames(m.titles).join(', ') : '<span class="muted">history</span>'}</td>
       </tr>`,
     )
     .join('\n')
@@ -1404,12 +1422,13 @@ export function matroidsPage(
           ${th('n', 'n', 'num')}
           ${th('rank', 'rank', 'num')}
           ${th('bases', 'bases', 'num')}
-          ${th('alpha', '&alpha;', 'num', 'the correlation constant, exact')}
+          ${th('alpha', alphaBarVar, 'num', 'the correlation constant, exact')}
           <th class="num">&approx;</th>
           <th>description</th>
+          <th>status</th>
+          <th>discovered by</th>
           <th>submitter</th>
           ${th('date', 'submitted')}
-          <th>status</th>
         </tr></thead>
         <tbody>${trs}</tbody>
       </table>

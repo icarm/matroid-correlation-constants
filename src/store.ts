@@ -154,6 +154,7 @@ export interface MatroidListRow {
   representation_type: string
   field: string | null
   cert_field: string | null
+  discoverers: string | null
   created_at: string
   submitter: string | null
   titles: string | null // current titles ('club' and/or field orders), CSV
@@ -163,7 +164,7 @@ export interface MatroidListRow {
 export function allMatroids(env: Bindings): Promise<MatroidListRow[]> {
   return env.DB.prepare(
     `SELECT m.id, m.n, m.rank, m.num_bases, m.alpha_num, m.alpha_den, m.alpha_value,
-            m.representation_type, m.field, m.cert_field, m.created_at,
+            m.representation_type, m.field, m.cert_field, m.discoverers, m.created_at,
             u.display_name AS submitter,
             ${CURRENT_TITLES_SQL} AS titles
        FROM matroids m LEFT JOIN users u ON u.id = m.submitter_user_id

@@ -324,7 +324,7 @@
       // club member's representation details live on its matroid page.
       hoverable(dot, 'matroid #' + r.id, [
         (r.titles || []).join(' · '),
-        'α = ' + r.label + ' ≈ ' + fmt(r.value, 5),
+        'α\u0305 = ' + r.label + ' ≈ ' + fmt(r.value, 5),
         '|E| = ' + r.n + ' · rank ' + r.rank + ' · ' + Number(r.bases).toLocaleString() + ' bases',
       ], '/matroid/' + r.id)
       marks.append(dot)
