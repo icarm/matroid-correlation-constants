@@ -538,7 +538,7 @@ const FAMILY_PALETTE = [
  * color, math_anchor, or fields_json (curator data outside the form). The
  * structured AI declaration becomes authoritative: any handwritten
  * ai_disclosure prose (curated rows) is cleared so the saved fields render.
- * Rejected proposals are dead ends and stay frozen. */
+ * Rejected proposals stay frozen; re-accept one first to edit it. */
 export async function updateFamilyFields(
   env: Bindings,
   familyId: number,
@@ -582,6 +582,13 @@ export async function updateFamilyFields(
   return (res.meta.changes ?? 0) > 0
 }
 
+/** Both decisions are reversible post-hoc, so a mistaken review can be
+ * undone: reject applies to accepted rows too (retracting — curve, card,
+ * and public page all key off status = 'accepted'), and accept applies to
+ * rejected rows too (republishing). Only the current status matters; the
+ * review columns record the latest decision. Re-acceptance picks a color
+ * fresh against the families accepted *now* — the old color may have been
+ * reassigned while the family sat rejected. */
 export async function reviewFamily(
   env: Bindings,
   familyId: number,
@@ -597,11 +604,13 @@ export async function reviewFamily(
     const used = new Set(results.map((r) => r.color))
     color = FAMILY_PALETTE.find((c) => !used.has(c)) ?? `hsl(${(familyId * 137) % 360} 45% 38%)`
   }
+  const from =
+    action === 'accept' ? `status IN ('pending', 'rejected')` : `status IN ('pending', 'accepted')`
   const res = await env.DB.prepare(
     `UPDATE families
        SET status = ?, color = COALESCE(?, color), reviewed_by = ?,
            reviewed_at = CURRENT_TIMESTAMP, review_note = ?
-       WHERE id = ? AND status = 'pending'`,
+       WHERE id = ? AND ${from}`,
   )
     .bind(action === 'accept' ? 'accepted' : 'rejected', color, adminId, note, familyId)
     .run()

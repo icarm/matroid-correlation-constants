@@ -164,7 +164,7 @@ app.post('/family/:slug/edit', async (c) => {
   const family = await familyBySlug(c.env, c.req.param('slug'))
   if (!family) return c.html(notFoundPage(user), 404)
   if (family.status === 'rejected') {
-    return c.text('rejected proposals are frozen; they cannot be edited', 400)
+    return c.text('rejected proposals are frozen; re-accept first to edit', 400)
   }
   const body = await c.req.parseBody()
   const form: FamilyFormState = {}

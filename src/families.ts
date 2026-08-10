@@ -138,6 +138,44 @@ function reviewPanel(f: Family): string {
       </section>`
 }
 
+/** The retract panel an admin sees on an accepted family: rejecting
+ * post-hoc unpublishes it, undoing a mistaken acceptance. */
+function retractPanel(f: Family): string {
+  return `
+      <section class="panel review-panel">
+        <h3>Retract this family <span class="muted">(admin)</span></h3>
+        <p class="muted">Rejecting unpublishes an accepted family: its curve leaves the chart,
+        its card the catalog, and this page becomes visible only to the submitter and the
+        admins. Reversible &mdash; an admin can re-accept from this page later.</p>
+        <form method="post" action="/family/${escapeHtml(f.slug)}/review">
+          <label for="review-note">Note <span class="hint">(recorded with the decision; shown to the submitter)</span></label>
+          <textarea id="review-note" name="note" rows="2" maxlength="2000"></textarea>
+          <div class="review-actions">
+            <button type="submit" name="action" value="reject" class="danger">Reject &mdash; unpublish</button>
+          </div>
+        </form>
+      </section>`
+}
+
+/** The re-accept panel an admin sees on a rejected proposal: accepting
+ * post-hoc republishes it, undoing a mistaken rejection. */
+function reacceptPanel(f: Family): string {
+  return `
+      <section class="panel review-panel">
+        <h3>Re-accept this proposal <span class="muted">(admin)</span></h3>
+        <p class="muted">Accepting publishes the family after all: its curve joins the chart and
+        its card the catalog. The color is picked fresh against the currently accepted
+        families. The note below replaces the rejection note.</p>
+        <form method="post" action="/family/${escapeHtml(f.slug)}/review">
+          <label for="review-note">Note <span class="hint">(recorded with the decision; shown to the submitter)</span></label>
+          <textarea id="review-note" name="note" rows="2" maxlength="2000"></textarea>
+          <div class="review-actions">
+            <button type="submit" name="action" value="accept">Accept &mdash; publish</button>
+          </div>
+        </form>
+      </section>`
+}
+
 function statusBanner(f: Family): string {
   if (f.status === 'pending') {
     return `<div class="status-banner pending"><strong>Pending review.</strong> This proposal is
@@ -219,7 +257,9 @@ export function familyPage(f: Family, user: User | null = null, viewerIsAdmin = 
       <h3>Plotted members</h3>
       ${seriesTables}
       ${viewerIsAdmin && f.status === 'pending' ? reviewPanel(f) : ''}
+      ${viewerIsAdmin && f.status === 'rejected' ? reacceptPanel(f) : ''}
       ${viewerIsAdmin && f.status !== 'rejected' ? familyEditSection(f, user) : ''}
+      ${viewerIsAdmin && f.status === 'accepted' ? retractPanel(f) : ''}
     </section>`
   return layout(`${f.name} — Matroid Correlation Constants`, body, user, MATHJAX_HEAD)
 }

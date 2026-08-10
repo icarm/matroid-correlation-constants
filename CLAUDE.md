@@ -59,7 +59,10 @@ case).
   from the landing form's "infinite family" tab land status='pending',
   visible only to submitter + admins (users.is_admin, read fresh from D1
   on admin paths, never from the session), until an admin accepts
-  (assigns a palette color, publishes curve/card/page) or rejects. All
+  (assigns a palette color, publishes curve/card/page) or rejects. Both
+  decisions reverse post-hoc from the family's page (reject retracts an
+  accepted family; accept republishes a rejected one — mistaken reviews
+  are undoable), though rejected rows stay frozen for edits. All
   family-sourced text incl. TeX renders HTML-escaped; MathJax reads DOM
   text, so escaping is free and makes proposals safe. The landing page
   injects accepted families (with the record points) as `#chart-data`
