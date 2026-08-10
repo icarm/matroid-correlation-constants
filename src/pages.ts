@@ -79,12 +79,15 @@ const beatsGoal = (num: number, den: number): boolean => 3 * num >= 4 * den
 
 const alphaVar = '<var>&alpha;</var>'
 // The landing page uses the unweighted invariant's full notation without
-// loading MathJax: the precomposed U+1FB1 (alpha with macron) supplies the
-// overline in ordinary HTML, SVG, and plain-text chart tooltips. A single
-// glyph carries its own bar; the combining U+0305 slides off italic alphas
-// in fonts without mark anchors.
+// loading MathJax. No Unicode overbar can be trusted here: the combining
+// U+0305 slides off italic alphas in fonts without mark anchors, and even
+// the precomposed U+1FB1 decomposes back to a stray combining mark on
+// machines whose fonts lack the glyph. So wherever we control markup the
+// bar is drawn by CSS (`.obar`, style.css) over a plain alpha; the
+// precomposed glyph remains only in plain-text-only spots (SVG title
+// tooltips of the no-JS fallback plot) where styling cannot reach.
 const alphaBarText = 'ᾱ'
-const alphaBarVar = `<var>${alphaBarText}</var>`
+const alphaBarVar = '<var class="obar">&alpha;</var>'
 
 function authNav(user: User | null): string {
   if (user) {
@@ -352,7 +355,7 @@ function recordsPlot(pts: RecordPoint[]): string {
       <line class="axis" x1="${PLOT.L}" y1="${PLOT.T}" x2="${PLOT.L}" y2="${PLOT.T + INNER_H}"/>
       <line class="axis" x1="${PLOT.L}" y1="${PLOT.T + INNER_H}" x2="${PLOT.W - PLOT.R}" y2="${PLOT.T + INNER_H}"/>
       <text class="axis-title" x="${PLOT.L + INNER_W / 2}" y="${PLOT.H - 6}" text-anchor="middle">ground-set size n &#8594;</text>
-      <text class="axis-title" transform="rotate(-90)" x="${-(PLOT.T + INNER_H / 2)}" y="15" text-anchor="middle">correlation constant ${alphaBarText} &#8594;</text>
+      <text class="axis-title" transform="rotate(-90)" x="${-(PLOT.T + INNER_H / 2)}" y="15" text-anchor="middle">correlation constant <tspan class="obar-svg">&alpha;</tspan> &#8594;</text>
     </svg>`
 }
 

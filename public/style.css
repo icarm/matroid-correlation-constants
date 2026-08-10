@@ -60,6 +60,27 @@ a:hover {
   white-space: nowrap;
 }
 
+/* The unweighted invariant's overbar, drawn by CSS over a plain alpha.
+ * Unicode can't be trusted for it: combining marks slide off italic
+ * glyphs, and the precomposed U+1FB1 decomposes back to one on machines
+ * whose fonts lack it. `.obar` styles HTML (the tooltip builds it via
+ * chart.js), `.obar-svg` the axis labels inside inline SVG, where only
+ * text-decoration is available. */
+.obar {
+  position: relative;
+}
+.obar::after {
+  content: '';
+  position: absolute;
+  left: 0.1em;
+  right: 0.04em;
+  top: 0.16em;
+  border-top: 0.07em solid currentColor;
+}
+.obar-svg {
+  text-decoration: overline;
+}
+
 /* Sticky topbar over blurred paper, following the draft site: brand mark +
    serif wordmark, primary nav, a dark submit pill, and (ours) the auth nav. */
 header {

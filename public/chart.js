@@ -171,7 +171,18 @@
     t.append(strong)
     for (const line of lines) {
       const div = document.createElement('div')
-      div.textContent = line
+      // A line is a string, or a list of parts: strings and {obar: 'α'}
+      // spans — the overbar is drawn by CSS (.obar), since no font can be
+      // trusted to place a Unicode one (see style.css).
+      for (const part of Array.isArray(line) ? line : [line]) {
+        if (typeof part === 'string') div.append(part)
+        else {
+          const span = document.createElement('span')
+          span.className = 'obar'
+          span.textContent = part.obar
+          div.append(span)
+        }
+      }
       t.append(div)
     }
     t.hidden = false
@@ -269,7 +280,8 @@
     grid.append(el('line', { x1: M.left, y1: M.top, x2: M.left, y2: H - M.bottom, class: 'axis-line' }))
     grid.append(el('text', { x: M.left + innerW / 2, y: H - 14, class: 'axis-label', 'text-anchor': 'middle' },
       state.xAxis === 'rank' ? 'Matroid rank' : 'Ground-set size |E|'))
-    const yLabel = el('text', { x: 20, y: M.top + innerH / 2, class: 'axis-label', 'text-anchor': 'middle' }, 'correlation constant ᾱ')
+    const yLabel = el('text', { x: 20, y: M.top + innerH / 2, class: 'axis-label', 'text-anchor': 'middle' }, 'correlation constant ')
+    yLabel.append(el('tspan', { class: 'obar-svg' }, 'α'))
     yLabel.setAttribute('transform', `rotate(-90 20 ${M.top + innerH / 2})`)
     grid.append(yLabel)
     chart.append(grid)
@@ -324,7 +336,7 @@
       // club member's representation details live on its matroid page.
       hoverable(dot, 'matroid #' + r.id, [
         (r.titles || []).join(' · '),
-        'ᾱ = ' + r.label + ' ≈ ' + fmt(r.value, 5),
+        [{ obar: 'α' }, ' = ' + r.label + ' ≈ ' + fmt(r.value, 5)],
         '|E| = ' + r.n + ' · rank ' + r.rank + ' · ' + Number(r.bases).toLocaleString() + ' bases',
       ], '/matroid/' + r.id)
       marks.append(dot)
