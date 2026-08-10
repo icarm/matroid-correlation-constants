@@ -79,9 +79,11 @@ const beatsGoal = (num: number, den: number): boolean => 3 * num >= 4 * den
 
 const alphaVar = '<var>&alpha;</var>'
 // The landing page uses the unweighted invariant's full notation without
-// loading MathJax: U+0305 supplies the overline in ordinary HTML, SVG, and
-// plain-text chart tooltips.
-const alphaBarText = 'α\u0305'
+// loading MathJax: the precomposed U+1FB1 (alpha with macron) supplies the
+// overline in ordinary HTML, SVG, and plain-text chart tooltips. A single
+// glyph carries its own bar; the combining U+0305 slides off italic alphas
+// in fonts without mark anchors.
+const alphaBarText = 'ᾱ'
 const alphaBarVar = `<var>${alphaBarText}</var>`
 
 function authNav(user: User | null): string {

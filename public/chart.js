@@ -269,7 +269,7 @@
     grid.append(el('line', { x1: M.left, y1: M.top, x2: M.left, y2: H - M.bottom, class: 'axis-line' }))
     grid.append(el('text', { x: M.left + innerW / 2, y: H - 14, class: 'axis-label', 'text-anchor': 'middle' },
       state.xAxis === 'rank' ? 'Matroid rank' : 'Ground-set size |E|'))
-    const yLabel = el('text', { x: 20, y: M.top + innerH / 2, class: 'axis-label', 'text-anchor': 'middle' }, 'correlation constant')
+    const yLabel = el('text', { x: 20, y: M.top + innerH / 2, class: 'axis-label', 'text-anchor': 'middle' }, 'correlation constant ᾱ')
     yLabel.setAttribute('transform', `rotate(-90 20 ${M.top + innerH / 2})`)
     grid.append(yLabel)
     chart.append(grid)
@@ -324,7 +324,7 @@
       // club member's representation details live on its matroid page.
       hoverable(dot, 'matroid #' + r.id, [
         (r.titles || []).join(' · '),
-        'α\u0305 = ' + r.label + ' ≈ ' + fmt(r.value, 5),
+        'ᾱ = ' + r.label + ' ≈ ' + fmt(r.value, 5),
         '|E| = ' + r.n + ' · rank ' + r.rank + ' · ' + Number(r.bases).toLocaleString() + ' bases',
       ], '/matroid/' + r.id)
       marks.append(dot)
