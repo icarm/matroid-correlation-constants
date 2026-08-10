@@ -14,6 +14,9 @@ export interface Bindings {
   SUBMISSION_RATE_LIMITER: RateLimit
   GITHUB_CLIENT_ID?: string
   GITHUB_CLIENT_SECRET?: string
+  /** Zulip slack_incoming webhook URL (stream + topic baked in), set via
+   * `wrangler secret put ZULIP_WEBHOOK_URL`; unset = no notifications. */
+  ZULIP_WEBHOOK_URL?: string
 }
 export type AppEnv = { Bindings: Bindings; Variables: { user: User | null } }
 type Ctx = Context<AppEnv>

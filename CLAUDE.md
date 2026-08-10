@@ -50,6 +50,10 @@ case).
   = moderation surface; Zulip is the discussion venue). The api_tokens,
   commentary_log tables and matroids.current_comment_id remain in D1,
   dormant.
+- `src/zulip.ts` — announces record-book entries to the ICARM Zulip topic
+  via a slack_incoming webhook, as in the sibling ruzsa-genus-one. Fired
+  with `waitUntil` from the submit route; the `ZULIP_WEBHOOK_URL` secret
+  (`wrangler secret put`) bakes in stream + topic, unset = silently off.
 - `src/pages.ts` — server-rendered template-literal pages. `src/mathematics.ts`
   — the proofs page (the only page loading MathJax, from CDN).
 - `src/familyData.ts` — the family model (types + chart-data mapper);

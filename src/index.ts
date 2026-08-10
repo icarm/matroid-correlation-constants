@@ -43,6 +43,7 @@ import {
   SUBMISSION_RATE_PERIOD_SEC,
 } from './rateLimit'
 import { mathematicsPage } from './mathematics'
+import { notifyNewRecord } from './zulip'
 import { familiesPage, familyPage } from './families'
 import {
   acceptedFamilies,
@@ -577,7 +578,19 @@ app.post('/verify', async (c) => {
   let record: RecordStatus | undefined
   if (result.ok && !('error' in meta)) {
     record = await recordMatroid(c.env, result, meta, user.id)
-    if (record.recorded) return c.redirect(`/matroid/${record.matroidId}?new=1`, 303)
+    if (record.recorded) {
+      c.executionCtx.waitUntil(
+        notifyNewRecord(
+          c.env,
+          record,
+          result,
+          meta.name,
+          user.display_name ?? null,
+          new URL(c.req.url).origin,
+        ),
+      )
+      return c.redirect(`/matroid/${record.matroidId}?new=1`, 303)
+    }
   }
   const flash: ResultFlash = {
     result: slimResult(result),
