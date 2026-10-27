@@ -99,10 +99,9 @@ case).
     npm test
     npx wrangler d1 migrations apply matroid-correlation-constants --local
 
-Deploy: pushes to main on GitHub run .github/workflows/deploy.yml
-(typecheck + tests, then remote migrations, then wrangler deploy; needs
-the CLOUDFLARE_API_TOKEN repo secret). Manual fallback (this environment
-has no wrangler auth — the user runs it):
+Deploy is manual (CI, .github/workflows/test.yml, only typechecks and
+tests; it was given no Cloudflare token because the needed permissions
+were too broad). This environment has no wrangler auth — the user runs it:
 
     npx wrangler d1 migrations apply matroid-correlation-constants --remote
     npm run deploy
